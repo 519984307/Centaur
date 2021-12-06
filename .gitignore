@@ -1,0 +1,8 @@
+# Build Paths
+/build
+
+#Clion paths
+/.idea
+
+# Application testing
+/local
