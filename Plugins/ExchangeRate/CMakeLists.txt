@@ -17,36 +17,27 @@ set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.2.1/macos")
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui LinguistTools Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui LinguistTools Widgets REQUIRED)
 # Required libraries
-find_package(libwebsockets REQUIRED)
 find_package(fmt REQUIRED)
 
-
-add_library(BinanceSPOT SHARED
-        res/resource.qrc
-        src/BinanceSPOT.cpp
-        include/BinanceSPOT.hpp src/SpotMarketWS.cpp)
+add_library(ExchangeRate SHARED
+        include/ExchangeRate.hpp
+        src/ExchangeRate.cpp)
 
 
-target_include_directories(BinanceSPOT PRIVATE
+target_include_directories(ExchangeRate PRIVATE
         include
-        ../../Library/BinanceAPI/include
         ../include
         /usr/local/Cellar/rapidjson/1.1.0/include
-        /usr/local/opt/cpr/include
-        /usr/local/opt/openssl/include
-        ${LIBWEBSOCKETS_INCLUDE_DIRS})
+        /usr/local/opt/cpr/include)
 
 
-target_link_libraries(BinanceSPOT PRIVATE Qt${QT_VERSION_MAJOR}::Gui)
-target_link_libraries(BinanceSPOT PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(BinanceSPOT PRIVATE fmt::fmt)
-target_link_libraries(BinanceSPOT PRIVATE ${OPENSSL_LIBRARIES})
-target_link_libraries(BinanceSPOT PRIVATE /usr/local/opt/cpr/lib/libcpr.dylib)
-target_link_libraries(BinanceSPOT PRIVATE /usr/local/opt/libwebsockets/lib/libwebsockets.dylib)
+target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Gui)
+target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(ExchangeRate PRIVATE fmt::fmt)
+target_link_libraries(ExchangeRate PRIVATE /usr/local/opt/cpr/lib/libcpr.dylib)
 
-target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
-target_compile_definitions(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)
+target_compile_definitions(ExchangeRate PRIVATE EXCHANGERATEPLUGIN_LIBRARY)
 
 if (COMMAND qt_create_translation)
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
@@ -55,7 +46,7 @@ else ()
 endif ()
 
 
-target_compile_options(BinanceSPOT PRIVATE
+target_compile_options(ExchangeRate PRIVATE
         -Weverything
         -Wno-extra-semi-stmt
         -Wno-reserved-id-macro

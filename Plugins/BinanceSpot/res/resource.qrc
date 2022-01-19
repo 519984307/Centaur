@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/img">
+        <file>BinancePlugin.png</file>
+        <file>crypto.svg</file>
+        <file>money-locked.svg</file>
+        <file>crypto.svg</file>
+    </qresource>
+</RCC>

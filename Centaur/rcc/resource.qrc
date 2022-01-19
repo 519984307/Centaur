@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/img">
+        <file>../res/img/downArrow.svg</file>
+        <file>../res/img/upArrow.svg</file>
+        <file>../res/img/Search.svg</file>
+        <file>../res/img/plugin.svg</file>
+    </qresource>
+</RCC>
