@@ -16,14 +16,18 @@ include_directories(Plugins/include)
 # Main Application
 add_subdirectory(Centaur)
 
-#PluginId Generator
-add_subdirectory(Plugins/plid)
+#Clients
+
 
 #Libraries
 add_subdirectory(Library/BinanceAPI)
 add_subdirectory(Library/uuid)
+add_subdirectory(Library/Protocol)
 
 #Plugins
 add_subdirectory(Plugins/ExchangeRate)
 add_subdirectory(Plugins/BinanceSpot)
+
+#tests
+add_subdirectory(test)
 
