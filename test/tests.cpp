@@ -2,7 +2,7 @@
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include <catch2/catch.hpp>
 #include <chrono>
-#include <iostream>
+#include <protocol.hpp>
 #include <uuid.hpp>
 
 TEST_CASE("UUID Construction")
@@ -53,4 +53,89 @@ TEST_CASE("UUID Benchmark")
         [[maybe_unused]] auto uuid   = cen::uuid::generate<std::mt19937_64>();
         [[maybe_unused]] auto string = cen::uuid::generate<std::mt19937_64>().to_string();
     };
+}
+
+TEST_CASE("Field Protocols Types and names")
+{
+    using namespace CENTAUR_NAMESPACE;
+    protocol::Field<int> fd("double");
+    CHECK(fd.name() == "double");
+    STATIC_REQUIRE(std::is_same_v<protocol::Field<int>::field_type, int>);
+    fd() = 123;
+    CHECK(fd() == 123);
+}
+
+TEST_CASE("Field Protocols")
+{
+    using namespace CENTAUR_NAMESPACE;
+    protocol::ProtocolJSONGenerator pjg;
+    protocol::Field<double> fd { "double" };
+    protocol::Field<bool> fbf { "f_boolean" };
+    protocol::Field<bool> fbt { "t_boolean" };
+    protocol::Field<int64_t> fi { "signed64" };
+    protocol::Field<uint32_t> fu { "unsigned" };
+    protocol::Field<std::string> fs { "string" };
+
+    fd()  = 32.455;
+    fbf() = false;
+    fbt() = true;
+    fi()  = -123;
+    fu()  = 124;
+    fs()  = "this is a string";
+
+    pjg.addField(std::addressof(fd));
+    pjg.addField(std::addressof(fbf));
+    pjg.addField(std::addressof(fbt));
+    pjg.addField(std::addressof(fi));
+    pjg.addField(std::addressof(fu));
+    pjg.addField(std::addressof(fs));
+
+    auto str = pjg.getJSON();
+
+    CHECK(str == R"({"data":{"double":32.45500000,"f_boolean":false,"t_boolean":true,"signed64":-123,"unsigned":124,"string":"this is a string"}})");
+}
+
+TEST_CASE("Field protocols from JSON")
+{
+    using namespace CENTAUR_NAMESPACE;
+    protocol::ProtocolJSONGenerator pjg;
+    protocol::Field<double> fd { "double" };
+    protocol::Field<bool> fb { "boolean" };
+    protocol::Field<int64_t> fi { "signed64" };
+    protocol::Field<uint32_t> fu { "unsigned" };
+    protocol::Field<std::string> fs { "string" };
+
+    pjg.addField(std::addressof(fd));
+    pjg.addField(std::addressof(fb));
+    pjg.addField(std::addressof(fi));
+    pjg.addField(std::addressof(fu));
+    pjg.addField(std::addressof(fs));
+
+    CHECK_THROWS(pjg.fromJSON(R"({"data":{"double":1.3,"boolean":false,"signed64":-10,"unsigned":50,"string":"this is a string"})"));
+    CHECK_NOTHROW(pjg.fromJSON(R"({"data":{"double":1.3,"boolean":false,"signed64":-10,"unsigned":50,"string":"this is a string"}})"));
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wfloat-equal"
+#endif /*__clang__*/
+    CHECK(fd() == 1.3);
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif /*__clang__*/
+    CHECK(fb() == false);
+    CHECK(fi() == -10);
+    CHECK(fu() == 50);
+    CHECK(fs() == "this is a string");
+}
+
+TEST_CASE("Communication JSON Protocols")
+{
+    using namespace CENTAUR_NAMESPACE;
+    protocol::Protocol_AcceptConnection pac;
+
+    pac.uuid()           = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
+    pac.name()           = "Connection test";
+    pac.implementation() = "exchange";
+
+    CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test","implementation":"exchange"}})");
 }

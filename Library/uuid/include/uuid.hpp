@@ -13,17 +13,7 @@
 #ifndef CENTAUR_UUID_HPP
 #define CENTAUR_UUID_HPP
 
-#ifndef CENTAUR_NAMESPACE
-#define CENTAUR_NAMESPACE cen
-#endif /*CENTAUR_NAMESPACE*/
-
-#ifndef NODISCARD
-#if defined(__clang__) || defined(__GNU__) || defined(MSVC)
-#define NODISCARD [[nodiscard]]
-#else
-#define NODISCARD
-#endif /* defined ...*/
-#endif /*NODISCARD*/
+#include "../../Centaur.hpp"
 #include <array>
 #include <concepts>
 #include <random>
@@ -193,4 +183,5 @@ namespace CENTAUR_NAMESPACE
         // clang-format on
     };
 } // namespace CENTAUR_NAMESPACE
+
 #endif // CENTAUR_UUID_HPP

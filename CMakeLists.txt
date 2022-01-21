@@ -18,7 +18,6 @@ add_subdirectory(Centaur)
 
 #Clients
 
-
 #Libraries
 add_subdirectory(Library/BinanceAPI)
 add_subdirectory(Library/uuid)
