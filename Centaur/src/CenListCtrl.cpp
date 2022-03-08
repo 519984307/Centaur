@@ -8,24 +8,24 @@
 #include <QMenu>
 #include <QMouseEvent>
 
-cent::CenListCtrl::CenListCtrl(QWidget *parent) :
+CENTAUR_NAMESPACE::CenListCtrl::CenListCtrl(QWidget *parent) :
     QTableView(parent)
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &cent::CenListCtrl::customContextMenuRequested, this, &cent::CenListCtrl::showContextMenu);
+    connect(this, &CENTAUR_NAMESPACE::CenListCtrl::customContextMenuRequested, this, &CENTAUR_NAMESPACE::CenListCtrl::showContextMenu);
 }
 
-void cent::CenListCtrl::setRemove(bool status)
+void CENTAUR_NAMESPACE::CenListCtrl::setRemove(bool status)
 {
     m_remove = status;
 }
 
-void cent::CenListCtrl::allowClickMessages(bool status)
+void CENTAUR_NAMESPACE::CenListCtrl::allowClickMessages(bool status)
 {
     m_allowClickMessages = status;
 }
 
-void cent::CenListCtrl::showContextMenu(const QPoint &pos)
+void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
 {
     QModelIndex index = indexAt(pos).siblingAtColumn(0);
     auto itemData     = index.data(Qt::DisplayRole).toString();
@@ -77,7 +77,7 @@ contextMenu.addAction(&action1);
     }
 }
 
-void cent::CenListCtrl::mousePressEvent(QMouseEvent *event)
+void CENTAUR_NAMESPACE::CenListCtrl::mousePressEvent(QMouseEvent *event)
 {
     QTableView::mousePressEvent(event);
     if (!m_allowClickMessages)

@@ -11,7 +11,7 @@
 #include "CentaurUIState.hpp"
 #include <QDialog>
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     QT_BEGIN_NAMESPACE
     namespace Ui
@@ -44,6 +44,6 @@ namespace cent
         Ui::PluginsDialog *m_ui;
         std::map<std::pair<uint32_t, uint16_t>, QString> m_localData;
     };
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_PLUGINSDIALOG_HPP

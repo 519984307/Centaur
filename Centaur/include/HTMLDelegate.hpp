@@ -15,7 +15,7 @@
 
 #include <QStyledItemDelegate>
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     class HTMLDelegate : public QStyledItemDelegate
     {
@@ -29,6 +29,6 @@ namespace cent
 
         [[nodiscard]] inline QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
     };
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_HTMLDELEGATE_HPP

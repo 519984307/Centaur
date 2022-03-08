@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -15,10 +15,11 @@ find_package(Qt6 COMPONENTS
         Widgets
         Xml
         REQUIRED)
-find_package(SQLite3 REQUIRED)
-find_package(FMT REQUIRED)
 
+find_package(FMT CONFIG REQUIRED)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_library(QWT Qwt /Volumes/RicardoESSD/dev/qwt/release/lib)
+
 
 IF (WIN32)
     set(CENTAUR_EXECUTABLE WIN32)
@@ -40,7 +41,7 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/Plugins.cpp
         src/PluginsDialog.cpp
         include/CentaurApp.hpp
-        include/Centaur.hpp
+        include/CentaurGlobal.hpp
         include/CentaurUIState.hpp
         include/CenListCtrl.hpp
         include/Logger.hpp
@@ -57,15 +58,21 @@ set_target_properties(Centaur PROPERTIES
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 
-target_include_directories(Centaur PRIVATE ../../Plugins/include)
-target_include_directories(Centaur PRIVATE ${QWT}/Headers)
-target_include_directories(Centaur PRIVATE include)
-target_include_directories(Centaur PRIVATE /usr/local/Cellar/rapidjson/1.1.0/include)
+target_include_directories(Centaur PRIVATE
+        include
+        ../../Plugins/include
+        ../../Library/Protocol/include
+        ../../Library/uuid/include
+        ${QWT}/Headers)
 
 target_link_libraries(Centaur PRIVATE fmt::fmt)
 target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml)
-target_link_libraries(Centaur PRIVATE SQLite::SQLite3)
 target_link_libraries(Centaur PRIVATE ${QWT})
+target_link_libraries(Centaur PRIVATE unofficial::sqlite3::sqlite3)
+
+# Local Libraries
+target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 
 
 target_compile_options(Centaur PRIVATE

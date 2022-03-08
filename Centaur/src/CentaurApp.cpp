@@ -9,9 +9,9 @@
 #include "PluginsDialog.hpp"
 #include <QMessageBox>
 
-cent::CentaurApp *cent::g_app = nullptr;
+CENTAUR_NAMESPACE::CentaurApp *CENTAUR_NAMESPACE::g_app = nullptr;
 
-cent::CentaurApp::CentaurApp(QWidget *parent) :
+CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
     m_ui { std::make_unique<Ui::CentaurApp>() }
 {
@@ -48,7 +48,7 @@ cent::CentaurApp::CentaurApp(QWidget *parent) :
     // Load plugins
     loadPlugins();
 }
-cent::CentaurApp::~CentaurApp()
+CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
 {
     if (g_logger != nullptr)
     {
@@ -59,7 +59,7 @@ cent::CentaurApp::~CentaurApp()
     delete g_globals;
 }
 
-bool cent::CentaurApp::eventFilter(QObject *obj, QEvent *event)
+bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
 {
     if (obj == this && event->type() == QEvent::Close)
         saveInterfaceState();
@@ -67,9 +67,9 @@ bool cent::CentaurApp::eventFilter(QObject *obj, QEvent *event)
     return QObject::eventFilter(obj, event);
 }
 
-void cent::CentaurApp::initializeInterface() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 {
-    logTrace("app", "cent::CentaurApp::initializeInterface()");
+    logTrace("app", "CENTAUR_NAMESPACE::CentaurApp::initializeInterface()");
 
     auto *aboutMenu         = new QMenu,
          *preferencesMenu   = new QMenu,
@@ -121,9 +121,9 @@ void cent::CentaurApp::initializeInterface() noexcept
     m_ui->m_ctrlWatchList->setModel(sortProxyModel);
     m_ui->m_ctrlWatchList->setRemove();
     m_ui->m_ctrlWatchList->allowClickMessages();
-    connect(m_ui->m_ctrlWatchList, &cent::CenListCtrl::sgRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
-    connect(m_ui->m_ctrlWatchList, &cent::CenListCtrl::sgSetSelection, this, &CentaurApp::onSetWatchlistSelection);
-    connect(m_ui->m_ctrlWatchList, &cent::CenListCtrl::sgRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
+    connect(m_ui->m_ctrlWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
+    connect(m_ui->m_ctrlWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgSetSelection, this, &CentaurApp::onSetWatchlistSelection);
+    connect(m_ui->m_ctrlWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
 
     sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
     connect(m_ui->m_ctrlWatchListFilter, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
@@ -245,7 +245,7 @@ void cent::CentaurApp::initializeInterface() noexcept
     m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight)->setAttribute(QwtScaleEngine::Floating, true);
 }
 
-void cent::CentaurApp::saveInterfaceState() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
 {
     logTrace("app", "CentaurApp::saveInterfaceState()");
 
@@ -291,7 +291,7 @@ void cent::CentaurApp::saveInterfaceState() noexcept
 
     logInfo("app", "UI state saved");
 }
-void cent::CentaurApp::loadInterfaceState() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
 {
     logTrace("app", "CentaurApp::loadInterfaceState()");
 
@@ -338,17 +338,17 @@ void cent::CentaurApp::loadInterfaceState() noexcept
     logInfo("app", "UI state loaded");
 }
 
-void cent::CentaurApp::startLoggingService() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::startLoggingService() noexcept
 {
     g_logger = new CentaurLogger;
     // Init the logger
-    m_loggerThread = std::make_unique<std::thread>(&cent::CentaurLogger::run, g_logger);
+    m_loggerThread = std::make_unique<std::thread>(&CENTAUR_NAMESPACE::CentaurLogger::run, g_logger);
     try
     {
         g_logger->setApplication(this);
         g_logger->setUser("root");
         g_logger->setSession(0);
-        logInfo("app", QString("TraderSys ") + QString(cent::CentaurVersionString));
+        logInfo("app", QString("TraderSys ") + QString(CENTAUR_NAMESPACE::CentaurVersionString));
     } catch (const std::runtime_error &ex)
     {
         QMessageBox::critical(this,
@@ -357,43 +357,43 @@ void cent::CentaurApp::startLoggingService() noexcept
         QApplication::quit();
     }
 }
-void cent::CentaurApp::onActionTileWindowsTriggered()
+void CENTAUR_NAMESPACE::CentaurApp::onActionTileWindowsTriggered()
 {
     m_ui->m_mdiArea->tileSubWindows();
 }
 
-void cent::CentaurApp::onActionCascadeWindowsTriggered()
+void CENTAUR_NAMESPACE::CentaurApp::onActionCascadeWindowsTriggered()
 {
     m_ui->m_mdiArea->cascadeSubWindows();
 }
 
-void cent::CentaurApp::onActionSymbolsToggled(bool status)
+void CENTAUR_NAMESPACE::CentaurApp::onActionSymbolsToggled(bool status)
 {
     status ? m_ui->m_dockSymbols->show() : m_ui->m_dockSymbols->hide();
 }
 
-void cent::CentaurApp::onActionLoggingToggled(bool status)
+void CENTAUR_NAMESPACE::CentaurApp::onActionLoggingToggled(bool status)
 {
     status ? m_ui->m_dockLogging->show() : m_ui->m_dockLogging->hide();
 }
-void cent::CentaurApp::onActionBalancesToggled(bool status)
+void CENTAUR_NAMESPACE::CentaurApp::onActionBalancesToggled(bool status)
 {
     status ? m_ui->m_dockBalances->show() : m_ui->m_dockBalances->hide();
 }
-void cent::CentaurApp::onActionAsksToggled(bool status)
+void CENTAUR_NAMESPACE::CentaurApp::onActionAsksToggled(bool status)
 {
     status ? m_ui->m_dockOrderbookAsks->show() : m_ui->m_dockOrderbookAsks->hide();
 }
-void cent::CentaurApp::onActionBidsToggled(bool status)
+void CENTAUR_NAMESPACE::CentaurApp::onActionBidsToggled(bool status)
 {
     status ? m_ui->m_dockOrderbookBids->show() : m_ui->m_dockOrderbookBids->hide();
 }
-void cent::CentaurApp::onActionDepthToggled(bool status)
+void CENTAUR_NAMESPACE::CentaurApp::onActionDepthToggled(bool status)
 {
     status ? m_ui->m_dockDepth->show() : m_ui->m_dockDepth->hide();
 }
 
-void cent::CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender) noexcept
 {
     logTrace("watchlist", "CentaurApp::onAddToWatchList()");
 
@@ -434,7 +434,7 @@ void cent::CentaurApp::onAddToWatchList(const QString &symbol, const QString &se
         logError("watchlist", QString("Symbol %1 was not added to the watchlist").arg(symbol));
     }
 }
-void cent::CentaurApp::onTickerUpdate(const QString &symbol, const int &id, const quint64 &receivedTime, const double &price) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, const int &id, const quint64 &receivedTime, const double &price) noexcept
 {
     // Find the item in the Watchlist items
     auto itemIter         = m_watchlistItems.find(id);
@@ -490,7 +490,7 @@ void cent::CentaurApp::onTickerUpdate(const QString &symbol, const int &id, cons
     itemLatency->setText(QString("%1 ms").arg(latency));
 }
 
-void cent::CentaurApp::onRemoveWatchList(const int &row) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onRemoveWatchList(const int &row) noexcept
 {
     logTrace("watchlist", "CentaurApp::onRemoveWatchList");
     /// Retrieve the IExchange from the row based on the 4 column which has the PluginUUID Source
@@ -548,7 +548,7 @@ void cent::CentaurApp::onRemoveWatchList(const int &row) noexcept
         logError("watchlist", "could not locate the item to remove");
 }
 
-void cent::CentaurApp::onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept
 {
     auto itemIter = m_exchangeList.find(source);
     if (itemIter == m_exchangeList.end())
@@ -572,7 +572,7 @@ void cent::CentaurApp::onSetWatchlistSelection(const QString &source, const QStr
     m_ui->m_asksSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
 }
 
-void cent::CentaurApp::onWatchlistRemoveSelection() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onWatchlistRemoveSelection() noexcept
 {
     auto &[source, symbol] = m_currentViewOrderbookSymbol;
     if (source.isEmpty() || symbol.isEmpty())
@@ -589,7 +589,7 @@ void cent::CentaurApp::onWatchlistRemoveSelection() noexcept
     clearOrderbookListsAndDepth();
 }
 
-void cent::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks) noexcept
 {
     const auto &[curSource, curSymbol] = m_currentViewOrderbookSymbol;
 
@@ -685,7 +685,7 @@ void cent::CentaurApp::onOrderbookUpdate(const QString &source, const QString &s
     }
 }
 
-void cent::CentaurApp::plotDepth(const QMap<QString, QPair<QString, QString>> &asks, const QMap<QString, QPair<QString, QString>> &bids) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<QString, QPair<QString, QString>> &asks, const QMap<QString, QPair<QString, QString>> &bids) noexcept
 {
     auto generatePoints = [](const QMap<QString, QPair<QString, QString>> &data, QVector<double> &prices, QVector<double> &increments) {
         double prevQuant = 0.0;
@@ -757,7 +757,7 @@ void cent::CentaurApp::plotDepth(const QMap<QString, QPair<QString, QString>> &a
     m_ui->m_asksDepth->replot();
 }
 
-void cent::CentaurApp::clearOrderbookListsAndDepth() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::clearOrderbookListsAndDepth() noexcept
 {
     m_currentViewOrderbookSymbol = { "", "" };
     m_ui->m_bidsSymbol->setText("");
@@ -775,8 +775,8 @@ void cent::CentaurApp::clearOrderbookListsAndDepth() noexcept
     m_ui->m_asksDepth->replot();
 }
 
-void cent::CentaurApp::onPlugins() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onPlugins() noexcept
 {
-    cent::PluginsDialog dlg(this);
+    CENTAUR_NAMESPACE::PluginsDialog dlg(this);
     dlg.exec();
 }

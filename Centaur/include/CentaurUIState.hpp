@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CENTAURUISTATE_HPP
 #define CENTAUR_CENTAURUISTATE_HPP
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     struct UserInterfaceState
     {
@@ -61,6 +61,6 @@ namespace cent
             int uuid { 120 };
         } datacols;
     };
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_CENTAURUISTATE_HPP

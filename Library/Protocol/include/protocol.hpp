@@ -20,6 +20,17 @@
 #include <variant>
 #include <vector>
 
+#ifndef CENTAUR_PROTOCOL_VERSION
+#define CENTAUR_PROTOCOL_VERSION_MAJOR 0
+#define CENTAUR_PROTOCOL_VERSION_MINOR 1
+#define CENTAUR_PROTOCOL_VERSION_PATCH 0
+#define CENTAUR_PROTOCOL_VERSION       CENTAUR_VERSION_CODE(CENTAUR_PROTOCOL_VERSION_MAJOR, CENTAUR_PROTOCOL_VERSION_MINOR, CENTAUR_PROTOCOL_VERSION_PATCH)
+#endif /*CENTAUR_PROTOCOL_VERSION*/
+
+#ifndef CENTAUR_PROTOCOL_NAMESPACE
+#define CENTAUR_PROTOCOL_NAMESPACE CENTAUR_NAMESPACE::protocol
+#endif /*CENTAUR_PROTOCOL_NAMESPACE*/
+
 /** ------------------------------------------------------------------------------------------
  * \brief Main protocol definitions
  *
@@ -35,11 +46,17 @@
  * For example
  * ProtocolJSONGenerator pjg;
  *
- * //
  */
-namespace CENTAUR_NAMESPACE::protocol
+
+namespace CENTAUR_PROTOCOL_NAMESPACE
 {
     constexpr char g_magic[4] = { 'C', 'E', 'N', 'T' };
+
+    enum ProtocolFlags
+    {
+        PFCompressed = 0x1, // Beware that only the JSON Data is compressed
+    };
+
     struct ProtocolHeader
     {
         char magic[4];        /// Magic number
@@ -48,6 +65,7 @@ namespace CENTAUR_NAMESPACE::protocol
         uint64_t size;        /// Object data
         uint64_t timestamp;   /// Message timestamp in milliseconds
         uint64_t hash;        /// Message data hash
+        uint32_t flags;       /// ProtocolFlags
     };
 
     struct Generator
@@ -61,6 +79,25 @@ namespace CENTAUR_NAMESPACE::protocol
 
     private:
         std::shared_ptr<uint8_t[]> m_data;
+    };
+
+    /// \brief Object encryption as well af the generation of public and private keys
+    struct Encryption
+    {
+    public:
+        /// \brief Generate the private key
+        /// \param file Path of the file where the private key is going to be stored
+        static auto generatePrivateKey(const std::string &file) -> void;
+
+        /// \brief Generate a public key from a private key stored in a file
+        /// \param file Path of the where the public key is going to be stored
+        /// \param privateKeyFile  Private key file
+        static auto generatePublicKey(const std::string &file, const std::string &privateKeyFile) -> void;
+    };
+
+    /// \brief Data compression
+    struct Compressor
+    {
     };
 
     template <typename T>
@@ -113,7 +150,7 @@ namespace CENTAUR_NAMESPACE::protocol
         }
 
         // Generate the json string from the fields set
-        NODISCARD auto getJSON() -> std::string;
+        C_NODISCARD auto getJSON() -> std::string;
 
         auto fromJSON(const char *json) -> void;
 
@@ -123,7 +160,7 @@ namespace CENTAUR_NAMESPACE::protocol
 
     struct ProtocolBase
     {
-        NODISCARD auto json() -> std::string;
+        C_NODISCARD auto json() -> std::string;
         auto fromJson(const char *json) -> void;
 
     protected:
@@ -141,6 +178,6 @@ namespace CENTAUR_NAMESPACE::protocol
         Field<std::string> implementation { "implementation" }; // Connection Implementation
     };
 
-} // namespace CENTAUR_NAMESPACE::protocol
+} // namespace CENTAUR_PROTOCOL_NAMESPACE
 
 #endif // CENTAUR_PROTOCOL_HPP

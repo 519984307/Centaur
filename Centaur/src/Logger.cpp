@@ -3,31 +3,16 @@
 // Created by Ricardo Romero on 09/12/21.
 // Copyright (c) 2021 Ricardo Romero.  All rights reserved.
 //
+
 #include "Logger.hpp"
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QTranslator>
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wundefined-func-template"
-#pragma clang diagnostic ignored "-Wsigned-enum-bitfield"
-#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-#pragma clang diagnostic ignored "-Wshadow-field-in-constructor"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#endif /*__clang__*/
-
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -35,13 +20,13 @@
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 #endif /*__clang__*/
 
-cent::CentaurLogger *cent::g_logger { nullptr };
+CENTAUR_NAMESPACE::CentaurLogger *CENTAUR_NAMESPACE::g_logger { nullptr };
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
-static constexpr char insertDb[] = { R"(INSERT INTO log (date, session, user, level, source, message) VALUES ('{}', {}, '{}', {}, '{}', '{}'); )" };
+static constexpr std::string_view insertDb[] = { R"(INSERT INTO log (date, session, user, level, source, message) VALUES ('{}', {}, '{}', {}, '{}', '{}'); )" };
 
 static auto sqlExec(void *, int, char **, char **) -> int
 {
@@ -50,12 +35,12 @@ static auto sqlExec(void *, int, char **, char **) -> int
     return 0;
 }
 
-cent::CentaurLogger::CentaurLogger()
+CENTAUR_NAMESPACE::CentaurLogger::CentaurLogger()
 {
     sqlite3_initialize();
 }
 
-cent::CentaurLogger::~CentaurLogger()
+CENTAUR_NAMESPACE::CentaurLogger::~CentaurLogger()
 {
     if (m_sql != nullptr)
         sqlite3_close(m_sql);
@@ -63,7 +48,7 @@ cent::CentaurLogger::~CentaurLogger()
     sqlite3_shutdown();
 }
 
-void cent::CentaurLogger::run() noexcept
+void CENTAUR_NAMESPACE::CentaurLogger::run() noexcept
 {
     while (!m_terminateSignal)
     {
@@ -75,13 +60,13 @@ void cent::CentaurLogger::run() noexcept
         dispatch();
     }
 }
-void cent::CentaurLogger::terminate() noexcept
+void CENTAUR_NAMESPACE::CentaurLogger::terminate() noexcept
 {
     m_terminateSignal = true;
     m_waitCondition.notify_one();
 }
 
-void cent::CentaurLogger::process(const LogMessage &log) noexcept
+void CENTAUR_NAMESPACE::CentaurLogger::process(const LogMessage &log) noexcept
 {
     QMetaObject::invokeMethod(m_app, "onLog",
         Qt::QueuedConnection,
@@ -95,11 +80,11 @@ void cent::CentaurLogger::process(const LogMessage &log) noexcept
     const auto thisTime = static_cast<std::time_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Insert into database
-    std::string query = fmt::format(insertDb,
+    std::string query = fmt::format("INSERT INTO log (date, session, user, level, source, message) VALUES ('{}', {}, '{}', {}, '{}', '{}');",
         fmt::format("{:%d-%m-%Y %H:%M:%S}", *std::localtime(&thisTime)),
         log.session,
         log.user.toStdString(),
-        log.level,
+        static_cast<int>(log.level),
         log.source.toStdString(),
         log.msg.toStdString());
 
@@ -120,7 +105,7 @@ void cent::CentaurLogger::process(const LogMessage &log) noexcept
     }
 }
 
-void cent::CentaurLogger::dispatch() noexcept
+void CENTAUR_NAMESPACE::CentaurLogger::dispatch() noexcept
 {
     // Process all queries
     while (!m_messages.empty())
@@ -134,7 +119,7 @@ void cent::CentaurLogger::dispatch() noexcept
     }
 }
 
-void cent::CentaurLogger::setApplication(cent::CentaurApp *app)
+void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::CentaurApp *app)
 {
     auto logFile   = g_globals->installPath + "/Log/log0.db";
     m_app          = app;
@@ -181,7 +166,7 @@ void cent::CentaurLogger::setApplication(cent::CentaurApp *app)
     }
 }
 
-void cent::CentaurLogger::log(const QString &source, const cent::interface::LogLevel level, const QString &msg) noexcept
+void CENTAUR_NAMESPACE::CentaurLogger::log(const QString &source, const CENTAUR_NAMESPACE::interface::LogLevel level, const QString &msg) noexcept
 {
     std::lock_guard<std::mutex> lock { m_dataProtect };
     m_messages.push({ static_cast<std::size_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()),

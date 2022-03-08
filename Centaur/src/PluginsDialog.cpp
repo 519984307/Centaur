@@ -13,21 +13,9 @@
 #include <QMessageBox>
 #include <fstream>
 
-// clang-format off
-CENTAUR_WARN_PUSH
-CENTAUR_WARN_OFF(padded)
-CENTAUR_WARN_OFF(undefined-func-template)
-CENTAUR_WARN_OFF(signed-enum-bitfield)
-CENTAUR_WARN_OFF(documentation-unknown-command)
-CENTAUR_WARN_OFF(global-constructors)
-CENTAUR_WARN_OFF(missing-noreturn)
-CENTAUR_WARN_OFF(shadow-field-in-constructor)
-CENTAUR_WARN_OFF(reserved-id-macro)
-// clang-format on
 #include <fmt/core.h>
-CENTAUR_WARN_POP
 
-cent::PluginsDialog::PluginsDialog(QWidget *parent) :
+CENTAUR_NAMESPACE::PluginsDialog::PluginsDialog(QWidget *parent) :
     QDialog(parent),
     m_ui(new Ui::PluginsDialog)
 {
@@ -62,12 +50,12 @@ cent::PluginsDialog::PluginsDialog(QWidget *parent) :
     populate();
 }
 
-cent::PluginsDialog::~PluginsDialog()
+CENTAUR_NAMESPACE::PluginsDialog::~PluginsDialog()
 {
     delete m_ui;
 }
 
-void cent::PluginsDialog::saveInterfaceState() noexcept
+void CENTAUR_NAMESPACE::PluginsDialog::saveInterfaceState() noexcept
 {
     QSettings settings("CentaurProject", "Centaur");
 
@@ -85,7 +73,7 @@ void cent::PluginsDialog::saveInterfaceState() noexcept
     settings.endGroup();
 }
 
-void cent::PluginsDialog::loadInterfaceState() noexcept
+void CENTAUR_NAMESPACE::PluginsDialog::loadInterfaceState() noexcept
 {
     QSettings settings("CentaurProject", "Centaur");
 
@@ -103,13 +91,13 @@ void cent::PluginsDialog::loadInterfaceState() noexcept
     settings.endGroup();
 }
 
-void cent::PluginsDialog::accept()
+void CENTAUR_NAMESPACE::PluginsDialog::accept()
 {
     saveInterfaceState();
     QDialog::accept();
 }
 
-void cent::PluginsDialog::populate()
+void CENTAUR_NAMESPACE::PluginsDialog::populate()
 {
     if (g_app == nullptr)
     {
@@ -171,7 +159,7 @@ void cent::PluginsDialog::populate()
     }
 }
 
-void cent::PluginsDialog::loadLocalData()
+void CENTAUR_NAMESPACE::PluginsDialog::loadLocalData()
 {
     std::string fileName = fmt::format("{}/local/plid.json", g_globals->pluginsPath.toStdString());
 
@@ -239,7 +227,7 @@ void cent::PluginsDialog::loadLocalData()
 
     for (const auto &dc : jsonDoc.GetArray())
     {
-        cent::plugin::PluginUUID uuid;
+        CENTAUR_NAMESPACE::plugin::PluginUUID uuid;
         uuid.dev0.dev0_c[0]                                 = static_cast<uint8_t>(dc["bytes"]["0"].GetUint());
         uuid.dev0.dev0_c[1]                                 = static_cast<uint8_t>(dc["bytes"]["1"].GetUint());
         uuid.dev0.dev0_c[2]                                 = static_cast<uint8_t>(dc["bytes"]["2"].GetUint());

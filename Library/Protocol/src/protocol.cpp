@@ -33,7 +33,7 @@ CENTAUR_WARN_POP
 #endif /*__clang__*/
 #endif /*#DONT_INCLUDE_RAPIDJSON*/
 
-auto CENTAUR_NAMESPACE::protocol::ProtocolJSONGenerator::getJSON() -> std::string
+auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolJSONGenerator::getJSON() -> std::string
 {
     std::string json = R"({"data":{)";
     for (const auto &data : m_types)
@@ -72,7 +72,7 @@ auto CENTAUR_NAMESPACE::protocol::ProtocolJSONGenerator::getJSON() -> std::strin
     return json;
 }
 
-auto cen::protocol::ProtocolJSONGenerator::fromJSON(const char *json) -> void
+auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolJSONGenerator::fromJSON(const char *json) -> void
 {
     rapidjson::Document jsonDoc;
 
@@ -129,18 +129,18 @@ auto cen::protocol::ProtocolJSONGenerator::fromJSON(const char *json) -> void
     }
 }
 
-CENTAUR_NAMESPACE::protocol::Protocol_AcceptConnection::Protocol_AcceptConnection()
+CENTAUR_PROTOCOL_NAMESPACE::Protocol_AcceptConnection::Protocol_AcceptConnection()
 {
     generator.addField(std::addressof(uuid));
     generator.addField(std::addressof(name));
     generator.addField(std::addressof(implementation));
 }
 
-auto CENTAUR_NAMESPACE::protocol::ProtocolBase::json() -> std::string
+auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::json() -> std::string
 {
     return generator.getJSON();
 }
-auto CENTAUR_NAMESPACE::protocol::ProtocolBase::fromJson(const char *json) -> void
+auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::fromJson(const char *json) -> void
 {
     generator.fromJSON(json);
 }

@@ -8,9 +8,10 @@
 
 #ifndef CENTAUR_CENLISTCTRL_HPP
 #define CENTAUR_CENLISTCTRL_HPP
+#include "../../Centaur.hpp"
 #include <QTableView>
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     class CenListCtrl : public QTableView
     {
@@ -39,6 +40,6 @@ namespace cent
     protected:
         void mousePressEvent(QMouseEvent *event) override;
     };
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_CENLISTCTRL_HPP

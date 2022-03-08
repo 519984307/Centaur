@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CENTAURAPP_HPP
 #define CENTAUR_CENTAURAPP_HPP
 
-#include "Centaur.hpp"
+#include "CentaurGlobal.hpp"
 #include "CentaurInterface.hpp"
 #include "CentaurPlugin.hpp"
 #include "CentaurUIState.hpp"
@@ -22,7 +22,7 @@
 #include <QDomDocument>
 #include <memory>
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     QT_BEGIN_NAMESPACE
     namespace Ui
@@ -35,8 +35,8 @@ namespace cent
     {
         struct ExchangeInformation
         {
-            cent::plugin::GlobalPluginUUID uuid;
-            cent::plugin::IExchange *exchange;
+            uuid uuid;
+            plugin::IExchange *exchange;
             CenListCtrl *list;
             QString listName;
         };
@@ -69,11 +69,11 @@ namespace cent
 
     protected:
         /// \brief Update the menus from the plugins.xml file
-        void updatePluginsMenu(const cent::plugin::PluginUUID &uuid, const QDomDocument &doc, plugin::IBase *base) noexcept;
+        void updatePluginsMenu(const uuid &uuid, const QDomDocument &doc, plugin::IBase *base) noexcept;
 
     protected:
-        bool initExchangePlugin(cent::plugin::IExchange *exchange) noexcept;
-        cent::CenListCtrl *populateExchangeSymbolList(cent::plugin::IExchange *exchange, const QString &uuidString) noexcept;
+        bool initExchangePlugin(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange) noexcept;
+        CenListCtrl *populateExchangeSymbolList(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange, const QString &uuidString) noexcept;
 
     protected:
         void plotDepth(const QMap<QString, QPair<QString, QString>> &asks, const QMap<QString, QPair<QString, QString>> &bids) noexcept;
@@ -131,10 +131,10 @@ namespace cent
         int m_sessionIds { 0 };
 
     public:
-        std::vector<cent::plugin::IBase *> m_pluginsData;
+        std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> m_pluginsData;
     };
     extern CentaurApp *g_app;
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 // Helper macros
 #define logInfo(x, y) \

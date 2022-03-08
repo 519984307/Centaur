@@ -6,4 +6,4 @@
 
 #include "Globals.hpp"
 
-cent::Globals *cent::g_globals { nullptr };
+CENTAUR_NAMESPACE::Globals *CENTAUR_NAMESPACE::g_globals { nullptr };

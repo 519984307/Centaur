@@ -13,6 +13,8 @@
 #ifndef CENTAUR_CENTAURPLUGIN_HPP
 #define CENTAUR_CENTAURPLUGIN_HPP
 
+#include "../../Centaur.hpp"
+#include "../../Library/uuid/include/uuid.hpp"
 #include <CentaurInterface.hpp>
 
 #define CENTAUR_PLUGIN_VERSION_CODE(x, y, z) \
@@ -25,114 +27,16 @@
 #include <QtPlugin>
 #endif /*DONT_INCLUDE_QT*/
 
-/// Current Centaur plugin version 0.2
+/// Current Centaur plugin version 0.2.0
 #define CENTAUR_PLUGIN_MAJOR_VERSION 0
 #define CENTAUR_PLUGIN_MINOR_VERSION 2
 #define CENTAUR_PLUGIN_PATCH_VERSION 0
 
 #define CENTAUR_PLUGIN_VERSION CENTAUR_PLUGIN_VERSION_CODE(CENTAUR_PLUGIN_MAJOR_VERSION, CENTAUR_PLUGIN_MINOR_VERSION, CENTAUR_PLUGIN_PATCH_VERSION)
 
-namespace cent::plugin
-{
-    constexpr unsigned int CentaurId0   = 0x55ee88d7;
-    constexpr unsigned short CentaurId1 = 0x44aa;
-
-#if defined(CENTAUR_PLUGIN_VERSION)
-    // It is guaranteed that VersionStrings Id's will not collide
-#if CENTAUR_PLUGIN_VERSION == 200
-    constexpr unsigned char CentaurPluginVersionStringId = { 0xe3 };
-    constexpr char CentaurPluginVersionString[]          = { "0.2.0" };
-#endif /*CENTAUR_PLUGIN_VERSION*/
-#endif /*CENTAUR_PLUGIN_VERSION*/
-
-    /// \brief Plugin identification
-    /// PluginUUID Specification
-    /// {ZZZZZZZZ-ZZZZ-ABPP-PPEF-YYYYYYYYYYYY}
-    /// Z: Plugin Developer identification
-    /// AB: 8-bit unsigned number identifying the Centaur String Version
-    /// P: Random numbers identifying the plugin
-    /// EF: 8-bit unsigned number identifying the Centaur Plugin Version
-    /// Y: Random numbers identifying the plugin
-
-    struct PluginUUID
-    {
-        bool operator==(const PluginUUID &rhs) const
-        {
-            return dev0.dev0_u == rhs.dev0.dev0_u && dev1.dev1_s == rhs.dev1.dev1_s && sp0.sp0_s == rhs.sp0.sp0_s && sp1.sp1_s == rhs.sp1.sp1_s && plg.plg0.plg0_s == rhs.plg.plg0.plg0_s && plg.plg1.plg1_u == rhs.plg.plg1.plg1_u;
-        }
-        bool operator!=(const PluginUUID &rhs) const
-        {
-            return !(rhs == *this);
-        }
-
-        union dev0
-        {
-            unsigned char dev0_c[4];
-            unsigned int dev0_u;
-        } dev0;
-        union dev1
-        {
-            unsigned char dev1_c[2];
-            unsigned short dev1_s;
-        } dev1;
-
-        union sp0
-        {
-            unsigned char sp0_c[2];
-            unsigned short sp0_s;
-        } sp0;
-
-        union sp1
-        {
-            unsigned char sp1_c[2];
-            unsigned short sp1_s;
-        } sp1;
-
-        struct plg_
-        {
-            union plg0
-            {
-                unsigned char plg0_c[2];
-                unsigned short plg0_s;
-            } plg0;
-            union plg1
-            {
-                unsigned char plg1_c[4];
-                unsigned int plg1_u;
-            } plg1;
-        } plg; /// Plugin unique id
-    };
-
-    // Wraps the PluginUUID and can be associated with a string
-    template <const std::size_t len = 45>
-    struct GlobalPluginUUID_t
-    {
-        inline GlobalPluginUUID_t() noexcept
-        {
-            memset(id, 0, len * sizeof(char));
-        }
-
-        inline GlobalPluginUUID_t(const PluginUUID uuid_, const char *id_) :
-            uuid { uuid_ }
-        {
-            assign(id_);
-        }
-
-        PluginUUID uuid;
-        char id[len];
-
-    public:
-        inline void assign(const char *str) noexcept
-        {
-#if defined(WIN32) || defined(WIN64)
-            strcpy_s(id, len, str);
-#else
-            strcpy(id, str);
-#endif
-        }
-    };
-    using GlobalPluginUUID = GlobalPluginUUID_t<>;
-} // namespace cent::plugin
+#ifndef CENTAUR_PLUGIN_NAMESPACE
+#define CENTAUR_PLUGIN_NAMESPACE CENTAUR_NAMESPACE::plugin
+#endif /*CENTAUR_PLUGIN_NAMESPACE*/
 
 #ifndef DONT_INCLUDE_QT
 
@@ -140,7 +44,8 @@ namespace cent::plugin
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wweak-vtables"
 #endif /*__clang__*/
-namespace cent::plugin
+
+namespace CENTAUR_PLUGIN_NAMESPACE
 {
 
     /// General types
@@ -159,25 +64,25 @@ namespace cent::plugin
 
         /// \brief The plugin name to be displayed in the plugins list in the the main app
         /// \return A String containing the plugin name
-        [[nodiscard]] virtual QString getPluginName() noexcept = 0;
+        C_NODISCARD virtual QString getPluginName() noexcept = 0;
 
         /// \brief The version string returned will be used to populate the plugins list in the main App
         /// \return A string containing the plugin version: example: "1.0.0" or "2.3.520.12323" or "2.3.rc1"
-        [[nodiscard]] virtual QString getPluginVersionString() noexcept = 0;
+        C_NODISCARD virtual QString getPluginVersionString() noexcept = 0;
 
         /// \brief init the logger and the configuration interfaces
         /// \param logger Use to set the logging capabilities from the main application
         /// \param config Configuration access from the configuration file
-        virtual void setPluginInterfaces(cent::interface::ILogger *logger, cent::interface::IConfiguration *config) noexcept = 0;
+        virtual void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept = 0;
 
         /// \brief Get the plugin UUID
         /// \return Beware that versions are check in order to run the plugin
-        virtual PluginUUID getPluginUUID() noexcept = 0;
+        virtual uuid getPluginUUID() noexcept = 0;
 
         /// \brief This function is called in order to the plugin connects a menu action of the user interface to a specific plugin action
         /// \param identifier The identifier name that is declared in the XML Plugins file
         /// \return nullptr on failure, otherwise it must return a pointer to the member function to call.
-        ///         Can be reinterpret_cast<cent::plugin::FuncPointer>(&class::memberfunc);
+        ///         Can be reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&class::memberfunc);
         virtual FuncPointer connectMenu(const QString &identifier) noexcept = 0;
     };
 
@@ -206,18 +111,18 @@ namespace cent::plugin
 
         /// \brief getSymbolListName Get name and the icon that will be displayed on "Symbol List Tab" and the icon in order to add a new tab
         /// \return If the QString part of StringIcon is empty. A new will not be created
-        [[nodiscard]] virtual StringIcon getSymbolListName() const noexcept = 0;
+        C_NODISCARD virtual StringIcon getSymbolListName() const noexcept = 0;
 
         /// \brief getSymbolList returns all the symbols handled by the exchange in order to populate the "Symbol list tab".
         /// \return A vector containing the names of the symbols link to an icon
-        [[nodiscard]] virtual StringIconVector getSymbolList() const noexcept = 0;
+        C_NODISCARD virtual StringIconVector getSymbolList() const noexcept = 0;
 
         /// \brief addSymbol Add a symbol to watchlist
         /// \param name Name of the symbol
         /// \param item Keep track of this variable and link it to the symbol and pass
         /// it with updateSymbol. NEVER CHANGE IT'S VALUE \return True on success;
         /// false on error
-        [[nodiscard]] virtual bool addSymbol(const QString &name, const int &item) noexcept = 0;
+        C_NODISCARD virtual bool addSymbol(const QString &name, const int &item) noexcept = 0;
 
         /// \brief removeSymbol The symbol was removed from the watchlist in the UI
         /// \param name Name of the symbol deleted
@@ -269,32 +174,32 @@ namespace cent::plugin
     {
     };
 
-} // namespace cent::plugin
+} // namespace CENTAUR_PLUGIN_NAMESPACE
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
 #define IBase_iid "com.centaur-project.plugin.IBase/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::IBase, IBase_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IBase, IBase_iid)
 
 #define IStatus_iid "com.centaur-project.plugin.IStatus/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::IStatus, IStatus_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IStatus, IStatus_iid)
 
 #define IExchange_iid "com.centaur-project.plugin.IExchange/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::IExchange, IExchange_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IExchange, IExchange_iid)
 
 #define ICandleView_iid "com.centaur-project.plugin.ICandleView/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::ICandleView, ICandleView_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::ICandleView, ICandleView_iid)
 
 #define IDrawingGroup_iid "com.centaur-project.plugin.IDrawingGroup/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::IDrawingGroup, IDrawingGroup_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IDrawingGroup, IDrawingGroup_iid)
 
 #define IIndicator_iid "com.centaur-project.plugin.IIndicator/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::IIndicator, IIndicator_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IIndicator, IIndicator_iid)
 
 #define IStrategyClient_iid "com.centaur-project.plugin.IStrategyClient/1.0"
-Q_DECLARE_INTERFACE(cent::plugin::IStrategyClient, IStrategyClient_iid)
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IStrategyClient, IStrategyClient_iid)
 
 #endif /*DONT_INCLUDE_QT*/
 

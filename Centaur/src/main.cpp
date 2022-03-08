@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    auto app = new cent::CentaurApp;
+    auto app = new CENTAUR_NAMESPACE::CentaurApp;
     app->show();
 
     return QApplication::exec();

@@ -13,15 +13,20 @@
 #ifndef CENTAUR_CENTAURINTERFACE_HPP
 #define CENTAUR_CENTAURINTERFACE_HPP
 
+#include "../../Centaur.hpp"
+
 #ifndef DONT_INCLUDE_QT
 #include <QString>
-
 #if defined(__clang__) || defined(__GNUC__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wweak-vtables"
 #endif /*__clang__*/
 
-namespace cent::interface
+#ifndef CENTAUR_INTERFACE_NAMESPACE
+#define CENTAUR_INTERFACE_NAMESPACE CENTAUR_NAMESPACE::interface
+#endif /*CENTAUR_INTERFACE_NAMESPACE*/
+
+namespace CENTAUR_INTERFACE_NAMESPACE
 {
     enum class LogLevel
     {
@@ -44,7 +49,7 @@ namespace cent::interface
         /// \param source The message source
         /// \param level Level of the diagnosis
         /// \param msg Message
-        virtual void log(const QString &source, const cent::interface::LogLevel level, const QString &msg) noexcept = 0;
+        virtual void log(const QString &source, const CENTAUR_INTERFACE_NAMESPACE::LogLevel level, const QString &msg) noexcept = 0;
 
         /// \brief Wrapper around msg with fatal level
         ///
@@ -70,6 +75,7 @@ namespace cent::interface
         /// \param msg Message
         virtual void info(const QString &source, const QString &msg) noexcept = 0;
 
+#ifndef NDEBUG
         /// \brief Wrapper around msg with trace level
         ///
         /// \param source The message source
@@ -81,6 +87,8 @@ namespace cent::interface
         /// \param source The message source
         /// \param msg Message
         virtual void debug(const QString &source, const QString &msg) noexcept = 0;
+#endif /*NDEBUG*/
+
     };
 
     /// \brief Provide the methods to access the main configuration file in the plugin data
@@ -88,7 +96,7 @@ namespace cent::interface
     {
     };
 
-} // namespace cent::interface
+} // namespace CENTAUR_INTERFACE_NAMESPACE
 #endif /*DONT_INCLUDE_QT*/
 
 #if defined(__clang__) || defined(__GNUC__)

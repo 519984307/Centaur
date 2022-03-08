@@ -28,16 +28,16 @@ struct LogMessage
 {
     std::size_t date;
     int session;
-    cent::interface::LogLevel level;
+    CENTAUR_INTERFACE_NAMESPACE::LogLevel level;
     QString user;
     QString source;
     QString msg;
 };
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     class CentaurApp;
-    class CentaurLogger : public cent::interface::ILogger
+    class CentaurLogger : public CENTAUR_NAMESPACE::interface::ILogger
     {
     public:
         CentaurLogger();
@@ -62,44 +62,44 @@ namespace cent
         /// \param source The message source
         /// \param level Level of the diagnosis
         /// \param msg Message
-        void log(const QString &source, const cent::interface::LogLevel level, const QString &msg) noexcept override;
+        void log(const QString &source, const CENTAUR_NAMESPACE::interface::LogLevel level, const QString &msg) noexcept override;
 
         /// \brief Wrapper around log with fatal level
         ///
         /// \param source The message source
         /// \param msg Message
-        inline void fatal(const QString &source, const QString &msg) noexcept override { log(source, cent::interface::LogLevel::fatal, msg); }
+        inline void fatal(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::fatal, msg); }
 
         /// \brief Wrapper around log with error level
         ///
         /// \param source The message source
         /// \param msg Message
-        inline void error(const QString &source, const QString &msg) noexcept override { log(source, cent::interface::LogLevel::error, msg); }
+        inline void error(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::error, msg); }
 
         /// \brief Wrapper around msg with warning level
         ///
         /// \param source The message source
         /// \param msg Message
-        inline void warning(const QString &source, const QString &msg) noexcept override { log(source, cent::interface::LogLevel::warning, msg); }
+        inline void warning(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::warning, msg); }
 
         /// \brief Wrapper around log with info level
         ///
         /// \param source The message source
         /// \param msg Message
-        inline void info(const QString &source, const QString &msg) noexcept override { log(source, cent::interface::LogLevel::info, msg); }
+        inline void info(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::info, msg); }
 
 #ifndef NDEBUG
         /// \brief Wrapper around log with trace level
         ///
         /// \param source The message source
         /// \param msg Message
-        inline void trace(const QString &source, const QString &msg) noexcept override { log(source, cent::interface::LogLevel::trace, msg); }
+        inline void trace(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::trace, msg); }
 
         /// \brief Wrapper around log with debug level
         ///
         /// \param source The message source
         /// \param msg Message
-        inline void debug(const QString &source, const QString &msg) noexcept override { log(source, cent::interface::LogLevel::debug, msg); }
+        inline void debug(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::debug, msg); }
 #else
         inline void trace([[maybe_unused]] const QString &source, [[maybe_unused]] const QString &msg) noexcept override
         {
@@ -109,7 +109,7 @@ namespace cent
 #endif
 
     private:
-        cent::CentaurApp *m_app { nullptr };
+        CENTAUR_NAMESPACE::CentaurApp *m_app { nullptr };
         sqlite3 *m_sql { nullptr };
         QString m_user;
         int m_session { 0 };
@@ -122,6 +122,6 @@ namespace cent
         std::atomic_bool m_terminateSignal { false };
     };
     extern CentaurLogger *g_logger;
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_LOGGER_HPP

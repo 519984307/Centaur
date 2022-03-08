@@ -12,23 +12,12 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QPluginLoader>
+#include <QString>
 #include <QUrl>
 
-// clang-format off
-CENTAUR_WARN_PUSH
-CENTAUR_WARN_OFF(padded)
-CENTAUR_WARN_OFF(undefined-func-template)
-CENTAUR_WARN_OFF(signed-enum-bitfield)
-CENTAUR_WARN_OFF(documentation-unknown-command)
-CENTAUR_WARN_OFF(global-constructors)
-CENTAUR_WARN_OFF(missing-noreturn)
-CENTAUR_WARN_OFF(shadow-field-in-constructor)
-CENTAUR_WARN_OFF(reserved-id-macro)
 #include <fmt/core.h>
-CENTAUR_WARN_POP
-// clang-format on
 
-void cent::CentaurApp::loadPlugins() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
 {
     logTrace("plugins", "CentaurApp::loadPlugins()");
 
@@ -39,7 +28,7 @@ void cent::CentaurApp::loadPlugins() noexcept
     };
 
     QDomDocument doc("plugins");
-    QFile file(cent::g_globals->pluginsPath + "/local/plugins.xml");
+    QFile file(CENTAUR_NAMESPACE::g_globals->pluginsPath + "/local/plugins.xml");
     if (!file.open(QIODevice::ReadOnly))
     {
         logFatal("plugins", "Failed to locate plugins.xml");
@@ -65,11 +54,11 @@ void cent::CentaurApp::loadPlugins() noexcept
     file.close();
     logInfo("plugins", "Plugins local data loaded and parsed.");
 
-    QString plugin = g_globals->pluginsPath;
-    QDir pluginsDir(plugin);
-    for (const auto &file : pluginsDir.entryList(QDir::Files))
+    QString pluginPath = g_globals->pluginsPath;
+    QDir pluginsDir(pluginPath);
+    for (const auto &plFile : pluginsDir.entryList(QDir::Files))
     {
-        QString realFile = pluginsDir.absoluteFilePath(file);
+        QString realFile = pluginsDir.absoluteFilePath(plFile);
         // Detect if the file is a symbolic link
         QFileInfo info(realFile);
         if (info.isSymLink() || info.isSymbolicLink()
@@ -82,8 +71,9 @@ void cent::CentaurApp::loadPlugins() noexcept
         QObject *plugin = loader.instance();
         if (plugin)
         {
+
             // Add to the list
-            auto baseInterface = qobject_cast<cent::plugin::IBase *>(plugin);
+            auto baseInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(plugin);
 
             if (baseInterface == nullptr)
                 logError("plugin", "The plugin does not implement the IBase interface");
@@ -93,23 +83,23 @@ void cent::CentaurApp::loadPlugins() noexcept
                 // Init the plugin
                 baseInterface->setPluginInterfaces(g_logger, nullptr);
 
-                logInfo("plugin", QString("Plugin found in file: ##F2FEFF#%1#").arg(file));
-                if (auto interface = qobject_cast<cent::plugin::IExchange *>(plugin); interface)
+                logInfo("plugin", QString("Plugin found in file: ##F2FEFF#%1#").arg(plFile));
+                if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
                 {
-                    logInfo("plugin", QString("IExchange plugin found in file: ##F2FEFF#%1#").arg(file));
-                    if (!initExchangePlugin(interface))
+                    logInfo("plugin", QString("IExchange plugin found in file: ##F2FEFF#%1#").arg(plFile));
+                    if (!initExchangePlugin(exInterface))
                     {
                         loader.unload();
-                        logWarn("plugin", QString("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded").arg(file));
+                        logWarn("plugin", QString("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded").arg(plFile));
                     }
-                    updatePluginsMenu(interface->getPluginUUID(), doc, baseInterface);
+                    updatePluginsMenu(exInterface->getPluginUUID(), doc, baseInterface);
                 }
-                else if (auto interface = qobject_cast<cent::plugin::IStatus *>(plugin); interface)
+                else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                 {
-                    logInfo("plugin", QString("IStatus plugin found in file: ##F2FEFF#%1#").arg(file));
+                    logInfo("plugin", QString("IStatus plugin found in file: ##F2FEFF#%1#").arg(plFile));
                     // Init the plugin
-                    interface->initialization(m_ui->m_statusBar);
-                    updatePluginsMenu(interface->getPluginUUID(), doc, baseInterface);
+                    stInterface->initialization(m_ui->m_statusBar);
+                    updatePluginsMenu(stInterface->getPluginUUID(), doc, baseInterface);
                 }
             }
         }
@@ -118,15 +108,9 @@ void cent::CentaurApp::loadPlugins() noexcept
     }
 }
 
-void cent::CentaurApp::updatePluginsMenu(const cent::plugin::PluginUUID &uuid, const QDomDocument &doc, plugin::IBase *base) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, const QDomDocument &doc, CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
 {
-    auto uuidStr        = fmt::format("{{{:08x}-{:04x}-{:04x}-{:04x}-{:04x}{:08x}}}",
-               uuid.dev0.dev0_u,
-               uuid.dev1.dev1_s,
-               uuid.sp0.sp0_s,
-               uuid.sp1.sp1_s,
-               uuid.plg.plg0.plg0_s,
-               uuid.plg.plg1.plg1_u);
+    auto uuidStr        = uuid.to_string();
 
     QDomElement docElem = doc.firstChildElement();
 
@@ -228,20 +212,13 @@ void cent::CentaurApp::updatePluginsMenu(const cent::plugin::PluginUUID &uuid, c
     }
 }
 
-bool cent::CentaurApp::initExchangePlugin(cent::plugin::IExchange *exchange) noexcept
+bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
 {
     logTrace("plugins", "CentaurApp::initExchangePlugin");
 
-    auto uuid = exchange->getPluginUUID();
+    auto uuid    = exchange->getPluginUUID();
 
-    /// Personal thought. I think {fmt} is good for this kind of stuff
-    auto uuidStr = fmt::format("{{{:08x}-{:04x}-{:04x}-{:04x}-{:04x}{:08x}}}",
-        uuid.dev0.dev0_u,
-        uuid.dev1.dev1_s,
-        uuid.sp0.sp0_s,
-        uuid.sp1.sp1_s,
-        uuid.plg.plg0.plg0_s,
-        uuid.plg.plg1.plg1_u);
+    auto uuidStr = uuid.to_string();
 
     logInfo("plugins", QString("Plugin identified itself with the plid: ##F2FEFF#%1#").arg(uuidStr.c_str()));
 
@@ -251,7 +228,7 @@ bool cent::CentaurApp::initExchangePlugin(cent::plugin::IExchange *exchange) noe
         return false;
     }
 
-    cent::plugin::GlobalPluginUUID global { uuid, uuidStr.c_str() };
+    CENTAUR_NAMESPACE::plugin::uuid global { uuid, uuidStr.c_str() };
 
     auto list                 = populateExchangeSymbolList(exchange, global.id);
 
@@ -267,7 +244,7 @@ bool cent::CentaurApp::initExchangePlugin(cent::plugin::IExchange *exchange) noe
     return true;
 }
 
-cent::CenListCtrl *cent::CentaurApp::populateExchangeSymbolList(cent::plugin::IExchange *exchange, const QString &uuidString) noexcept
+CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
 {
     logTrace("plugins", "CentaurApp::populateExchangeSymbolList");
 

@@ -139,3 +139,10 @@ TEST_CASE("Communication JSON Protocols")
 
     CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test","implementation":"exchange"}})");
 }
+
+TEST_CASE("Protocol Generation private key")
+{
+    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
+
+    ec.generatePrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Keys/privateKey.key");
+}

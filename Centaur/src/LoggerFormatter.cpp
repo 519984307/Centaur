@@ -8,13 +8,13 @@
 
 #include "CentaurApp.hpp"
 
-void cent::CentaurApp::onLog(const unsigned long long &date, const int &session, const int &level, const QString &usr, const QString &source, const QString &msg) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onLog(const unsigned long long &date, const int &session, const int &level, const QString &usr, const QString &source, const QString &msg) noexcept
 {
     QTableWidget *logger = m_ui->m_logs;
     if (logger->rowCount() > 2000)
         logger->clearContents();
 
-    auto logLevel = static_cast<cent::interface::LogLevel>(level);
+    auto logLevel = static_cast<CENTAUR_NAMESPACE::interface::LogLevel>(level);
 
     int curRow    = logger->rowCount();
     logger->insertRow(curRow);
@@ -37,22 +37,22 @@ void cent::CentaurApp::onLog(const unsigned long long &date, const int &session,
 
     switch (logLevel)
     {
-        case cent::interface::LogLevel::fatal:
+        case CENTAUR_NAMESPACE::interface::LogLevel::fatal:
             insertItem(3, "fatal", Qt::red);
             break;
-        case cent::interface::LogLevel::error:
+        case CENTAUR_NAMESPACE::interface::LogLevel::error:
             insertItem(3, "error", QColor(0xFF8C00ul)); // Dark orange
             break;
-        case cent::interface::LogLevel::warning:
+        case CENTAUR_NAMESPACE::interface::LogLevel::warning:
             insertItem(3, "warning", Qt::yellow); // Dark orange
             break;
-        case cent::interface::LogLevel::info:
+        case CENTAUR_NAMESPACE::interface::LogLevel::info:
             insertItem(3, "info", QColor(0x00BFFFul)); // Deep sky blue
             break;
-        case cent::interface::LogLevel::debug:
+        case CENTAUR_NAMESPACE::interface::LogLevel::debug:
             insertItem(3, "debug", QColor(0x6A5ACDul)); // Slate blue
             break;
-        case cent::interface::LogLevel::trace:
+        case CENTAUR_NAMESPACE::interface::LogLevel::trace:
             insertItem(3, "trace", QColor(0xFF69B4ul)); // Hot pink
             break;
     }

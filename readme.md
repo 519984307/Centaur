@@ -26,6 +26,14 @@ contribute, give some ideas or give better ideas than mine are welcome.
 
 ### Server/Client Model
 
+Client applications can be trading bots handling accounts interoperating with the main application and the plugins.
+
+For example, a client app can be handling orders, receiving input about the user balances and informing this to the main
+application, meanwhile, a local plugin can be accessing the candlestick information and the orderbook to create the
+depth chart in the main interface
+
+### Plugins
+
 ### Why?
 
 > Why Server/Client Model?

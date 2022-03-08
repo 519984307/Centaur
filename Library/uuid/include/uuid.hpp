@@ -19,104 +19,26 @@
 #include <random>
 #include <string>
 
+#define CENTAUR_VALID_UUID_GENERATORS std::same_as<std::mt19937, generator> || std::same_as<std::mt19937_64, generator> || std::same_as<std::minstd_rand, generator> || std::same_as<std::minstd_rand0, generator> || std::same_as<std::ranlux24, generator> || std::same_as<std::ranlux48, generator>
+
 namespace CENTAUR_NAMESPACE
 {
     struct uuid
     {
         /// \brief Construct an uuid from a string
         /// \param str The string must have the curly braces and dashes
-        explicit inline uuid(const std::string &str) :
-            uuid_bytes {}
-        {
-            if (!str.empty())
-            {
-                if (str.front() != '{')
-                    throw std::runtime_error("uuid is missing '{'");
-                else if (str.back() != '}')
-                    throw std::runtime_error("uuid is missing '}'");
-                else if (str.size() != 38)
-                    throw std::runtime_error("uuid invalid size");
-                else
-                {
-
-                    for (std::size_t i = 1l; i < str.size() - 1; ++i)
-                    {
-                        auto end = std::find_if(
-                            std::begin(uuid::valid_chars),
-                            std::end(uuid::valid_chars),
-                            [&ch0 = str[i]](char ch) { return ch == ch0; });
-                        if (end == std::end(uuid::valid_chars))
-                            throw std::runtime_error("invalid character in the uuid string");
-                        else
-                        {
-                            //  static size_t valid_pos[2] = { 9, 14 };
-                            if (str[i] == '-' && (!(i == 9 || i == 14 || i == 19 || i == 24)))
-                                throw std::runtime_error("invalid format in the uuid string");
-                        }
-                    }
-
-                    std::size_t k = 0;
-                    for (std::size_t i = 1l; i < str.size() - 1; i += 2)
-                    {
-                        if (str[i] == '-')
-                        {
-
-                            i -= 1;
-                            continue;
-                        }
-                        constexpr uint32_t shift = 4;
-                        constexpr uint32_t digit = '0';
-                        constexpr uint32_t upper = 'A';
-                        constexpr uint32_t lower = 'a';
-
-                        uint32_t t[2]            = { 0, 0 };
-                        for (std::size_t j = 0; j < 2; ++j)
-                        {
-                            auto ch = static_cast<uint32_t>(str[i + j]);
-                            if (ch >= '0' && ch <= '9')
-                                t[j] = ch - digit;
-                            else if (ch >= 'A' && ch <= 'F')
-                                t[j] = ch - upper + 10;
-                            else if (ch >= 'a' && ch <= 'f')
-                                t[j] = ch - lower + 10;
-                        }
-                        uuid_bytes[k] = static_cast<unsigned char>((t[0] << shift) | t[1]);
-                        k++;
-                    }
-                }
-            }
-            else
-                throw std::runtime_error("uuid string is empty");
-        }
+        explicit uuid(const std::string &str);
 
     public:
         /// \brief Returns the string bytes
         /// \return A lower case of the uuid string
-        NODISCARD auto to_string(bool upper = false) const -> std::string
-        {
-            std::string str;
-            str.reserve(40);
-            str                  = "{";
+        C_NODISCARD auto to_string(bool upper = false) const -> std::string;
 
-            const auto &char_set = [&upper] {
-                if (upper)
-                    return uuid_chars_upper;
-                return uuid_chars_lower;
-            }();
-
-            for (uint32_t i = 0; i < 16; ++i)
-            {
-                if (i == 4 || i == 6 || i == 8 || i == 10)
-                    str += '-';
-                str += char_set[uuid_bytes[i]];
-            }
-            str += "}";
-            return str;
-        }
-
+        /// \brief Generates a random UUID
+        /// \tparam generator A valid c++ random generator (mt19937, mt19937_64, minstd_rand, minstd_rand0, ranlux24, ranlux48)
+        /// \return A random UUID
         template <typename generator>
-        NODISCARD static auto generate() -> cen::uuid requires
-            std::same_as<std::mt19937, generator> || std::same_as<std::mt19937_64, generator> || std::same_as<std::minstd_rand, generator> || std::same_as<std::minstd_rand0, generator> || std::same_as<std::ranlux24, generator> || std::same_as<std::ranlux48, generator>
+        C_NODISCARD static auto generate() -> cen::uuid requires CENTAUR_VALID_UUID_GENERATORS
         {
             std::string uuid;
             uuid.reserve(40);
@@ -137,10 +59,8 @@ namespace CENTAUR_NAMESPACE
             return cen::uuid(uuid);
         }
 
-    private : unsigned char uuid_bytes[17];
-    private:
+    private :
         // clang-format off
-
         static constexpr std::array<std::string_view, 256> uuid_chars_lower = {
             "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
             "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b", "1c", "1d", "1e", "1f",
@@ -181,6 +101,9 @@ namespace CENTAUR_NAMESPACE
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'A', 'b', 'B', 'c', 'C', 'd', 'D', 'e', 'E', 'f', 'F', '-'
         };
         // clang-format on
+
+    private:
+        unsigned char uuid_bytes[17];
     };
 } // namespace CENTAUR_NAMESPACE
 

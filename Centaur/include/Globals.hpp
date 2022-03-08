@@ -15,7 +15,7 @@
 
 #include <QString>
 
-namespace cent
+namespace CENTAUR_NAMESPACE
 {
     struct Globals
     {
@@ -26,6 +26,6 @@ namespace cent
     };
 
     extern Globals *g_globals;
-} // namespace cent
+} // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_GLOBALS_HPP

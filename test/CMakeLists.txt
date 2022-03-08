@@ -20,6 +20,7 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
 
 target_link_libraries(tests PRIVATE Catch2::Catch2)
 target_link_libraries(tests PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+target_link_libraries(tests PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 
 
 target_compile_options(tests PRIVATE

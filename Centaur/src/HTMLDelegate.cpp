@@ -9,11 +9,11 @@
 #include <QPainter>
 #include <QTextDocument>
 
-cent::HTMLDelegate::HTMLDelegate()  = default;
+CENTAUR_NAMESPACE::HTMLDelegate::HTMLDelegate()  = default;
 
-cent::HTMLDelegate::~HTMLDelegate() = default;
+CENTAUR_NAMESPACE::HTMLDelegate::~HTMLDelegate() = default;
 
-void cent::HTMLDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+void CENTAUR_NAMESPACE::HTMLDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     QStyleOptionViewItem options = option;
     initStyleOption(&options, index);
@@ -44,7 +44,7 @@ void cent::HTMLDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     painter->restore();
 }
 
-QSize cent::HTMLDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+QSize CENTAUR_NAMESPACE::HTMLDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     QStyleOptionViewItem options = option;
     initStyleOption(&options, index);
