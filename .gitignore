@@ -6,3 +6,7 @@
 
 # Application testing
 /local
+
+/conan/debug
+/conan/release
+
