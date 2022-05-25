@@ -15,6 +15,8 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
     m_ui { std::make_unique<Ui::CentaurApp>() }
 {
+    START_TIME(initializationTimeStart);
+
     g_app     = this;
     g_globals = new Globals;
 
@@ -22,22 +24,25 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     installEventFilter(this);
 
 #ifdef Q_OS_MAC
-    CFURLRef appUrlRef  = CFBundleCopyBundleURL(CFBundleGetMainBundle());
-    CFStringRef macPath = CFURLCopyFileSystemPath(appUrlRef,
-        kCFURLPOSIXPathStyle);
-    g_globals->appPath  = CFStringGetCStringPtr(macPath, CFStringGetSystemEncoding());
+    CFURLRef appUrlRef       = CFBundleCopyBundleURL(CFBundleGetMainBundle());
+    CFStringRef macPath      = CFURLCopyFileSystemPath(appUrlRef,
+             kCFURLPOSIXPathStyle);
+    g_globals->paths.appPath = CFStringGetCStringPtr(macPath, CFStringGetSystemEncoding());
     CFRelease(appUrlRef);
     CFRelease(macPath);
 #else
 
 #endif /*Q_OS_MAC*/
 
-    g_globals->installPath = "/Volumes/RicardoESSD/Projects/Centaur/local";
-    g_globals->pluginsPath = g_globals->installPath + "/Plugin";
-    g_globals->resPath     = g_globals->installPath + "/Resources";
+    g_globals->paths.installPath = "/Volumes/RicardoESSD/Projects/Centaur/local";
+    g_globals->paths.pluginsPath = g_globals->paths.installPath + "/Plugin";
+    g_globals->paths.resPath     = g_globals->paths.installPath + "/Resources";
 
     // Start logging service
     startLoggingService();
+
+    // Load External XML Configuration Data
+    loadConfigurationData();
 
     // Restore file
     loadInterfaceState();
@@ -47,6 +52,11 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
 
     // Load plugins
     loadPlugins();
+
+    g_globals->visuals.releaseVisuals();
+
+    END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
+    logInfo("app", QString(LS("trace-initialize-time")).arg(initializationTime.count(), 0, 'f', 4));
 }
 CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
 {
@@ -70,6 +80,35 @@ bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
 void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 {
     logTrace("app", "CENTAUR_NAMESPACE::CentaurApp::initializeInterface()");
+
+    // Create Fonts
+    QFont headerFont {
+        g_globals->visuals.dockSymbols->headerFont.name,
+        g_globals->visuals.dockSymbols->headerFont.size,
+        g_globals->visuals.dockSymbols->headerFont.weight,
+        g_globals->visuals.dockSymbols->headerFont.italic
+    };
+    if (g_globals->visuals.dockSymbols->headerFont.spacing > 0)
+        headerFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->headerFont.spacing);
+
+    QFont searchFont {
+        g_globals->visuals.dockSymbols->searchFont.name,
+        g_globals->visuals.dockSymbols->searchFont.size,
+        g_globals->visuals.dockSymbols->searchFont.weight,
+        g_globals->visuals.dockSymbols->searchFont.italic
+    };
+
+    if (g_globals->visuals.dockSymbols->searchFont.spacing > 0)
+        searchFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->searchFont.spacing);
+
+    // Set fonts
+    m_ui->editWatchListFilter->setFont(searchFont);
+
+    // Set stylesheets
+    if (!g_globals->visuals.dockSymbols->headerCSS.isEmpty())
+        m_ui->listWatchList->setStyleSheet(g_globals->visuals.dockSymbols->headerCSS);
+    if (!g_globals->visuals.dockSymbols->searchCSS.isEmpty())
+        m_ui->editWatchListFilter->setStyleSheet(g_globals->visuals.dockSymbols->searchCSS);
 
     auto *aboutMenu         = new QMenu,
          *preferencesMenu   = new QMenu,
@@ -103,10 +142,11 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     connect(m_ui->m_actionSymbols, SIGNAL(toggled(bool)), this, SLOT(onActionSymbolsToggled(bool)));
 
     // Remove the first index
-    m_ui->m_ctrlSymbols->removeTab(1);
+    m_ui->dockSymbols->setWindowTitle(LS("ui-docks-symbols"));
+    m_ui->tabSymbols->removeTab(1);
 
     // Show or hide the docking windows according to the store status of the Gm_ui
-    m_ui->m_actionSymbols->setChecked(!m_ui->m_dockSymbols->isHidden());
+    m_ui->m_actionSymbols->setChecked(!m_ui->dockSymbols->isHidden());
     m_ui->m_actionLogging->setChecked(!m_ui->m_dockLogging->isHidden());
     m_ui->m_actionBalances->setChecked(!m_ui->m_dockBalances->isHidden());
     m_ui->m_actionBids->setChecked(!m_ui->m_dockOrderbookBids->isHidden());
@@ -114,42 +154,49 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->m_actionDepth->setChecked(!m_ui->m_dockDepth->isHidden());
 
     // Init the watchlist QLineEdit
-    m_ui->m_ctrlWatchListFilter->addAction(m_icnSearch, QLineEdit::LeadingPosition);
-    m_watchlistItemModel = new QStandardItemModel(0, 4, m_ui->m_tabWatchList);
-    auto sortProxyModel  = new QSortFilterProxyModel(m_ui->m_tabWatchList);
+    m_ui->editWatchListFilter->setPlaceholderText(LS("ui-docks-search"));
+    m_ui->editWatchListFilter->addAction(g_globals->icons.searchIcon, QLineEdit::LeadingPosition);
+    m_watchlistItemModel = new QStandardItemModel(0, 4, m_ui->tabWatchList);
+    auto sortProxyModel  = new QSortFilterProxyModel(m_ui->tabWatchList);
     sortProxyModel->setSourceModel(m_watchlistItemModel);
-    m_ui->m_ctrlWatchList->setModel(sortProxyModel);
-    m_ui->m_ctrlWatchList->setRemove();
-    m_ui->m_ctrlWatchList->allowClickMessages();
-    connect(m_ui->m_ctrlWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
-    connect(m_ui->m_ctrlWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgSetSelection, this, &CentaurApp::onSetWatchlistSelection);
-    connect(m_ui->m_ctrlWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
+    m_ui->listWatchList->setModel(sortProxyModel);
+    m_ui->listWatchList->setRemove();
+    m_ui->listWatchList->allowClickMessages();
+    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
+    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgSetSelection, this, &CentaurApp::onSetWatchlistSelection);
+    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
 
     sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    connect(m_ui->m_ctrlWatchListFilter, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
+    connect(m_ui->editWatchListFilter, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
 
-    m_ui->m_ctrlWatchList->verticalHeader()->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlWatchList->sortByColumn(0, Qt::AscendingOrder);
-    m_ui->m_ctrlWatchList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_ui->listWatchList->verticalHeader()->setFont(QFont("Arial", 10));
+    m_ui->listWatchList->sortByColumn(0, Qt::AscendingOrder);
+    m_ui->listWatchList->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    m_watchlistItemModel->setHorizontalHeaderLabels({ tr("Symbol"), tr("Price"), tr("Source"), tr("Latency"), tr("UUID") });
-    m_watchlistItemModel->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
+    m_watchlistItemModel->setHorizontalHeaderLabels(
+        { LS("ui-docks-symbol"),
+            LS("ui-docks-price"),
+            LS("ui-docks-source"),
+            LS("ui-docks-latency"),
+            "UUID" });
+
+    m_watchlistItemModel->horizontalHeaderItem(0)->setFont(headerFont);
     m_watchlistItemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    m_watchlistItemModel->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
+    m_watchlistItemModel->horizontalHeaderItem(1)->setFont(headerFont);
     m_watchlistItemModel->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignLeft);
-    m_watchlistItemModel->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
+    m_watchlistItemModel->horizontalHeaderItem(2)->setFont(headerFont);
     m_watchlistItemModel->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignLeft);
-    m_watchlistItemModel->horizontalHeaderItem(3)->setFont(QFont("Arial", 10));
+    m_watchlistItemModel->horizontalHeaderItem(3)->setFont(headerFont);
     m_watchlistItemModel->horizontalHeaderItem(3)->setTextAlignment(Qt::AlignLeft);
     // This column, although hidden, will be used to find uuid source of all watchlist items
-    m_watchlistItemModel->horizontalHeaderItem(4)->setFont(QFont("Arial", 10));
+    m_watchlistItemModel->horizontalHeaderItem(4)->setFont(headerFont);
     m_watchlistItemModel->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignLeft);
-    m_ui->m_ctrlWatchList->setColumnHidden(4, true);
+    m_ui->listWatchList->setColumnHidden(4, true);
 
-    m_ui->m_ctrlWatchList->setColumnWidth(0, m_uiState.wlcols.symbol);
-    m_ui->m_ctrlWatchList->setColumnWidth(1, m_uiState.wlcols.price);
-    m_ui->m_ctrlWatchList->setColumnWidth(2, m_uiState.wlcols.sender);
-    m_ui->m_ctrlWatchList->setColumnWidth(3, m_uiState.wlcols.latency);
+    m_ui->listWatchList->setColumnWidth(0, m_uiState.wlcols.symbol);
+    m_ui->listWatchList->setColumnWidth(1, m_uiState.wlcols.price);
+    m_ui->listWatchList->setColumnWidth(2, m_uiState.wlcols.sender);
+    m_ui->listWatchList->setColumnWidth(3, m_uiState.wlcols.latency);
 
     // Balances Tree
     m_ui->m_ctrlBalances->setHeaderLabels({ "Name", "Value" });
@@ -257,10 +304,10 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("watchlistListState");
-    settings.setValue("c0", m_ui->m_ctrlWatchList->columnWidth(0));
-    settings.setValue("c1", m_ui->m_ctrlWatchList->columnWidth(1));
-    settings.setValue("c2", m_ui->m_ctrlWatchList->columnWidth(2));
-    settings.setValue("c3", m_ui->m_ctrlWatchList->columnWidth(3));
+    settings.setValue("c0", m_ui->listWatchList->columnWidth(0));
+    settings.setValue("c1", m_ui->listWatchList->columnWidth(1));
+    settings.setValue("c2", m_ui->listWatchList->columnWidth(2));
+    settings.setValue("c3", m_ui->listWatchList->columnWidth(3));
     settings.endGroup();
 
     settings.beginGroup("loggingListState");
@@ -357,6 +404,7 @@ void CENTAUR_NAMESPACE::CentaurApp::startLoggingService() noexcept
         QApplication::quit();
     }
 }
+
 void CENTAUR_NAMESPACE::CentaurApp::onActionTileWindowsTriggered()
 {
     m_ui->m_mdiArea->tileSubWindows();
@@ -369,7 +417,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onActionCascadeWindowsTriggered()
 
 void CENTAUR_NAMESPACE::CentaurApp::onActionSymbolsToggled(bool status)
 {
-    status ? m_ui->m_dockSymbols->show() : m_ui->m_dockSymbols->hide();
+    status ? m_ui->dockSymbols->show() : m_ui->dockSymbols->hide();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onActionLoggingToggled(bool status)
@@ -416,7 +464,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, cons
         auto itemPrice   = new QStandardItem("$ ");
         auto itemSource  = new QStandardItem(interface->second.listName);
         auto itemLatency = new QStandardItem("0");
-        auto itemUUID    = new QStandardItem(interface->second.uuid.id);
+        auto itemUUID    = new QStandardItem(interface->second.uuid.to_string().c_str());
         int curRow       = m_watchlistItemModel->rowCount();
         itemSymbol->setFont(QFont("Arial", 10));
         itemSymbol->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -461,12 +509,12 @@ void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, const 
     auto itemPrice = m_watchlistItemModel->item(itemRow, 1);
     if (price > previousPrice)
     {
-        item->setIcon(m_icnUpArrow);
+        item->setIcon(g_globals->icons.upArrow);
         itemPrice->setData(QBrush(Qt::green), Qt::ForegroundRole);
     }
     else
     {
-        item->setIcon(m_icnDownArrow);
+        item->setIcon(g_globals->icons.downArrow);
         itemPrice->setData(QBrush(Qt::red), Qt::ForegroundRole);
     }
     itemPrice->setText("$ " + QLocale(QLocale::English).toString(price, 'f', 5));

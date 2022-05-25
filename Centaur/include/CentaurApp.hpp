@@ -20,6 +20,7 @@
 #include "Globals.hpp"
 #include "Logger.hpp"
 #include <QDomDocument>
+#include <chrono>
 #include <memory>
 
 namespace CENTAUR_NAMESPACE
@@ -31,6 +32,7 @@ namespace CENTAUR_NAMESPACE
         class CenListCtrl;
     } // namespace Ui
     QT_END_NAMESPACE
+
     class CentaurApp final : public QMainWindow
     {
         struct ExchangeInformation
@@ -66,6 +68,12 @@ namespace CENTAUR_NAMESPACE
         void startLoggingService() noexcept;
         /// \brief Load plugin information
         void loadPlugins() noexcept;
+        /// \brief Initialize the XML Xerces C++ library and call load the functions that load external XML files
+        void loadConfigurationData() noexcept;
+        /// \brief Load Strings
+        void loadLocaleData() noexcept;
+        /// \brief Load the general personalized data to visualized the user interface
+        void loadVisualsUI() noexcept;
 
     protected:
         /// \brief Update the menus from the plugins.xml file
@@ -105,12 +113,6 @@ namespace CENTAUR_NAMESPACE
     private:
         std::unique_ptr<std::thread> m_loggerThread { nullptr };
 
-        // Icons
-    private:
-        QIcon m_icnUpArrow { ":/img/res/img/upArrow.svg" };
-        QIcon m_icnDownArrow { ":/img/res/img/downArrow.svg" };
-        QIcon m_icnSearch { ":/img/res/img/Search.svg" };
-
         // Plugins
     private:
         std::map<QString /*uuid string*/, ExchangeInformation> m_exchangeList;
@@ -136,29 +138,38 @@ namespace CENTAUR_NAMESPACE
     extern CentaurApp *g_app;
 } // namespace CENTAUR_NAMESPACE
 
-// Helper macros
-#define logInfo(x, y) \
-    g_logger->info(x, y)
+#define START_TIME(x)                    \
+    auto x                               \
+    {                                    \
+        std::chrono::steady_clock::now() \
+    }
 
-#define logWarn(x, y) \
-    g_logger->warning(x, y)
+#define END_TIME_SEC(x, y, z)                               \
+    auto y { std::chrono::steady_clock::now() };            \
+    auto z                                                  \
+    {                                                       \
+        std::chrono::duration<double, std::ratio<1>>(y - x) \
+    }
 
-#if !defined(NDEBUG)
-#define logTrace(x, y) \
-    g_logger->trace(x, y)
-#define logDebug(x, y) \
-    g_logger->debug(x, y)
-#else
-#define logTrace(x, y) \
-    ((void *)0)
-#define logDebug(x, y) \
-    ((void *)0)
-#endif /**/
+#define END_TIME_MS(x, y, z)                                      \
+    auto y { std::chrono::steady_clock::now() };                  \
+    auto z                                                        \
+    {                                                             \
+        std::chrono::duration<double, std::ratio<1, 1000>>(y - x) \
+    }
 
-#define logError(x, y) \
-    g_logger->error(x, y)
+#define END_TIME_US(x, y, z)                                         \
+    auto y { std::chrono::steady_clock::now() };                     \
+    auto z                                                           \
+    {                                                                \
+        std::chrono::duration<double, std::ratio<1, 1000000>>(y - x) \
+    }
 
-#define logFatal(x, y) \
-    g_logger->fatal(x, y)
+#define END_TIME_MIN(x, y, z)                                   \
+    auto y { std::chrono::steady_clock::now() };                \
+    auto z                                                      \
+    {                                                           \
+        std::chrono::duration<double, std::ratio<60, 1>>(y - x) \
+    }
 
 #endif // CENTAUR_CENTAURAPP_HPP
