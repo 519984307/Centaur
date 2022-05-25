@@ -28,8 +28,8 @@
 #define CENTAUR_PRAGMA(x)      _Pragma(CENTAUR_STR(x))
 #define CENTAUR_WARN_PRAGMA(x) CENTAUR_PRAGMA(GCC diagnostic x)
 #define CENTAUR_WARN_OFF(x)    CENTAUR_WARN_PRAGMA(ignored CENTAUR_STR(CENTAUR_JOIN(-W, x)))
-#define CENTAUR_WARN_PUSH      CENTAUR_WARN_PRAGMA(push)
-#define CENTAUR_WARN_POP       CENTAUR_WARN_PRAGMA(pop)
+#define CENTAUR_WARN_PUSH()    CENTAUR_WARN_PRAGMA(push)
+#define CENTAUR_WARN_POP()     CENTAUR_WARN_PRAGMA(pop)
 #endif
 
 // General Centaur namespace for libraries
@@ -52,6 +52,14 @@
 #define C_UNUSED
 #endif /* defined ...*/
 #endif /*C_UNUSED*/
+
+#ifndef C_NORETURN
+#if defined(__clang__) || defined(__GNU__) || defined(MSVC)
+#define C_NORETURN [[noreturn]]
+#else
+#define C_NORETURN
+#endif /* defined ...*/
+#endif /*C_NORETURN*/
 
 namespace CENTAUR_NAMESPACE
 {
