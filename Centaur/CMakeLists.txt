@@ -5,7 +5,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.2.1/macos")
+
+find_package(FMT CONFIG REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(XercesC REQUIRED)
+
+set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.3.0/macos")
 set(QWT_PATH ${QWT_PATH} /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6)
 
 
@@ -16,8 +21,7 @@ find_package(Qt6 COMPONENTS
         Xml
         REQUIRED)
 
-find_package(FMT CONFIG REQUIRED)
-find_package(unofficial-sqlite3 CONFIG REQUIRED)
+
 find_library(QWT Qwt /Volumes/RicardoESSD/dev/qwt/release/lib)
 
 
@@ -51,7 +55,7 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
-        ui/PluginsDialog.ui)
+        ui/PluginsDialog.ui include/crc64.hpp src/CentaurLoadData.cpp)
 
 set_target_properties(Centaur PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER centaur.project.com
@@ -68,7 +72,9 @@ target_include_directories(Centaur PRIVATE
 target_link_libraries(Centaur PRIVATE fmt::fmt)
 target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml)
 target_link_libraries(Centaur PRIVATE ${QWT})
-target_link_libraries(Centaur PRIVATE unofficial::sqlite3::sqlite3)
+target_link_libraries(Centaur PRIVATE SQLite3)
+target_link_libraries(Centaur PRIVATE XercesC::XercesC)
+
 
 # Local Libraries
 target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
