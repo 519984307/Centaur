@@ -49,7 +49,7 @@ namespace CENTAUR_INTERFACE_NAMESPACE
         /// \param source The message source
         /// \param level Level of the diagnosis
         /// \param msg Message
-        virtual void log(const QString &source, const CENTAUR_INTERFACE_NAMESPACE::LogLevel level, const QString &msg) noexcept = 0;
+        virtual void log(const QString &source, CENTAUR_INTERFACE_NAMESPACE::LogLevel level, const QString &msg) noexcept = 0;
 
         /// \brief Wrapper around msg with fatal level
         ///
@@ -87,8 +87,13 @@ namespace CENTAUR_INTERFACE_NAMESPACE
         /// \param source The message source
         /// \param msg Message
         virtual void debug(const QString &source, const QString &msg) noexcept = 0;
-#endif /*NDEBUG*/
+#else
+        /// \brief Wrapper around msg with trace level
+        virtual void trace() noexcept = 0;
 
+        /// \brief Wrapper around msg with debug level
+        virtual void debug() noexcept = 0;
+#endif /*NDEBUG*/
     };
 
     /// \brief Provide the methods to access the main configuration file in the plugin data
