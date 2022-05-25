@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 PROJECT(Centaur VERSION 1.0
         DESCRIPTION "Centaur. Trading Application"
-        LANGUAGES CXX)
+        LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -22,6 +22,9 @@ add_subdirectory(Centaur)
 add_subdirectory(Library/uuid)
 add_subdirectory(Library/Protocol)
 
+#Libraries for exchanges
+add_subdirectory(Library/Exchanges/BinanceAPI)
+
 #Plugins
 add_subdirectory(Plugins/ExchangeRate)
 add_subdirectory(Plugins/BinanceSpot)
@@ -29,3 +32,6 @@ add_subdirectory(Plugins/BinanceSpot)
 #tests
 add_subdirectory(test)
 
+# COnan commands:
+# conan install . -s build_type=Release  -if conan/release -of conan2/ --build missing
+# conan install . -s build_type=Debug  -if conan/Debug -of conan2/ --build missing
