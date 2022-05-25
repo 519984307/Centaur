@@ -121,7 +121,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::dispatch() noexcept
 
 void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::CentaurApp *app)
 {
-    auto logFile   = g_globals->installPath + "/Log/log0.db";
+    auto logFile   = g_globals->paths.installPath + "/Log/log0.db";
     m_app          = app;
 
     bool recoverDb = false;
@@ -145,7 +145,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::Centaur
     {
         if (recoverDb)
         {
-            auto recoveryFile = g_globals->resPath + "/Repair/logdb.sql";
+            auto recoveryFile = g_globals->paths.resPath + "/Repair/logdb.sql";
             QFile file(recoveryFile);
             if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
                 throw std::runtime_error("recovery file not located");
@@ -166,7 +166,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::Centaur
     }
 }
 
-void CENTAUR_NAMESPACE::CentaurLogger::log(const QString &source, const CENTAUR_NAMESPACE::interface::LogLevel level, const QString &msg) noexcept
+void CENTAUR_NAMESPACE::CentaurLogger::log(const QString &source, CENTAUR_NAMESPACE::interface::LogLevel level, const QString &msg) noexcept
 {
     std::lock_guard<std::mutex> lock { m_dataProtect };
     m_messages.push({ static_cast<std::size_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()),
