@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>cent::PluginsDialog</class>
- <widget class="QDialog" name="cent::PluginsDialog">
+ <class>CENTAUR_NAMESPACE::PluginsDialog</class>
+ <widget class="QDialog" name="CENTAUR_NAMESPACE::PluginsDialog">
   <property name="windowModality">
    <enum>Qt::WindowModal</enum>
   </property>
@@ -62,7 +62,7 @@
   <connection>
    <sender>m_buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>cent::PluginsDialog</receiver>
+   <receiver>CENTAUR_NAMESPACE::PluginsDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -78,7 +78,7 @@
   <connection>
    <sender>m_buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>cent::PluginsDialog</receiver>
+   <receiver>CENTAUR_NAMESPACE::PluginsDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

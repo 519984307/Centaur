@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>cent::CentaurApp</class>
- <widget class="QMainWindow" name="cent::CentaurApp">
+ <class>CENTAUR_NAMESPACE::CentaurApp</class>
+ <widget class="QMainWindow" name="CENTAUR_NAMESPACE::CentaurApp">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -92,14 +92,14 @@
    <addaction name="m_menuWindow"/>
   </widget>
   <widget class="QStatusBar" name="m_statusBar"/>
-  <widget class="QDockWidget" name="m_dockSymbols">
+  <widget class="QDockWidget" name="dockSymbols">
    <property name="windowTitle">
-    <string>Symbols</string>
+    <string notr="true">__symbols__</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="m_dockContents">
+   <widget class="QWidget" name="dockContents">
     <layout class="QHBoxLayout" name="m_symbolsLayout">
      <property name="spacing">
       <number>0</number>
@@ -117,7 +117,7 @@
       <number>0</number>
      </property>
      <item>
-      <widget class="QTabWidget" name="m_ctrlSymbols">
+      <widget class="QTabWidget" name="tabSymbols">
        <property name="tabPosition">
         <enum>QTabWidget::South</enum>
        </property>
@@ -148,9 +148,9 @@
        <property name="tabBarAutoHide">
         <bool>true</bool>
        </property>
-       <widget class="QWidget" name="m_tabWatchList">
+       <widget class="QWidget" name="tabWatchList">
         <attribute name="title">
-         <string>Watchlist</string>
+         <string notr="true">__watchlist__</string>
         </attribute>
         <layout class="QVBoxLayout" name="m_watchListLayout">
          <property name="spacing">
@@ -169,12 +169,21 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QLineEdit" name="m_ctrlWatchListFilter">
+          <widget class="QLineEdit" name="editWatchListFilter">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string notr="true"/>
+           </property>
            <property name="echoMode">
             <enum>QLineEdit::Normal</enum>
            </property>
            <property name="placeholderText">
-            <string>Search...</string>
+            <string notr="true">Search...</string>
            </property>
            <property name="clearButtonEnabled">
             <bool>true</bool>
@@ -182,7 +191,27 @@
           </widget>
          </item>
          <item>
-          <widget class="cent::CenListCtrl" name="m_ctrlWatchList">
+          <widget class="CENTAUR_NAMESPACE::CenListCtrl" name="listWatchList">
+           <property name="styleSheet">
+            <string notr="true">
+QTableView QTableCornerButton::section {
+    background: rgb(48,48,48);
+    border: 0px;
+}
+
+QTableView::item {
+	border: 0px;
+	min-height: 100px;
+}
+
+QTableView::item:hover{
+	background-color: rgb(48,48,48);
+}
+
+QTableView::item:selected{
+	background-color: rgb(78,78,78);
+}</string>
+           </property>
            <property name="sortingEnabled">
             <bool>true</bool>
            </property>
@@ -193,7 +222,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="m_symbolsEmptyLayout_2">
+       <widget class="QWidget" name="symbolsEmptyLayout">
         <attribute name="title">
          <string/>
         </attribute>
@@ -641,7 +670,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>cent::CenListCtrl</class>
+   <class>CENTAUR_NAMESPACE::CenListCtrl</class>
    <extends>QTableView</extends>
    <header>CenListCtrl.hpp</header>
   </customwidget>
@@ -652,6 +681,8 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../rcc/resource.qrc"/>
+ </resources>
  <connections/>
 </ui>
