@@ -2,7 +2,10 @@
     <qresource prefix="/img">
         <file>../res/img/downArrow.svg</file>
         <file>../res/img/upArrow.svg</file>
-        <file>../res/img/Search.svg</file>
         <file>../res/img/plugin.svg</file>
+    </qresource>
+
+    <qresource prefix="/svg/edit">
+        <file alias="search_gray">../res/img/search_gray_48dp.svg</file>
     </qresource>
 </RCC>
