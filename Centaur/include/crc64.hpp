@@ -15,9 +15,9 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace CENTAUR_NAMESPACE
+namespace CENTAUR_NAMESPACE::crc64
 {
-    static const uint64_t crc64Table[256] = {
+    static constexpr uint64_t crc64Table[256] = {
         UINT64_C(0x0000000000000000),
         UINT64_C(0x7ad870c830358979),
         UINT64_C(0xf5b0e190606b12f2),
@@ -293,10 +293,10 @@ namespace CENTAUR_NAMESPACE
         return crc;
     }
 
-} // namespace CENTAUR_NAMESPACE
+} // namespace CENTAUR_NAMESPACE::crc64
 
 // Macro to be used, guarantees hash is computed at compile time.
 #define CRC64_STR(A) \
-    std::integral_constant<uint64_t, CENTAUR_NAMESPACE::compute(A, sizeof(A) - 1)>::value
+    std::integral_constant<uint64_t, CENTAUR_NAMESPACE::crc64::compute(A, sizeof(A) - 1)>::value
 
 #endif // CENTAUR_CRC64_HPP
