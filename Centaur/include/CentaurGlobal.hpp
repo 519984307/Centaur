@@ -24,7 +24,7 @@
 #ifndef DONT_INCLUDE_RAPIDJSON
 #if defined(__clang__) || defined(__GNUC__)
 // clang-format off
-CENTAUR_WARN_PUSH
+CENTAUR_WARN_PUSH()
 CENTAUR_WARN_OFF(zero-as-null-pointer-constant)
 CENTAUR_WARN_OFF(extra-semi-stmt)
 CENTAUR_WARN_OFF(shadow)
@@ -43,7 +43,7 @@ CENTAUR_WARN_OFF(deprecated-declarations)
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/schema.h>
 #if defined(__clang__) || defined(__GNUC__)
-CENTAUR_WARN_POP
+CENTAUR_WARN_POP()
 #endif /*__clang__*/
 #endif /*#DONT_INCLUDE_RAPIDJSON*/
 
@@ -61,7 +61,7 @@ CENTAUR_WARN_POP
 #include <QWidget>
 
 #if defined(__clang__) || defined(__GNUC__)
-CENTAUR_WARN_PUSH
+CENTAUR_WARN_PUSH()
 // clang-format off
 CENTAUR_WARN_OFF(elaborated-enum-base)
 // clang-format on
@@ -71,12 +71,12 @@ CENTAUR_WARN_OFF(elaborated-enum-base)
 #include <CoreServices/CoreServices.h>
 #endif /*Q_OS_MAC*/
 #if defined(__clang__) || defined(__GNUC__)
-CENTAUR_WARN_POP
+CENTAUR_WARN_POP()
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
 // clang-format off
-CENTAUR_WARN_PUSH
+CENTAUR_WARN_PUSH()
 CENTAUR_WARN_OFF(reserved-identifier)
 CENTAUR_WARN_OFF(quoted-include-in-framework-header)
 CENTAUR_WARN_OFF(double-promotion)
@@ -91,7 +91,7 @@ CENTAUR_WARN_OFF(suggest-destructor-override)
 #include <qwt_plot_curve.h>
 #include <qwt_scale_engine.h>
 #if defined(__clang__) || defined(__GNUC__)
-CENTAUR_WARN_POP
+CENTAUR_WARN_POP()
 #endif /*__clang__*/
 
 #endif /*DONT_INCLUDE_QT*/
