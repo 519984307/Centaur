@@ -1,0 +1,13 @@
+[requires]
+yaml-cpp/0.7.0
+rapidjson/cci.20211112
+libwebsockets/4.3.0
+sqlite3/3.38.1
+cpr/1.7.2
+zlib/1.2.12
+openssl/1.1.1n
+xerces-c/3.2.3
+
+[generators]
+CMakeDeps
+CMakeToolchain
