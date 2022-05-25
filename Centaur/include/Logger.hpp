@@ -62,7 +62,7 @@ namespace CENTAUR_NAMESPACE
         /// \param source The message source
         /// \param level Level of the diagnosis
         /// \param msg Message
-        void log(const QString &source, const CENTAUR_NAMESPACE::interface::LogLevel level, const QString &msg) noexcept override;
+        void log(const QString &source, CENTAUR_NAMESPACE::interface::LogLevel level, const QString &msg) noexcept override;
 
         /// \brief Wrapper around log with fatal level
         ///
@@ -101,11 +101,13 @@ namespace CENTAUR_NAMESPACE
         /// \param msg Message
         inline void debug(const QString &source, const QString &msg) noexcept override { log(source, CENTAUR_NAMESPACE::interface::LogLevel::debug, msg); }
 #else
-        inline void trace([[maybe_unused]] const QString &source, [[maybe_unused]] const QString &msg) noexcept override
+        inline void trace() noexcept override
         {
-            return;
         }
-        inline void debug([[maybe_unused]] const QString &source, [[maybe_unused]] const QString &msg) noexcept override { return; }
+
+        inline void debug() noexcept override
+        {
+        }
 #endif
 
     private:
@@ -124,4 +126,28 @@ namespace CENTAUR_NAMESPACE
     extern CentaurLogger *g_logger;
 } // namespace CENTAUR_NAMESPACE
 
+// Helper macros
+#define logInfo(x, y) \
+    g_logger->info(x, y)
+
+#define logWarn(x, y) \
+    g_logger->warning(x, y)
+
+#if !defined(NDEBUG)
+#define logTrace(x, y) \
+    g_logger->trace(x, y)
+#define logDebug(x, y) \
+    g_logger->debug(x, y)
+#else
+#define logTrace(x, y) \
+    ((void *)0)
+#define logDebug(x, y) \
+    ((void *)0)
+#endif /**/
+
+#define logError(x, y) \
+    g_logger->error(x, y)
+
+#define logFatal(x, y) \
+    g_logger->fatal(x, y)
 #endif // CENTAUR_LOGGER_HPP
