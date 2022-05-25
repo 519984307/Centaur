@@ -13,6 +13,7 @@
 #ifndef CENTAUR_HTMLDELEGATE_HPP
 #define CENTAUR_HTMLDELEGATE_HPP
 
+#include "../../Centaur.hpp"
 #include <QStyledItemDelegate>
 
 namespace CENTAUR_NAMESPACE
