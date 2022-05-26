@@ -26,8 +26,10 @@ CENTAUR_NAMESPACE::CentaurLogger *CENTAUR_NAMESPACE::g_logger { nullptr };
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
-static constexpr std::string_view insertDb[] = { R"(INSERT INTO log (date, session, user, level, source, message) VALUES ('{}', {}, '{}', {}, '{}', '{}'); )" };
-
+namespace
+{
+    constexpr std::string_view insertDb = { R"(INSERT INTO log (date, session, user, level, source, message) VALUES ('{}', {}, '{}', {}, '{}', '{}'); )" };
+}
 static auto sqlExec(void *, int, char **, char **) -> int
 {
     // The database function does not really care about selecting data
@@ -80,7 +82,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::process(const LogMessage &log) noexcept
     const auto thisTime = static_cast<std::time_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Insert into database
-    std::string query = fmt::format("INSERT INTO log (date, session, user, level, source, message) VALUES ('{}', {}, '{}', {}, '{}', '{}');",
+    std::string query = fmt::format(insertDb,
         fmt::format("{:%d-%m-%Y %H:%M:%S}", *std::localtime(&thisTime)),
         log.session,
         log.user.toStdString(),

@@ -45,13 +45,17 @@
 #pragma clang diagnostic ignored "-Wweak-vtables"
 #endif /*__clang__*/
 
+/**
+ * \brief
+ * uuid namespace: a15c48b4-460b-4a79-a0a8-8ece90603f85
+ */
+
 namespace CENTAUR_PLUGIN_NAMESPACE
 {
 
     /// General types
     using StringIcon       = std::pair<QString, QIcon *>;
     using StringIconVector = std::vector<StringIcon>;
-    using FuncPointer      = void (QObject::*)(void);
 
     struct IBase
     {
@@ -78,12 +82,6 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \brief Get the plugin UUID
         /// \return Beware that versions are check in order to run the plugin
         virtual uuid getPluginUUID() noexcept = 0;
-
-        /// \brief This function is called in order to the plugin connects a menu action of the user interface to a specific plugin action
-        /// \param identifier The identifier name that is declared in the XML Plugins file
-        /// \return nullptr on failure, otherwise it must return a pointer to the member function to call.
-        ///         Can be reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&class::memberfunc);
-        virtual FuncPointer connectMenu(const QString &identifier) noexcept = 0;
     };
 
     /// \brief Provides access to the status bar
@@ -180,10 +178,10 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
-#define IBase_iid "com.centaur-project.plugin.IBase/1.0"
+#define IBase_iid "com.centaur-project.plugin.IBase/0.2"
 Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IBase, IBase_iid)
 
-#define IStatus_iid "com.centaur-project.plugin.IStatus/1.0"
+#define IStatus_iid "com.centaur-project.plugin.IStatus/0.2"
 Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IStatus, IStatus_iid)
 
 #define IExchange_iid "com.centaur-project.plugin.IExchange/1.0"

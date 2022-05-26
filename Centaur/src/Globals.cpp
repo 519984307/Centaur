@@ -8,14 +8,7 @@
 #include "Logger.hpp"
 #include <QDebug>
 #include <QDomDocument>
-#include <QDomElement>
 #include <QFile>
-#include <QTextStream>
-/*
-#include <rapidjson/document.h>
-#include <rapidjson/rapidjson.h>
-*/
-
 #include <xercesc/dom/DOMNodeFilter.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
 #include <xercesc/sax/HandlerBase.hpp>
