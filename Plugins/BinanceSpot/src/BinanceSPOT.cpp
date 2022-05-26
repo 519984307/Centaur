@@ -7,38 +7,17 @@
 #include <QObject>
 
 #include "BinanceSPOT.hpp"
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wundefined-func-template"
-#pragma clang diagnostic ignored "-Wsigned-enum-bitfield"
-#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-#pragma clang diagnostic ignored "-Wshadow-field-in-constructor"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#endif /*__clang__*/
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
 
-static constexpr char g_BinanceSpotName[]          = "BinanceSPOT";
-static constexpr char g_BinanceSpotVersionString[] = "0.1.0";
-static constexpr char g_uuidString[]               = "{55ee88d7-44aa-0f00-a5e3-54efc35f2352}";
-
-// {55ee88d7-44aa-0f00-a5e3-54efc35f2352}
-static constexpr cent::plugin::PluginUUID g_uuid {
-    .dev0.dev0_u     = cent::plugin::CentaurId0,
-    .dev1.dev1_s     = cent::plugin::CentaurId1,
-    .sp0.sp0_s       = 0x0f00,
-    .sp1.sp1_s       = 0xa5e3,
-    .plg.plg0.plg0_s = 0x54ef,
-    .plg.plg1.plg1_u = 0xc35f2352
-};
+namespace
+{
+    /// UUID V5 string "CentaurProject-BinanceExchangeSPOT-0.1.0"
+    constexpr char g_BinanceSpotName[]          = "BinanceSPOT";
+    constexpr char g_BinanceSpotVersionString[] = "0.1.0";
+    constexpr char g_uuidString[]               = "{85261bc6-8f92-57ca-802b-f08b819031db}";
+} // namespace
 
 #define CATCH_API_EXCEPTION()                                                                                                                                                  \
     catch (const trader::api::APIException &ex)                                                                                                                                \
@@ -93,14 +72,14 @@ static constexpr cent::plugin::PluginUUID g_uuid {
         return false;                                                                                                                                                          \
     }
 
-BinanceSpotPlugin::BinanceSpotPlugin(QObject *parent) :
+CENTAUR_NAMESPACE::BinanceSpotPlugin::BinanceSpotPlugin(QObject *parent) :
     QObject(parent),
     m_spotWS { std::make_unique<SpotMarketWS>() },
-    m_globalPluginUuid { g_uuid, g_uuidString }
+    m_globalPluginUuid { g_uuidString }
 {
 }
 
-BinanceSpotPlugin::~BinanceSpotPlugin()
+CENTAUR_NAMESPACE::BinanceSpotPlugin::~BinanceSpotPlugin()
 {
     if (m_spotWSThread != nullptr && m_spotWSThread->joinable())
     {
@@ -111,106 +90,107 @@ BinanceSpotPlugin::~BinanceSpotPlugin()
     m_spotWS.reset();
 }
 
-QObject *BinanceSpotPlugin::getPluginObject() noexcept
+QObject *CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginObject() noexcept
 {
     return reinterpret_cast<QObject *>(this);
 }
 
-QString BinanceSpotPlugin::getPluginVersionString() noexcept
+QString CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginVersionString() noexcept
 {
     return g_BinanceSpotVersionString;
 }
 
-QString BinanceSpotPlugin::getPluginName() noexcept
+QString CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginName() noexcept
 {
     return g_BinanceSpotName;
 }
 
-void BinanceSpotPlugin::setPluginInterfaces(cent::interface::ILogger *logger, cent::interface::IConfiguration *config) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept
 {
     m_logger = logger;
     m_config = config;
-    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::setPluginInterfaces");
+
 }
 
-cent::plugin::PluginUUID BinanceSpotPlugin::getPluginUUID() noexcept
+CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() noexcept
 {
-    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::setPluginInterfaces");
+    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::getPluginUUID");
 
-    return g_uuid;
+    return m_globalPluginUuid;
 }
 
-cent::plugin::FuncPointer BinanceSpotPlugin::connectMenu(const QString &identifier) noexcept
+/*
+CENTAUR_PLUGIN_NAMESPACE::FuncPointer CENTAUR_NAMESPACE::BinanceSpotPlugin::connectMenu(const QString &identifier) noexcept
 {
     if (identifier == "{5445eaec-d22c-4204-b720-ab07a570ab2e}")
-        return reinterpret_cast<cent::plugin::FuncPointer>(&BinanceSpotPlugin::onSpotStatus);
+        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onSpotStatus);
     else if (identifier == "{394f3857-c797-49c0-9343-37e1e66e028a}")
-        return reinterpret_cast<cent::plugin::FuncPointer>(&BinanceSpotPlugin::onCoinInformation);
+        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onCoinInformation);
     else if (identifier == "{a42c4440-2615-4b1a-9438-a70d27d63c9c}")
-        return reinterpret_cast<cent::plugin::FuncPointer>(&BinanceSpotPlugin::onSpotDepositHistory);
+        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onSpotDepositHistory);
     else if (identifier == "{5f04e9e5-1075-422e-880f-35ba33bb0f79}")
-        return reinterpret_cast<cent::plugin::FuncPointer>(&BinanceSpotPlugin::onSpotWithdrawHistory);
+        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onSpotWithdrawHistory);
     else if (identifier == "{020af463-b249-4121-97a8-d5d5cfc0ddad}")
-        return reinterpret_cast<cent::plugin::FuncPointer>(&BinanceSpotPlugin::onGetAllOrders);
+        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onGetAllOrders);
     else if (identifier == "{2bbb88f4-bb25-488d-94e3-d5f2e1d50480}")
-        return reinterpret_cast<cent::plugin::FuncPointer>(&BinanceSpotPlugin::onAccountTradeList);
+        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onAccountTradeList);
 
     return nullptr;
 }
-
-bool BinanceSpotPlugin::initialization() noexcept
+                      */
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::initialization");
+    /*
+m_api = std::make_unique<trader::api::BinanceAPI>(&m_keys, &m_limits);
 
-    m_api = std::make_unique<trader::api::BinanceAPI>(&m_keys, &m_limits);
+try
+{
+m_spotWS->initialize(this, m_logger);
+m_api->apiPing();
+logInfo("BinanceSpotPlugin", "Binance Server SPOT ping correctly");
+if (!m_api->apiExchangeStatus())
+{
+logError("BinanceSpotPlugin", "Binance Server is under maintenance");
+return false;
+}
 
-    try
-    {
-        m_spotWS->initialize(this, m_logger);
-        m_api->apiPing();
-        logInfo("BinanceSpotPlugin", "Binance Server SPOT ping correctly");
-        if (!m_api->apiExchangeStatus())
-        {
-            logError("BinanceSpotPlugin", "Binance Server is under maintenance");
-            return false;
-        }
+logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
+m_exchInfo = m_api->apiExchangeInformation();
+logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(m_api->getLastCallTime()));
 
-        logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
-        m_exchInfo = m_api->apiExchangeInformation();
-        logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(m_api->getLastCallTime()));
+m_limits.setAPIRequestsLimits(m_exchInfo.limitWeight.limit, m_exchInfo.limitWeight.seconds);
+m_limits.setAPIOrderLimitLow(m_exchInfo.limitOrderSecond.limit, m_exchInfo.limitOrderSecond.seconds);
+m_limits.setAPIOrderLimitHigh(m_exchInfo.limitOrderDay.limit, m_exchInfo.limitOrderDay.seconds);
 
-        m_limits.setAPIRequestsLimits(m_exchInfo.limitWeight.limit, m_exchInfo.limitWeight.seconds);
-        m_limits.setAPIOrderLimitLow(m_exchInfo.limitOrderSecond.limit, m_exchInfo.limitOrderSecond.seconds);
-        m_limits.setAPIOrderLimitHigh(m_exchInfo.limitOrderDay.limit, m_exchInfo.limitOrderDay.seconds);
+logInfo("BinanceSpotPlugin", "Binance SPOT limits changed.");
 
-        logInfo("BinanceSpotPlugin", "Binance SPOT limits changed.");
-
-        for (const auto &[sym, info] : m_exchInfo.symbols)
-        {
-            if (info.permissions.test(trader::api::AccountPermissions::SPOT))
-                m_symbols.push_back({ QString { info.symbol.c_str() }, &m_cryptoIcon });
-        }
-        logInfo("BinanceSpotPlugin", QString("Symbols handled: ##00FFFF#%1#").arg(m_symbols.size()));
-    }
-    CATCH_API_EXCEPTION()
+for (const auto &[sym, info] : m_exchInfo.symbols)
+{
+if (info.permissions.test(trader::api::AccountPermissions::SPOT))
+  m_symbols.push_back({ QString { info.symbol.c_str() }, &m_cryptoIcon });
+}
+logInfo("BinanceSpotPlugin", QString("Symbols handled: ##00FFFF#%1#").arg(m_symbols.size()));
+}
+CATCH_API_EXCEPTION()                                          */
     return true;
 }
 
-cent::plugin::StringIcon BinanceSpotPlugin::getSymbolListName() const noexcept
+CENTAUR_PLUGIN_NAMESPACE::StringIcon CENTAUR_NAMESPACE::BinanceSpotPlugin::getSymbolListName() const noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::getSymbolListName");
 
     return { QString { g_BinanceSpotName }, &m_exchIcon };
 }
 
-cent::plugin::StringIconVector BinanceSpotPlugin::getSymbolList() const noexcept
+CENTAUR_PLUGIN_NAMESPACE::StringIconVector CENTAUR_NAMESPACE::BinanceSpotPlugin::getSymbolList() const noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::getSymbolList");
 
     return m_symbols;
 }
 
-void BinanceSpotPlugin::runMarketWS(const QString &symbol) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::runMarketWS");
 
@@ -226,7 +206,7 @@ void BinanceSpotPlugin::runMarketWS(const QString &symbol) noexcept
     });
 }
 
-bool BinanceSpotPlugin::addSymbol(const QString &name, const int &item) noexcept
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, const int &item) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::addSymbol()");
 
@@ -261,7 +241,7 @@ bool BinanceSpotPlugin::addSymbol(const QString &name, const int &item) noexcept
     return true;
 }
 
-void BinanceSpotPlugin::removeSymbol(const QString &name) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbol(const QString &name) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::removeSymbol()");
 
@@ -292,7 +272,7 @@ void BinanceSpotPlugin::removeSymbol(const QString &name) noexcept
     }
 }
 
-void BinanceSpotPlugin::onTickerUpdate(const QString &symbol, const quint64 &receivedTime, const double &price) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onTickerUpdate(const QString &symbol, const quint64 &receivedTime, const double &price) noexcept
 {
     // Don't log since this message will be sent every 500 ms
 
@@ -305,10 +285,10 @@ void BinanceSpotPlugin::onTickerUpdate(const QString &symbol, const quint64 &rec
     }
 
     // Redirect the signal
-    emit sgTickerUpdate(symbol, itemId->second, receivedTime, price);
+    emit snTickerUpdate(symbol, itemId->second, receivedTime, price);
 }
 
-void BinanceSpotPlugin::onSubscription(const bool &subscribe, const bool &status, const int &id) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSubscription(const bool &subscribe, const bool &status, const int &id) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSubscription()");
 
@@ -331,7 +311,7 @@ void BinanceSpotPlugin::onSubscription(const bool &subscribe, const bool &status
     }
 }
 
-void BinanceSpotPlugin::updateOrderbook(const QString &symbol) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::updateOrderbook(const QString &symbol) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotSymbolListPlugin::updateOrderbook()");
 
@@ -356,7 +336,7 @@ void BinanceSpotPlugin::updateOrderbook(const QString &symbol) noexcept
     m_symbolOrderbookSnapshot[symbol] = { false, 0 };
 }
 
-void BinanceSpotPlugin::stopOrderbook(const QString &symbol) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::stopOrderbook(const QString &symbol) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotSymbolListPlugin::stopOrderbook()");
     auto itemId = m_symbolId.find(symbol);
@@ -375,7 +355,7 @@ void BinanceSpotPlugin::stopOrderbook(const QString &symbol) noexcept
     m_symbolOrderbookSnapshot.erase(symbol);
 }
 
-void BinanceSpotPlugin::onDepthUpdate(const QString &symbol, const quint64 &eventTime, const trader::api::StreamDepthUpdate &sdp) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, const quint64 &eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) noexcept
 {
     /*
    Open a stream to wss://stream.binance.com:9443/ws/bnbbtc@@depth.
@@ -388,6 +368,7 @@ void BinanceSpotPlugin::onDepthUpdate(const QString &symbol, const quint64 &even
    If the quantity is 0, remove the price level.
    Receiving an event that removes a price level that is not in your local order book can happen and is normal.
    */
+    /*
     const auto &[snap, lastUpdate] = m_symbolOrderbookSnapshot[symbol];
     uint64_t lastUpdateId          = lastUpdate;
     if (!snap)
@@ -447,33 +428,33 @@ void BinanceSpotPlugin::onDepthUpdate(const QString &symbol, const quint64 &even
         }
     }
 
-    emit sgOrderbookUpdate(g_uuidString, symbol, eventTime, bids, asks);
+    emit snOrderbookUpdate(g_uuidString, symbol, eventTime, bids, asks);
 
-    m_symbolOrderbookSnapshot[symbol] = { true, sdp.finalUpdateId };
+    m_symbolOrderbookSnapshot[symbol] = { true, sdp.finalUpdateId };           */
 }
-void BinanceSpotPlugin::onSpotStatus() noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotStatus() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotStatus");
 }
-void BinanceSpotPlugin::onCoinInformation() noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onCoinInformation() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onCoinInformation");
 }
-void BinanceSpotPlugin::onSpotDepositHistory() noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotDepositHistory() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotDepositHistory");
 }
-void BinanceSpotPlugin::onSpotWithdrawHistory() noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotWithdrawHistory() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotWithdrawHistory");
 }
 
-void BinanceSpotPlugin::onGetAllOrders() noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onGetAllOrders() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onGetAllOrders");
 }
 
-void BinanceSpotPlugin::onAccountTradeList() noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onAccountTradeList() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onAccountTradeList");
 }
