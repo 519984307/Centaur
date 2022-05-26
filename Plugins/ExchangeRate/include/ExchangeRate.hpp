@@ -17,40 +17,45 @@
 #include <CentaurPlugin.hpp>
 #include <QLabel>
 
-class ExchangeRatePlugin : public QObject,
-                           public cent::plugin::IStatus
+namespace CENTAUR_PLUGIN_NAMESPACE
 {
+    class ExchangeRatePlugin : public QObject,
+                               public CENTAUR_PLUGIN_NAMESPACE::IStatus
+    {
 
-    Q_OBJECT
+        Q_OBJECT
 
-    Q_PLUGIN_METADATA(IID "com.centaur-project.plugin.ExchangeRatePlugin/1.0")
-    Q_INTERFACES(cent::plugin::IBase cent::plugin::IStatus)
+        Q_PLUGIN_METADATA(IID "com.centaur-project.plugin.ExchangeRatePlugin/1.0")
+        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IStatus)
 
-public:
-    explicit ExchangeRatePlugin(QObject *parent = nullptr);
-    ~ExchangeRatePlugin() override = default;
+    public:
+        explicit ExchangeRatePlugin(QObject *parent = nullptr);
+        ~ExchangeRatePlugin() override = default;
 
-public:
-    QObject *getPluginObject() noexcept override;
-    QString getPluginName() noexcept override;
-    QString getPluginVersionString() noexcept override;
-    void setPluginInterfaces(cent::interface::ILogger *logger, cent::interface::IConfiguration *config) noexcept override;
-    cent::plugin::PluginUUID getPluginUUID() noexcept override;
-    QString menuSlotName(const QString &identifier) noexcept override;
+    public:
+        QObject *getPluginObject() noexcept override;
+        QString getPluginName() noexcept override;
+        QString getPluginVersionString() noexcept override;
+        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
+        uuid getPluginUUID() noexcept override;
+        //    QString menuSlotName(const QString &identifier) noexcept override;
 
-public:
-    void initialization(QStatusBar *bar) noexcept override;
+    public:
+        void initialization(QStatusBar *bar) noexcept override;
 
-protected:
-    void updateExchangeRate() noexcept;
+    protected:
+        void updateExchangeRate() noexcept;
 
-private:
-    QLabel *m_exchangeRate;
+    private:
+        QLabel *m_exchangeRate { nullptr };
 
-private:
-    cent::interface::ILogger *m_logger { nullptr };
-    cent::interface::IConfiguration *m_config { nullptr };
-};
+    private:
+        CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
+        CENTAUR_INTERFACE_NAMESPACE::IConfiguration *m_config { nullptr };
+
+        uuid m_thisUUID;
+    };
+} // namespace CENTAUR_PLUGIN_NAMESPACE
 
 // Helper macros
 #define logInfo(x, y) \

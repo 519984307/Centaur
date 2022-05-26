@@ -60,12 +60,15 @@
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
-// 55ee88d7-44aa-0f05-cde3-7073e28ea778
-static constexpr char g_ExchangeRateName[]          = "ExchangeRate";
-static constexpr char g_ExchangeRateVersionString[] = "0.2.0";
-// static constexpr char g_uuidString[]                = "{55ee88d7-44aa-0f05-cde3-7073e28ea778}";
+/// UUID v5 Hashed String: CentaurProject-ExchangeRate-0.2.0
 
-static constexpr char g_schema[] = R"({
+namespace
+{
+    constexpr char g_ExchangeRateName[]          = "ExchangeRate";
+    constexpr char g_ExchangeRateVersionString[] = "0.2.0";
+    constexpr char g_uuidString[]                = "{f77ecf55-8162-5570-a9dc-3a79c6757c72}";
+
+    constexpr char g_schema[]                    = R"({
 "$schema": "http://json-schema.org/draft-07/schema",
 "$id": "http://richardqpc.com/binapi/currency_exchange.schema.json",
 "type": "object",
@@ -133,48 +136,40 @@ static constexpr char g_schema[] = R"({
 },
 "additionalProperties": true
 })";
+} // namespace
 
-// {55ee88d7-44aa-0f00-a5e3-54efc35f2352}
-static constexpr cent::plugin::PluginUUID g_uuid {
-    .dev0.dev0_u     = cent::plugin::CentaurId0,
-    .dev1.dev1_s     = cent::plugin::CentaurId1,
-    .sp0.sp0_s       = 0x0f05,
-    .sp1.sp1_s       = 0xcde3,
-    .plg.plg0.plg0_s = 0x7073,
-    .plg.plg1.plg1_u = 0xe28ea778
-};
-
-ExchangeRatePlugin::ExchangeRatePlugin(QObject *parent) :
-    QObject(parent)
+CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::ExchangeRatePlugin(QObject *parent) :
+    QObject(parent),
+    m_thisUUID { g_uuidString }
 {
 }
 
-QObject *ExchangeRatePlugin::getPluginObject() noexcept
+QObject *CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginObject() noexcept
 {
     return reinterpret_cast<QObject *>(this);
 }
-QString ExchangeRatePlugin::getPluginName() noexcept
+QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginName() noexcept
 {
     return g_ExchangeRateName;
 }
-QString ExchangeRatePlugin::getPluginVersionString() noexcept
+QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginVersionString() noexcept
 {
     return g_ExchangeRateVersionString;
 }
-void ExchangeRatePlugin::setPluginInterfaces(cent::interface::ILogger *logger, cent::interface::IConfiguration *config) noexcept
+void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept
 {
     m_logger = logger;
     m_config = config;
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::setPluginInterfaces");
 }
-cent::plugin::PluginUUID ExchangeRatePlugin::getPluginUUID() noexcept
+CENTAUR_NAMESPACE::uuid CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginUUID() noexcept
 {
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::setPluginInterfaces");
 
-    return g_uuid;
+    return m_thisUUID;
 }
 
-void ExchangeRatePlugin::initialization(QStatusBar *bar) noexcept
+void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::initialization(QStatusBar *bar) noexcept
 {
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::initialization");
 
@@ -185,7 +180,7 @@ void ExchangeRatePlugin::initialization(QStatusBar *bar) noexcept
     updateExchangeRate();
 }
 
-void ExchangeRatePlugin::updateExchangeRate() noexcept
+void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::updateExchangeRate() noexcept
 {
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::updateExchangeRate");
 
@@ -250,7 +245,9 @@ void ExchangeRatePlugin::updateExchangeRate() noexcept
     }
 }
 
+/*
 QString ExchangeRatePlugin::menuSlotName([[maybe_unused]] const QString &identifier) noexcept
 {
     return QString();
 }
+ */
