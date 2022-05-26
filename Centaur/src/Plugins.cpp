@@ -15,11 +15,24 @@
 #include <QString>
 #include <QUrl>
 
-#include <fmt/core.h>
+#include <xercesc/dom/DOMNodeFilter.hpp>
+#include <xercesc/parsers/XercesDOMParser.hpp>
+#include <xercesc/sax/HandlerBase.hpp>
+#include <xercesc/util/PlatformUtils.hpp>
 
 void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
 {
     logTrace("plugins", "CentaurApp::loadPlugins()");
+
+    try
+    {
+        xercesc::XMLPlatformUtils::Initialize();
+    } catch (const xercesc::XMLException &ex)
+    {
+        char *message = xercesc::XMLString::transcode(ex.getMessage());
+        qDebug() << "Error during initialization!" << message << "\n";
+        xercesc::XMLString::release(&message);
+    }
 
     auto errorDelay = [](const int &ms) {
         QTime dieTime = QTime::currentTime().addMSecs(ms);
@@ -27,285 +40,240 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
             QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     };
 
-    QDomDocument doc("plugins");
-    QFile file(CENTAUR_NAMESPACE::g_globals->pluginsPath + "/local/plugins.xml");
-    if (!file.open(QIODevice::ReadOnly))
+    const QString xmlFile = g_globals->paths.pluginsPath + "/local/plugins.xml";
+    xercesc::DOMDocument *doc { nullptr };
     {
-        logFatal("plugins", "Failed to locate plugins.xml");
-        QMessageBox::critical(this,
-            tr("Plugins Error"),
-            tr("Failed to locate the local plugins information file"));
-        errorDelay(500); // Wait for all logging messages be processed and store in the DB
-        QApplication::quit();
-        return;
-    }
+        // make the unique_ptr's being release before the call to terminate
+        std::unique_ptr<xercesc::XercesDOMParser> parser = std::make_unique<xercesc::XercesDOMParser>();
+        parser->setValidationScheme(xercesc::XercesDOMParser::Val_Always);
+        parser->setDoSchema(true);
+        parser->setDoNamespaces(true);
 
-    if (!doc.setContent(&file))
-    {
-        logFatal("plugins", "plugins.xml is not a valid XML document");
-        QMessageBox::critical(this,
-            tr("Plugins Error"),
-            tr("The local plugins is not valid"));
-        file.close();
-        errorDelay(500); // Wait for all logging messages be processed and store in the DB
-        QApplication::quit();
-        return;
-    }
-    file.close();
-    logInfo("plugins", "Plugins local data loaded and parsed.");
+        //  std::unique_ptr<xercesc::ErrorHandler> errHandler { static_cast<xercesc::ErrorHandler *>(new xercesc::HandlerBase()) };
+        //   parser->setErrorHandler(errHandler.get());
 
-    QString pluginPath = g_globals->pluginsPath;
-    QDir pluginsDir(pluginPath);
-    for (const auto &plFile : pluginsDir.entryList(QDir::Files))
-    {
-        QString realFile = pluginsDir.absoluteFilePath(plFile);
-        // Detect if the file is a symbolic link
-        QFileInfo info(realFile);
-        if (info.isSymLink() || info.isSymbolicLink()
-#ifdef Q_OS_WIN
-            || info.isShortcut()
-#endif /* Q_OS_WIN */
-        )
-            realFile = info.symLinkTarget();
-        QPluginLoader loader(realFile);
-        QObject *plugin = loader.instance();
-        if (plugin)
+        if (!QFile::exists(xmlFile))
         {
+            logFatal("plugins", LS("fatal-plugins-file"));
+            QMessageBox::critical(this,
+                LS("fatal-plugins-file-title-ui"),
+                LS("fatal-plugins-file-ui"));
+            errorDelay(500); // Wait for all logging messages be processed and store in the DB
+            QApplication::quit();
+            return;
+        }
+        try
+        {
+            parser->parse(xmlFile.toLatin1().data());
+            doc = parser->getDocument();
 
-            // Add to the list
-            auto baseInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(plugin);
+        } catch (const xercesc::XMLException &ex)
+        {
+            logFatal("plugins", LS("fatal-plugins-file-invalid"));
+            QMessageBox::critical(this,
+                LS("fatal-plugins-file-title-ui"),
+                LS("fatal-plugins-file-invalid-ui"));
+            errorDelay(500); // Wait for all logging messages be processed and store in the DB
+            QApplication::quit();
+            return;
+        }
 
-            if (baseInterface == nullptr)
-                logError("plugin", "The plugin does not implement the IBase interface");
-            else
+        logInfo("plugins", LS("info-plugins-file-loaded"));
+
+        QString pluginPath = g_globals->paths.pluginsPath;
+        QDir pluginsDir(pluginPath);
+        for (const auto &plFile : pluginsDir.entryList(QDir::Files))
+        {
+            QString realFile = pluginsDir.absoluteFilePath(plFile);
+            // Detect if the file is a symbolic link
+            QFileInfo info(realFile);
+            if (info.isSymLink() || info.isSymbolicLink()
+#ifdef Q_OS_WIN
+                || info.isShortcut()
+#endif /* Q_OS_WIN */
+            )
             {
-                m_pluginsData.push_back(baseInterface);
-                // Init the plugin
-                baseInterface->setPluginInterfaces(g_logger, nullptr);
+                realFile = info.symLinkTarget();
+            }
 
-                logInfo("plugin", QString("Plugin found in file: ##F2FEFF#%1#").arg(plFile));
-                if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
+            QPluginLoader loader(realFile);
+            QObject *plugin = loader.instance();
+
+            if (plugin)
+            {
+                // Add to the list
+                auto baseInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(plugin);
+
+                if (baseInterface == nullptr)
+                    logError("plugin", LS("error-file-not-plugin"));
+                else
                 {
-                    logInfo("plugin", QString("IExchange plugin found in file: ##F2FEFF#%1#").arg(plFile));
-                    if (!initExchangePlugin(exInterface))
-                    {
-                        loader.unload();
-                        logWarn("plugin", QString("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded").arg(plFile));
-                    }
-                    updatePluginsMenu(exInterface->getPluginUUID(), doc, baseInterface);
-                }
-                else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
-                {
-                    logInfo("plugin", QString("IStatus plugin found in file: ##F2FEFF#%1#").arg(plFile));
+                    m_pluginsData.push_back(baseInterface);
                     // Init the plugin
-                    stInterface->initialization(m_ui->m_statusBar);
-                    updatePluginsMenu(stInterface->getPluginUUID(), doc, baseInterface);
+                    baseInterface->setPluginInterfaces(g_logger, nullptr);
+                    logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
+
+                    if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
+                    {
+                        logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
+                        // Init the plugin
+                        stInterface->initialization(m_ui->m_statusBar);
+                        updatePluginsMenu(stInterface->getPluginUUID(), doc, baseInterface);
+                    }
                 }
             }
+            else
+                loader.unload();
         }
-        else
-            loader.unload();
+    }
+
+    try
+    {
+        xercesc::XMLPlatformUtils::Terminate();
+    } catch (const xercesc::XMLException &ex)
+    {
+        char *message = xercesc::XMLString::transcode(ex.getMessage());
+        qDebug() << "Error during termination!" << message << "\n";
+        xercesc::XMLString::release(&message);
     }
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, const QDomDocument &doc, CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, xercesc::DOMDocument *doc, CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
 {
-    auto uuidStr        = uuid.to_string();
 
-    QDomElement docElem = doc.firstChildElement();
+    auto pluginUuidStr = XMLStr { uuid.to_string().c_str() };
 
-    auto nodeList       = docElem.elementsByTagName("plugin");
+    auto docElem       = doc->getDocumentElement();
+
+    if (docElem == nullptr)
+    {
+        logWarn("plugins", LS("warning-plugins-file-empty"));
+        return;
+    }
+    auto nodeList = docElem->getElementsByTagName(XMLStr { "plugin" });
 
     // This is a recursive function intended to parse the XML File and add all the sub menus
-    auto insertToMenu = [this, &base](const auto &recursive, QMenu *parent, QDomNode &dataNode) -> void { // NOLINT(misc-no-recursion)
-        while (!dataNode.isNull())
+    auto insertToMenu = [this, &base](const auto &recursive, QMenu *parent, xercesc::DOMNode *dataNode) -> void { // NOLINT(misc-no-recursion)
+        auto typeStr = XMLStr { "type" };
+        auto dataStr = XMLStr { "data" };
+        auto nameStr = XMLStr { "name" };
+        auto sepStr  = XMLStr { "sep" };
+        auto subStr  = XMLStr { "sub" };
+
+        while (dataNode)
         {
-            if (dataNode.isElement())
+            if (dataNode->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
             {
-                auto dataElem = dataNode.toElement();
-                if (dataElem.nodeName() != "data")
+                if (!xercesc::XMLString::equals(dataNode->getNodeName(), dataStr))
                 {
-                    dataNode = dataNode.nextSibling();
-                    logWarn("plugins", QString(tr("Invalid node name %1. Was expecting 'data'")).arg(dataElem.nodeName()));
+                    logWarn("plugins", QString(LS("warning-plugin-data-expected")).arg(QString { StrXML { dataNode->getNodeName() } }));
+                    dataNode = dataNode->getNextSibling();
                     continue;
                 }
-                auto type = dataElem.attribute("type");
-                auto name = dataElem.attribute("name");
-                auto id   = dataElem.attribute("id");
-                if (!type.isEmpty())
+
+                auto dataElem = dynamic_cast<xercesc::DOMElement *>(dataNode);
+
+                auto type     = dataElem->getAttributeNode(typeStr);
+                auto name     = dataElem->getAttributeNode(nameStr);
+                //// auto id   = dataElem.getAttribute("id");
+                if (type != nullptr)
                 {
-                    if (type == "sep")
+                    if (xercesc::XMLString::equals(type->getNodeValue(), sepStr))
                         parent->addSeparator();
-                    else if (type == "sub")
+                    else if (xercesc::XMLString::equals(type->getNodeValue(), subStr))
                     {
-                        auto newMenu = new QMenu(name, this);
-                        auto fc      = dataElem.firstChild();
+                        if (name == nullptr || xercesc::XMLString::stringLen(name->getNodeValue()) == 0)
+                        {
+                            logWarn("plugins", QString(LS("warning-plugin-name-expected")).arg(base->getPluginName()));
+                            dataNode = dataNode->getNextSibling();
+                            continue;
+                        }
+
+                        auto newMenu = new QMenu(QString { StrXML { name->getNodeValue() } }, this);
+                        auto fc      = dataElem->getFirstChild();
                         recursive(recursive, newMenu, fc);
                         parent->addMenu(newMenu);
                     }
                 }
                 else
                 {
-                    if (name.isEmpty())
+
+                    if (name == nullptr || xercesc::XMLString::stringLen(name->getNodeValue()) == 0)
                     {
-                        logWarn("plugins", QString(tr("%1 does not implement menu options correctly. The menu name is empty")).arg(id));
-                        return;
+                        logWarn("plugins", QString(LS("warning-plugin-name-expected")).arg(base->getPluginName()));
+                        dataNode = dataNode->getNextSibling();
+                        continue;
                     }
                     else
                     {
-
-                        auto function = base->connectMenu(id);
-                        if (function != nullptr)
-                        {
-                            auto menuAction = new QAction(name);
-                            parent->addAction(menuAction);
-                            connect(menuAction, &QAction::triggered, base->getPluginObject(), function);
-                        }
-                        else
-                            logWarn("plugins", QString(tr("%1 the plugin interface does not implement the menu name %2")).arg(id, name));
+                        //   auto function = base->connectMenu(id);
+                        //   if (function != nullptr)
+                        //   {
+                        auto menuAction = new QAction(QString { StrXML { name->getNodeValue() } });
+                        parent->addAction(menuAction);
+                        //       connect(menuAction, &QAction::triggered, base->getPluginObject(), function);
+                        //   }
+                        //   else
+                        //       logWarn("plugins", QString(tr("%1 the plugin interface does not implement the menu name %2")).arg(id, name));
                     }
                 }
             }
-            dataNode = dataNode.nextSibling();
+
+            dataNode = dataNode->getNextSibling();
         }
     };
 
-    for (int i = 0; i < nodeList.count(); ++i)
+    auto uuidStr = XMLStr { "uuid" };
+    auto menuStr = XMLStr { "menu" };
+    auto nameStr = XMLStr { "name" };
+
+    for (auto i = 0ull; i < nodeList->getLength(); ++i)
     {
-        auto node = nodeList.at(i);
-        if (node.isElement())
+        auto node = nodeList->item(i);
+
+        if (node->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
         {
-            auto elem = node.toElement();
-            auto uuid = elem.attribute("uuid");
-            if (uuid == uuidStr.c_str())
+            auto attributes = node->getAttributes();
+            if (attributes == nullptr || attributes->getLength() == 0ull)
+                continue;
+
+            auto attribute = attributes->getNamedItem(uuidStr);
+            if (attribute == nullptr)
+                continue;
+
+            if (!xercesc::XMLString::equals(attribute->getNodeValue(), pluginUuidStr))
+                continue;
+
+            if (!node->hasChildNodes())
+                continue;
+
+            auto nodeChildren = (dynamic_cast<xercesc::DOMElement *>(node))->getElementsByTagName(menuStr);
+            if (nodeChildren->getLength() == 0)
             {
-                // Parse the menu items
-                auto menuNodeList = elem.elementsByTagName("menu");
-                if (menuNodeList.isEmpty())
-                {
-                    logInfo("plugins", QString(tr("%1 does not implement menu options")).arg(uuid));
-                    return;
-                }
-
-                auto menuNode = menuNodeList.at(0); // Must be one. Everything else will be ignored
-                if (!menuNode.isElement())
-                {
-                    logWarn("plugins", QString(tr("%1 does not implement menu options correctly")).arg(uuid));
-                    return;
-                }
-
-                auto menuElem     = menuNode.toElement();
-                auto mainMenuName = menuElem.attribute("name");
-                if (mainMenuName.isEmpty())
-                {
-                    logWarn("plugins", QString(tr("%1 does not implement menu options correctly. The main menu name is empty")).arg(uuid));
-                    return;
-                }
-
-                auto mainMenu = new QMenu(mainMenuName, this);
-                auto fc       = menuElem.firstChild();
-                insertToMenu(insertToMenu, mainMenu, fc);
-
-                m_ui->m_menuBar->insertMenu(m_ui->m_menuView->menuAction(), mainMenu);
+                logInfo("plugins", QString(LS("info-plugin-no-menus")).arg(base->getPluginName()));
+                continue;
             }
+
+            // This will only use the first menu item, everything else will be ignored
+            auto menuItem       = nodeChildren->item(0);
+
+            auto menuAttributes = menuItem->getAttributes();
+            if (menuAttributes == nullptr || menuAttributes->getLength() == 0ull)
+                continue;
+
+            auto menuNameAttribute = menuAttributes->getNamedItem(nameStr);
+
+            if (menuNameAttribute == nullptr || xercesc::XMLString::stringLen(menuNameAttribute->getNodeValue()) == 0)
+            {
+                logWarn("plugins", QString(LS("warning-plugin-no-menu-name")).arg(base->getPluginName()));
+                continue;
+            }
+
+            auto mainMenu = new QMenu(QString { StrXML { menuNameAttribute->getNodeValue() } }, this);
+
+            insertToMenu(insertToMenu, mainMenu, menuItem->getFirstChild());
+
+            m_ui->m_menuBar->insertMenu(m_ui->m_menuView->menuAction(), mainMenu);
         }
     }
 }
-
-bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
-{
-    logTrace("plugins", "CentaurApp::initExchangePlugin");
-
-    auto uuid    = exchange->getPluginUUID();
-
-    auto uuidStr = uuid.to_string();
-
-    logInfo("plugins", QString("Plugin identified itself with the plid: ##F2FEFF#%1#").arg(uuidStr.c_str()));
-
-    if (!exchange->initialization())
-    {
-        logError("plugins", "Failed to initialize plugin");
-        return false;
-    }
-
-    CENTAUR_NAMESPACE::plugin::uuid global { uuid, uuidStr.c_str() };
-
-    auto list                 = populateExchangeSymbolList(exchange, global.id);
-
-    m_exchangeList[global.id] = { global, exchange, list, exchange->getSymbolListName().first };
-
-    // clang-format off
-    connect(exchange->getPluginObject(), SIGNAL(sgTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
-    connect(exchange->getPluginObject(), SIGNAL(sgOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)), this, SLOT(onOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)));
-
-    // connect(exchange->getPluginObject(), SIGNAL(emitAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)), this, SLOT(onBalanceAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)));
-    // connect(exchange->getPluginObject(), SIGNAL(emitBalanceUpdate(QList<QString>,int)), this, SLOT(onBalanceUpdate(QList<QString>,int)));
-    //  clang-format on
-    return true;
-}
-
-CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
-{
-    logTrace("plugins", "CentaurApp::populateExchangeSymbolList");
-
-    auto widget         = new QWidget();
-    const auto [name, icon] = exchange->getSymbolListName();
-
-    if (icon != nullptr)
-        m_ui->m_ctrlSymbols->addTab(widget, *icon, name);
-    else
-        m_ui->m_ctrlSymbols->addTab(widget, name);
-
-    auto verticalLayout = new QVBoxLayout(widget);
-    verticalLayout->setSpacing(2);
-    verticalLayout->setContentsMargins(2, 2, 2, 2);
-
-    auto editCtrl = new QLineEdit(widget);
-    editCtrl->setFont(QFont("Arial", 13));
-    editCtrl->setPlaceholderText(tr("Search..."));
-    editCtrl->setClearButtonEnabled(true);
-    editCtrl->addAction(m_icnSearch, QLineEdit::LeadingPosition);
-    verticalLayout->addWidget(editCtrl);
-
-    auto symbolsList    = new CenListCtrl(widget);
-    auto itemModel      = new QStandardItemModel(0, 1, widget);
-    auto sortProxyModel = new QSortFilterProxyModel(widget);
-    sortProxyModel->setSourceModel(itemModel);
-    symbolsList->setModel(sortProxyModel);
-    symbolsList->setObjectName(uuidString);
-
-    sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    connect(editCtrl, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
-    connect(symbolsList, &CenListCtrl::sgAddToWatchList, this, &CentaurApp::onAddToWatchList);
-
-    symbolsList->verticalHeader()->setFont(QFont("Arial", 10));
-    symbolsList->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    symbolsList->setGridStyle(Qt::NoPen);
-    symbolsList->setSortingEnabled(true);
-    symbolsList->sortByColumn(0, Qt::AscendingOrder);
-    symbolsList->verticalHeader()->setVisible(false);
-
-    itemModel->setHorizontalHeaderLabels({ tr("Symbol") });
-    itemModel->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
-    itemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-
-    verticalLayout->addWidget(symbolsList);
-
-    auto symbols = exchange->getSymbolList();
-
-    for (const auto &[sym, icon] : symbols)
-    {
-        auto item  = new QStandardItem(sym);
-        int curRow = itemModel->rowCount();
-        item->setFont(QFont("Arial", 10));
-        item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        item->setIcon(*icon);
-
-        itemModel->insertRow(curRow, item);
-    }
-
-    logInfo("plugins", "Exchange list populated");
-
-    return symbolsList;
-}
-
