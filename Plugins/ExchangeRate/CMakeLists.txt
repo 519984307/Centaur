@@ -35,7 +35,7 @@ target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Gui)
 target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(ExchangeRate PRIVATE fmt::fmt)
 target_link_libraries(ExchangeRate PRIVATE /usr/local/opt/cpr/lib/libcpr.dylib)
-
+target_link_libraries(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 
 target_compile_definitions(ExchangeRate PRIVATE EXCHANGERATEPLUGIN_LIBRARY)
 

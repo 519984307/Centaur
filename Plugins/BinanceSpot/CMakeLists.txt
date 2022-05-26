@@ -5,20 +5,24 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.2.1/macos")
-
-
-#set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /usr/local/opt/openssl/lib)
-#set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /usr/local/opt/openssl/include)
-
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui LinguistTools Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui LinguistTools Widgets REQUIRED)
-# Required libraries
+find_package(cpr REQUIRED)
+find_package(FMT REQUIRED)
+find_package(RapidJSON REQUIRED)
 find_package(libwebsockets REQUIRED)
-find_package(fmt REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+
+set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.3.0/macos")
+
+
+find_package(Qt6 COMPONENTS
+        Core
+        Gui
+        Widgets
+        REQUIRED)
 
 
 add_library(BinanceSPOT SHARED
@@ -29,21 +33,16 @@ add_library(BinanceSPOT SHARED
 
 target_include_directories(BinanceSPOT PRIVATE
         include
-        ../../Library/BinanceAPI/include
-        ../include
-        /usr/local/Cellar/rapidjson/1.1.0/include
-        /usr/local/opt/cpr/include
-        /usr/local/opt/openssl/include
-        ${LIBWEBSOCKETS_INCLUDE_DIRS})
+        ../../Library/Exchanges/BinanceAPI/include
+        ../include)
 
 
-target_link_libraries(BinanceSPOT PRIVATE Qt${QT_VERSION_MAJOR}::Gui)
-target_link_libraries(BinanceSPOT PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(BinanceSPOT PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
 target_link_libraries(BinanceSPOT PRIVATE fmt::fmt)
 target_link_libraries(BinanceSPOT PRIVATE ${OPENSSL_LIBRARIES})
-target_link_libraries(BinanceSPOT PRIVATE /usr/local/opt/cpr/lib/libcpr.dylib)
-target_link_libraries(BinanceSPOT PRIVATE /usr/local/opt/libwebsockets/lib/libwebsockets.dylib)
-
+target_link_libraries(BinanceSPOT PRIVATE cpr::cpr)
+target_link_libraries(BinanceSPOT PRIVATE websockets)
+target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
 target_compile_definitions(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)
