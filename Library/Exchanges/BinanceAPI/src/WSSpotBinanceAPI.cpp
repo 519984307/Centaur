@@ -7,29 +7,9 @@
 #include "WSSpotBinanceAPI.hpp"
 #include "Binapi.hpp"
 #include <random>
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wundefined-func-template"
-#pragma clang diagnostic ignored "-Wsigned-enum-bitfield"
-#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-#pragma clang diagnostic ignored "-Wshadow-field-in-constructor"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#endif /*__clang__*/
 
-#include <fmt/chrono.h>
 #include <fmt/color.h>
 #include <fmt/core.h>
-#include <fmt/format.h>
-#include <fmt/os.h>
-#include <fmt/ranges.h>
-#include <fmt/xchar.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
 
 #define SUBSCRIBE_METHOD(stream)            \
     if (!m_running)                         \

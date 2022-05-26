@@ -13,9 +13,10 @@
 #ifndef BINAPI_HPP_
 #define BINAPI_HPP_
 
-#include "BinanceAPIDefs.hpp"
 #include "BinanceAPIGlobal.hpp"
 #include "BinanceAPILimits.hpp"
+//////
+#include "BinanceAPIDefs.hpp"
 
 #include <exception>
 #include <optional>
@@ -81,7 +82,7 @@ namespace BINAPI_NAMESPACE
         ///
         /// \param interval Time interval
         /// \return constexpr std::string_view The string. e.g. fromIntervalToString(BinanceTimeIntervals::i12h) returns std::string_view{"12h"}
-        static constexpr auto fromIntervalToString(const BinanceTimeIntervals &interval) noexcept -> std::string_view
+        static constexpr auto fromIntervalToString(const BINAPI_NAMESPACE::BinanceTimeIntervals &interval) noexcept -> std::string_view
         {
             switch (interval)
             {
@@ -278,7 +279,7 @@ namespace BINAPI_NAMESPACE
         ///                candles.push_back(candles); // Not necessary correct but just to get an idea
         ///            }
         ///
-        T_NODISCARD static auto getCandlesTimesAndLimits(const BinanceTimeIntervals &interval, const uint64_t &startTime, const uint64_t &endTime, uint64_t &totalExpected) noexcept -> std::vector<std::tuple<uint64_t, uint64_t, uint64_t>>;
+        T_NODISCARD static auto getCandlesTimesAndLimits(const BINAPI_NAMESPACE::BinanceTimeIntervals &interval, const uint64_t &startTime, const uint64_t &endTime, uint64_t &totalExpected) noexcept -> std::vector<std::tuple<uint64_t, uint64_t, uint64_t>>;
 
     private:
         std::string_view m_baseURL;

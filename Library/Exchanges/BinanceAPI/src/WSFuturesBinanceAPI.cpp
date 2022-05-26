@@ -10,24 +10,9 @@
 
 #include "Binapi.hpp"
 #include <random>
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wundefined-func-template"
-#pragma clang diagnostic ignored "-Wsigned-enum-bitfield"
-#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-#pragma clang diagnostic ignored "-Wshadow-field-in-constructor"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#endif /*__clang__*/
 
 #include <fmt/color.h>
 #include <fmt/core.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
 
 #define SUBSCRIBE_METHOD(stream)              \
     if (!isRunning())                         \
@@ -64,8 +49,11 @@
     }                                           \
     return -1;
 
-#define JTO_STRING(x, y) \
-    std::string { x[y].GetString(), x[y].GetStringLength() }
+#define JTO_STRING(x, y)                         \
+    std::string                                  \
+    {                                            \
+        x[y].GetString(), x[y].GetStringLength() \
+    }
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -427,7 +415,7 @@ void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::receivedData()
                     .firstTradeId          = cd["f"].GetInt64(),
                     .lastTradeId           = cd["L"].GetInt64()
                 };
-                kline( {value["s"].GetString(), value["s"].GetStringLength()}, value["E"].GetUint64(), bti, cs);
+                kline({ value["s"].GetString(), value["s"].GetStringLength() }, value["E"].GetUint64(), bti, cs);
             }
             else if (type == glstr::g_continuous_kline)
             {
@@ -493,7 +481,7 @@ void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::receivedData()
                     .firstTradeId          = cd["f"].GetInt64(),
                     .lastTradeId           = cd["L"].GetInt64()
                 };
-                continuousKline( {value["ps"].GetString(), value["ps"].GetStringLength()}, value["E"].GetUint64(), ct, bti, cs);
+                continuousKline({ value["ps"].GetString(), value["ps"].GetStringLength() }, value["E"].GetUint64(), ct, bti, cs);
             }
 
             else if (type == glstr::g_24hrMiniTicker)

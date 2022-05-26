@@ -8,28 +8,14 @@
 
 #include "WSFuturesBinanceUser.hpp"
 #include "Binapi.hpp"
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wundefined-func-template"
-#pragma clang diagnostic ignored "-Wsigned-enum-bitfield"
-#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-#pragma clang diagnostic ignored "-Wshadow-field-in-constructor"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#endif /*__clang__*/
-
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
-
-#define JTO_STRING(x, y) \
-    std::string { x[y].GetString(), x[y].GetStringLength() }
+#define JTO_STRING(x, y)                         \
+    std::string                                  \
+    {                                            \
+        x[y].GetString(), x[y].GetStringLength() \
+    }
 
 BINAPI_NAMESPACE::ws::WSFuturesBinanceUser::WSFuturesBinanceUser(const std::string &listenKey, const uint64_t &pingTimer) :
     WSThread("fstream.binance.com", fmt::format("/ws/{}", listenKey))
@@ -100,13 +86,12 @@ void BINAPI_NAMESPACE::ws::WSFuturesBinanceUser::receivedData()
             const auto &objectData = jsonDoc["o"];
             u_order_t clientOrderId { objectData["s"].GetString(), objectData["s"].GetStringLength() };
 
-
             const auto isLiquidation = clientOrderId.starts_with("autoclose-");
             if (isLiquidation)
                 clientOrderId.erase(0, strlen("autoclose-"));
 
             const bool isADLAutoClose = [&clientOrderId]() {
-                if (clientOrderId == "adl_autoclose" )
+                if (clientOrderId == "adl_autoclose")
                 {
                     clientOrderId.clear();
                     return true;
@@ -202,8 +187,8 @@ void BINAPI_NAMESPACE::ws::WSFuturesBinanceUser::receivedData()
                 }(),
                 .commissionAsset = [&objectData]() {
                     if (objectData.FindMember("N") != objectData.MemberEnd())
-                        return u_order_t {objectData["N"].GetString(), objectData["N"].GetStringLength()};
-                    return u_order_t{};
+                        return u_order_t { objectData["N"].GetString(), objectData["N"].GetStringLength() };
+                    return u_order_t {};
                 }(),
                 .tradeTime    = objectData["T"].GetUint64(),
                 .tradeId      = objectData["t"].GetInt64(),
