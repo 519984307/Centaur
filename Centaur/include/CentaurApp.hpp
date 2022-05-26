@@ -19,6 +19,7 @@
 #include "CentaurUIState.hpp"
 #include "Globals.hpp"
 #include "Logger.hpp"
+#include "XMLHelper.hpp"
 #include <QDomDocument>
 #include <chrono>
 #include <memory>
@@ -77,7 +78,7 @@ namespace CENTAUR_NAMESPACE
 
     protected:
         /// \brief Update the menus from the plugins.xml file
-        void updatePluginsMenu(const uuid &uuid, const QDomDocument &doc, plugin::IBase *base) noexcept;
+        void updatePluginsMenu(const uuid &uuid, xercesc::DOMDocument *doc, plugin::IBase *base) noexcept;
 
     protected:
         bool initExchangePlugin(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange) noexcept;
