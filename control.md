@@ -12,7 +12,7 @@
 
 - Orderbook window
     - Depth chart
-- Symbols window
+- Symbols window (Exchange Window)
 - Candlestick charts
 
 ### Interoperability between plugins and clients applications
