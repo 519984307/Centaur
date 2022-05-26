@@ -69,6 +69,11 @@ cen::uuid::uuid(const std::string &str) :
         throw std::runtime_error("uuid string is empty");
 }
 
+cen::uuid::uuid() :
+    uuid_bytes {}
+{
+}
+
 auto cen::uuid::to_string(bool upper) const -> std::string
 {
     std::string str;
@@ -90,4 +95,3 @@ auto cen::uuid::to_string(bool upper) const -> std::string
     str += "}";
     return str;
 }
-

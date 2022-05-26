@@ -29,6 +29,8 @@ namespace CENTAUR_NAMESPACE
         /// \param str The string must have the curly braces and dashes
         explicit uuid(const std::string &str);
 
+        uuid();
+
     public:
         /// \brief Returns the string bytes
         /// \return A lower case of the uuid string
@@ -38,7 +40,8 @@ namespace CENTAUR_NAMESPACE
         /// \tparam generator A valid c++ random generator (mt19937, mt19937_64, minstd_rand, minstd_rand0, ranlux24, ranlux48)
         /// \return A random UUID
         template <typename generator>
-        C_NODISCARD static auto generate() -> cen::uuid requires CENTAUR_VALID_UUID_GENERATORS
+        C_NODISCARD static auto generate() -> cen::uuid
+            requires CENTAUR_VALID_UUID_GENERATORS
         {
             std::string uuid;
             uuid.reserve(40);
@@ -59,7 +62,7 @@ namespace CENTAUR_NAMESPACE
             return cen::uuid(uuid);
         }
 
-    private :
+    private:
         // clang-format off
         static constexpr std::array<std::string_view, 256> uuid_chars_lower = {
             "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
