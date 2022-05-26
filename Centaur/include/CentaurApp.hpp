@@ -116,7 +116,7 @@ namespace CENTAUR_NAMESPACE
 
         // Plugins
     private:
-        std::map<QString /*uuid string*/, ExchangeInformation> m_exchangeList;
+        std::map<QString, ExchangeInformation> m_exchangeList;
         std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item
         std::pair<QString, QString> m_currentViewOrderbookSymbol;
 

@@ -112,8 +112,17 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                     // Init the plugin
                     baseInterface->setPluginInterfaces(g_logger, nullptr);
                     logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
-
-                    if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
+                    if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
+                    {
+                        logInfo("plugin", QString(LS("info-plugin-iexchange")).arg(plFile));
+                        if (!initExchangePlugin(exInterface))
+                        {
+                            loader.unload();
+                            logWarn("plugin", QString(LS("warning-iexchange-plugin-unloaded")).arg(plFile));
+                        }
+                        updatePluginsMenu(exInterface->getPluginUUID(), doc, baseInterface);
+                    }
+                    else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                     {
                         logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
                         // Init the plugin
@@ -276,4 +285,120 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, xercesc:
             m_ui->m_menuBar->insertMenu(m_ui->m_menuView->menuAction(), mainMenu);
         }
     }
+}
+
+bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
+{
+    logTrace("plugins", "CentaurApp::initExchangePlugin");
+
+    const auto uuid = exchange->getPluginUUID();
+
+    if (!exchange->initialization())
+    {
+        logError("plugins", LS("error-iexchange-plugin-init"));
+        return false;
+    }
+
+    auto list                                            = populateExchangeSymbolList(exchange, uuid.to_string().c_str());
+
+    m_exchangeList[QString { uuid.to_string().c_str() }] = ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first };
+
+    // clang-format off
+    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
+    connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)), this, SLOT(onOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)));
+    //connect(exchange->getPluginObject(), SIGNAL(emitAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)), this, SLOT(onBalanceAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)));
+    //connect(exchange->getPluginObject(), SIGNAL(emitBalanceUpdate(QList<QString>,int)), this, SLOT(onBalanceUpdate(QList<QString>,int)));
+    //  clang-format on
+
+    return true;
+}
+
+CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
+{
+    logTrace("plugins", "CentaurApp::populateExchangeSymbolList");
+
+    // Create Fonts
+    QFont headerFont {
+        g_globals->visuals.dockSymbols->headerFont.name,
+        g_globals->visuals.dockSymbols->headerFont.size,
+        g_globals->visuals.dockSymbols->headerFont.weight,
+        g_globals->visuals.dockSymbols->headerFont.italic
+    };
+    if (g_globals->visuals.dockSymbols->headerFont.spacing > 0)
+        headerFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->headerFont.spacing);
+
+    QFont searchFont {
+        g_globals->visuals.dockSymbols->searchFont.name,
+        g_globals->visuals.dockSymbols->searchFont.size,
+        g_globals->visuals.dockSymbols->searchFont.weight,
+        g_globals->visuals.dockSymbols->searchFont.italic
+    };
+
+    if (g_globals->visuals.dockSymbols->searchFont.spacing > 0)
+        searchFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->searchFont.spacing);
+
+    auto widget             = new QWidget();
+    const auto [name, icon] = exchange->getSymbolListName();
+
+    if (icon != nullptr)
+        m_ui->tabSymbols->addTab(widget, *icon, name);
+    else
+        m_ui->tabSymbols->addTab(widget, name);
+
+    auto verticalLayout = new QVBoxLayout(widget);
+    verticalLayout->setSpacing(2);
+    verticalLayout->setContentsMargins(2, 2, 2, 2);
+
+    auto editCtrl = new QLineEdit(widget);
+    editCtrl->setFont(searchFont);
+    editCtrl->setPlaceholderText(LS("ui-docks-search"));
+    editCtrl->setClearButtonEnabled(true);
+    editCtrl->addAction(g_globals->icons.searchIcon, QLineEdit::LeadingPosition);
+    if (!g_globals->visuals.dockSymbols->searchCSS.isEmpty())
+        editCtrl->setStyleSheet(g_globals->visuals.dockSymbols->searchCSS);
+    verticalLayout->addWidget(editCtrl);
+
+    auto symbolsList    = new CenListCtrl(widget);
+    auto itemModel      = new QStandardItemModel(0, 1, widget);
+    auto sortProxyModel = new QSortFilterProxyModel(widget);
+    if (!g_globals->visuals.dockSymbols->headerCSS.isEmpty())
+        symbolsList->setStyleSheet(g_globals->visuals.dockSymbols->headerCSS);
+
+    sortProxyModel->setSourceModel(itemModel);
+    symbolsList->setModel(sortProxyModel);
+    symbolsList->setObjectName(uuidString);
+
+    sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    connect(editCtrl, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
+    connect(symbolsList, &CenListCtrl::sgAddToWatchList, this, &CentaurApp::onAddToWatchList);
+
+    symbolsList->verticalHeader()->setFont(headerFont);
+    symbolsList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    symbolsList->setGridStyle(Qt::NoPen);
+    symbolsList->setSortingEnabled(true);
+    symbolsList->sortByColumn(0, Qt::AscendingOrder);
+    symbolsList->verticalHeader()->setVisible(false);
+
+    itemModel->setHorizontalHeaderLabels({ tr("Symbol") });
+    itemModel->horizontalHeaderItem(0)->setFont(headerFont);
+    itemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
+
+    verticalLayout->addWidget(symbolsList);
+
+    auto symbols = exchange->getSymbolList();
+
+    for (const auto &[sym, icon] : symbols)
+    {
+        auto item  = new QStandardItem(sym);
+        int curRow = itemModel->rowCount();
+        item->setFont(QFont("Arial", 10));
+        item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        item->setIcon(*icon);
+
+        itemModel->insertRow(curRow, item);
+    }
+
+    logInfo("plugins", "Exchange list populated");
+
+    return symbolsList;
 }
