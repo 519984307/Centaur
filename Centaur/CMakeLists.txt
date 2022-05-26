@@ -55,7 +55,7 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
-        ui/PluginsDialog.ui include/crc64.hpp src/CentaurLoadData.cpp)
+        ui/PluginsDialog.ui include/crc64.hpp src/CentaurLoadData.cpp include/XMLHelper.hpp)
 
 set_target_properties(Centaur PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER centaur.project.com

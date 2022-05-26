@@ -44,6 +44,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadConfigurationData() noexcept
     // Load visuals elements for the user interface
     loadVisualsUI();
 
+
     try
     {
         xercesc::XMLPlatformUtils::Terminate();

@@ -14,12 +14,12 @@
 #define CENTAUR_GLOBALS_HPP
 
 #include "../../Centaur.hpp"
+#include "XMLHelper.hpp"
 #include "crc64.hpp"
 #include <QFont>
 #include <QIcon>
 #include <QString>
 #include <unordered_map>
-#include <xercesc/dom/DOM.hpp>
 
 namespace CENTAUR_NAMESPACE
 {

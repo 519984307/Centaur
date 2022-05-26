@@ -20,49 +20,8 @@
 #include <xercesc/parsers/XercesDOMParser.hpp>
 #include <xercesc/sax/HandlerBase.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/util/XMLString.hpp>
 
 CENTAUR_NAMESPACE::Globals *CENTAUR_NAMESPACE::g_globals { nullptr };
-
-namespace
-{
-    struct XMLStr
-    {
-        explicit XMLStr(const char *ptr) :
-            m_ptr { xercesc::XMLString::transcode(ptr) } { }
-        ~XMLStr()
-        {
-            xercesc::XMLString::release(&m_ptr);
-        }
-
-        operator XMLCh *() const
-        {
-            return m_ptr;
-        }
-
-    private:
-        XMLCh *m_ptr;
-    };
-
-    struct StrXML
-    {
-        explicit StrXML(const XMLCh *ptr) :
-            m_ptr { xercesc::XMLString::transcode(ptr) } { }
-        ~StrXML()
-        {
-            xercesc::XMLString::release(&m_ptr);
-        }
-
-        operator char *() const
-        {
-            return m_ptr;
-        }
-
-    private:
-        char *m_ptr;
-    };
-
-} // namespace
 
 auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noexcept -> ErrorDetail
 {
@@ -148,7 +107,7 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
 
 namespace
 {
-    // clang-format off
+// clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF(exit-time-destructors)
