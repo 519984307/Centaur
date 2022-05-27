@@ -1,17 +1,18 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
 
 find_package(FMT CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(XercesC REQUIRED)
 
-set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.3.0/macos")
-set(QWT_PATH ${QWT_PATH} /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6)
+set(CMAKE_PREFIX_PATH /Volumes/RicardoESSD/Qt/6.3.0/macos)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+#set(QWT_PATH ${QWT_PATH} /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6)
 
 
 find_package(Qt6 COMPONENTS
@@ -21,8 +22,7 @@ find_package(Qt6 COMPONENTS
         Xml
         REQUIRED)
 
-
-find_library(QWT Qwt /Volumes/RicardoESSD/dev/qwt/release/lib)
+#find_library(QWT Qwt /Volumes/RicardoESSD/dev/qwt/release/lib)
 
 
 IF (WIN32)
@@ -67,17 +67,18 @@ target_include_directories(Centaur PRIVATE
         ../../Plugins/include
         ../../Library/Protocol/include
         ../../Library/uuid/include
-        ${QWT}/Headers)
+        #${QWT}/Headers
+        )
 
 target_link_libraries(Centaur PRIVATE fmt::fmt)
 target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml)
-target_link_libraries(Centaur PRIVATE ${QWT})
+#target_link_libraries(Centaur PRIVATE ${QWT})
 target_link_libraries(Centaur PRIVATE SQLite3)
 target_link_libraries(Centaur PRIVATE XercesC::XercesC)
 
 
 # Local Libraries
-target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+#target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 
 

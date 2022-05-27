@@ -546,12 +546,6 @@ QTableView::item:selected{
      <property name="bottomMargin">
       <number>2</number>
      </property>
-     <item>
-      <widget class="QwtPlot" name="m_bidsDepth" native="true"/>
-     </item>
-     <item>
-      <widget class="QwtPlot" name="m_asksDepth" native="true"/>
-     </item>
     </layout>
    </widget>
   </widget>
@@ -673,12 +667,6 @@ QTableView::item:selected{
    <class>CENTAUR_NAMESPACE::CenListCtrl</class>
    <extends>QTableView</extends>
    <header>CenListCtrl.hpp</header>
-  </customwidget>
-  <customwidget>
-   <class>QwtPlot</class>
-   <extends>QWidget</extends>
-   <header location="global">qwt_plot.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>
