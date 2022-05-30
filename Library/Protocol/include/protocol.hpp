@@ -82,17 +82,45 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     };
 
     /// \brief Object encryption as well af the generation of public and private keys
-    struct Encryption
+    struct Encryption final
     {
-    public:
-        /// \brief Generate the private key
-        /// \param file Path of the file where the private key is going to be stored
-        static auto generatePrivateKey(const std::string &file) -> void;
+        enum class BinaryBase
+        {
+            Base64,
+            Base16, /// Hexadecimal format
+        };
 
-        /// \brief Generate a public key from a private key stored in a file
-        /// \param file Path of the where the public key is going to be stored
-        /// \param privateKeyFile  Private key file
-        static auto generatePublicKey(const std::string &file, const std::string &privateKeyFile) -> void;
+    public:
+        Encryption();
+        ~Encryption();
+
+    public:
+        /// \brief Loads and validates a private key. Expect an exception if an error occur
+        /// \param file File name
+        auto loadPrivateKey(const std::string &file) -> void;
+
+        /// \brief Loads and validates a public key. Expect an exception if an error occur
+        /// \param file File name
+        auto loadPublicKey(const std::string &file) -> void;
+
+        /// \brief Encrypt with the private key
+        /// \param plainText Data to encrypt
+        /// \param base Return data in this formatted string
+        /// \return Return Base64 or Base156 according
+        auto encryptPrivate(const std::string &plainText, const BinaryBase base) -> std::string;
+
+        auto decryptPrivate(const std::string &cipherText, const BinaryBase base) -> std::string;
+
+        auto encryptPublic(const std::string &plainText, const BinaryBase base) -> std::string;
+
+        /// \brief Decrypt with the public key
+        /// \param cipherText Data to decrypt
+        /// \return an array of the decrypted data
+        auto decryptPublic(const std::string &cipherText, const BinaryBase base) -> std::string;
+
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> pimpl;
     };
 
     /// \brief Data compression
@@ -109,7 +137,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     using json_null_type_t = json_null_type<void>;
 
     template <typename T>
-    requires std::integral<T> || std::floating_point<T> || std::same_as<std::string, T> || std::same_as<json_null_type_t, T>
+        requires std::integral<T> || std::floating_point<T> || std::same_as<std::string, T> || std::same_as<json_null_type_t, T>
     struct Field
     {
         using field_type = T;
@@ -143,8 +171,9 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
 
     public:
         template <typename T>
-        requires std::derived_from<Field<typename Field<typename T::field_type>::field_type>, T>
-        auto addField(T *f) -> void
+            requires std::derived_from<Field<typename Field<typename T::field_type>::field_type>,
+                T> auto
+            addField(T *f) -> void
         {
             m_types.push_back({ f });
         }

@@ -10,7 +10,7 @@
 #ifndef DONT_INCLUDE_RAPIDJSON
 #ifdef __clang__
 // clang-format off
-CENTAUR_WARN_PUSH
+CENTAUR_WARN_PUSH()
 CENTAUR_WARN_OFF(zero-as-null-pointer-constant)
 CENTAUR_WARN_OFF(extra-semi-stmt)
 CENTAUR_WARN_OFF(shadow)
@@ -29,7 +29,7 @@ CENTAUR_WARN_OFF(deprecated-declarations)
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/schema.h>
 #ifdef __clang__
-CENTAUR_WARN_POP
+CENTAUR_WARN_POP()
 #endif /*__clang__*/
 #endif /*#DONT_INCLUDE_RAPIDJSON*/
 
