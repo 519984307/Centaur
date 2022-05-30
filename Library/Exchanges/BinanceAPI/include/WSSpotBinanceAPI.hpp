@@ -14,15 +14,16 @@
 #include "BinanceAPIGlobal.hpp"
 //
 #include "BinanceAPIDefs.hpp"
+#include "WSThread.hpp"
 
 namespace BINAPI_NAMESPACE::ws
 {
 
-    class BINAPI_EXPORT WSSpotBinanceAPI
+    class BINAPI_EXPORT WSSpotBinanceAPI : public WSThread
     {
     public:
-        WSSpotBinanceAPI();
-        virtual ~WSSpotBinanceAPI() = default;
+        WSSpotBinanceAPI(std::string endpoint);
+        ~WSSpotBinanceAPI() override = default;
 
     protected:
         /// \brief Subscribe to a stream. thread-safe
@@ -52,7 +53,7 @@ namespace BINAPI_NAMESPACE::ws
         ///         See constructEndPoint example.
         ///         if endpoint is ill formed the connection will fail.
         /// \remark std::runtime_error will be throw if run is already running
-        void run(const std::string &endpoint, const bool &multipleStreams = false);
+        //  void run(const std::string &endpoint, const bool &multipleStreams = false);
 
         /// Receiving methods
         /// Override any of this methods to process the received data
@@ -116,16 +117,16 @@ namespace BINAPI_NAMESPACE::ws
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
-        /// \brief Stop receiving. The function is thread safe
-        void terminate();
+        /*        /// \brief Stop receiving. The function is thread safe
+                void terminate();
 
-    public:
-        /// \brief Called when the WebSocket is connected
-        virtual void connected() = 0;
-        /// \brief Called when the WebSocket gets closed
-        virtual void close() = 0;
-        /// \brief Called when the WebSocket failed to connect
-        virtual void connectionError() = 0;
+            public:
+                /// \brief Called when the WebSocket is connected
+                virtual void connected() = 0;
+                /// \brief Called when the WebSocket gets closed
+                virtual void close() = 0;
+                /// \brief Called when the WebSocket failed to connect
+                virtual void connectionError() = 0;*/
 
         /// All subscription methods are thread-safe
     public:
@@ -207,20 +208,15 @@ namespace BINAPI_NAMESPACE::ws
         int unsubscribeDiffBookDepth(const std::string &symbol, const int &update);
 
     private:
-        lws_context *m_context { nullptr };
-        lws_protocols m_protocols[2];
-        lws *m_lws { nullptr };
-        std::atomic_bool m_running { false };
-        std::atomic_bool m_terminate { false };
         std::atomic_bool m_combined { false };
         std::set<int> m_subscribeIds;
         std::set<int> m_unsubscribeIds;
 
     private:
-        void sendData(const std::string &msg);
-        void receivedData(const std::string &msg);
-        int randNumber(const bool &subscribe = true);
-        static int eventManager(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
+        //    void sendData(const std::string &msg);
+        auto receivedData() -> void override;
+        //    int randNumber(const bool &subscribe = true);
+        //    static int eventManager(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
     };
 } // namespace BINAPI_NAMESPACE::ws
 #endif // WSSPOTBINANCEAPI_HPP
