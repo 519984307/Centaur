@@ -21,6 +21,11 @@
 #include <QString>
 #include <unordered_map>
 
+namespace CENTAUR_NAMESPACE::Ui
+{
+    class CentaurApp;
+} // namespace CENTAUR_NAMESPACE::Ui
+
 namespace CENTAUR_NAMESPACE
 {
     struct Globals
@@ -39,6 +44,93 @@ namespace CENTAUR_NAMESPACE
             QIcon downArrow { ":/img/res/img/downArrow.svg" };
             QIcon searchIcon { ":/svg/edit/search_gray" };
         } icons;
+
+        struct Fonts
+        {
+            struct SymbolsDock
+            {
+                QFont headerFont;
+                QFont tableFont;
+            } symbolsDock;
+            struct OrderBookDock
+            {
+                struct AsksSide
+                {
+                    QFont tableFont;
+                    QFont headerFont;
+                } asksSide;
+                struct BidsSide
+                {
+                    QFont tableFont;
+                    QFont headerFont;
+                } bidsSide;
+            } orderBookDock;
+        } fonts;
+
+        struct Colors
+        {
+            struct SymbolsDock
+            {
+                QColor latencyLow;
+                QColor latencyMedium;
+                QColor latencyHigh;
+                QColor priceUp;
+                QColor priceDown;
+                QColor priceNeutral;
+            } symbolsDockColors;
+
+            struct OrderBookDock
+            {
+                struct AsksSide
+                {
+                    QColor latencyLow;
+                    QColor latencyMedium;
+                    QColor latencyHigh;
+                } asksSide;
+
+                struct BidsSide
+                {
+                    QColor latencyLow;
+                    QColor latencyMedium;
+                    QColor latencyHigh;
+                } bidsSide;
+            } orderBookDockColors;
+        } colors;
+
+        struct Parameters
+        {
+            struct SymbolsDock
+            {
+                uint64_t latencyLowMin;
+                uint64_t latencyLowMax;
+                uint64_t latencyMediumMin;
+                uint64_t latencyMediumMax;
+                uint64_t latencyHighMin;
+                uint64_t latencyHighMax;
+            } symbolsDockParameters;
+
+            struct OrderBookDock
+            {
+                struct AsksSide
+                {
+                    uint64_t latencyLowMin;
+                    uint64_t latencyLowMax;
+                    uint64_t latencyMediumMin;
+                    uint64_t latencyMediumMax;
+                    uint64_t latencyHighMin;
+                    uint64_t latencyHighMax;
+                } asksSide;
+                struct BidsSide
+                {
+                    uint64_t latencyLowMin;
+                    uint64_t latencyLowMax;
+                    uint64_t latencyMediumMin;
+                    uint64_t latencyMediumMax;
+                    uint64_t latencyHighMin;
+                    uint64_t latencyHighMax;
+                } bidsSide;
+            } orderBookParameters;
+        } params;
 
         struct Locale
         {
@@ -67,10 +159,7 @@ namespace CENTAUR_NAMESPACE
                 xmlDocumentInvalid
             };
 
-            C_NODISCARD auto loadVisualsUI() noexcept -> ErrorDetail;
-
-            static auto allocateVisuals() noexcept -> void;
-            static auto releaseVisuals() noexcept -> void;
+            C_NODISCARD auto loadVisualsUI(Ui::CentaurApp *ui) noexcept -> ErrorDetail;
 
             struct VisualsFont
             {
@@ -81,18 +170,8 @@ namespace CENTAUR_NAMESPACE
                 qreal spacing { 0.0 };
             };
 
-            struct DockSymbols
-            {
-                VisualsFont headerFont;
-                VisualsFont tableFont;
-                VisualsFont searchFont;
-                QString headerCSS;
-                QString tableCSS;
-                QString searchCSS;
-            } * dockSymbols { nullptr };
-
         private:
-            auto parseVisuals(xercesc::DOMDocument *doc) -> void;
+            auto parseVisuals(xercesc::DOMDocument *doc, Ui::CentaurApp *ui) -> void;
 
         } visuals;
     };

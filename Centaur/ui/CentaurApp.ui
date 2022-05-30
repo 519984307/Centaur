@@ -194,23 +194,24 @@
           <widget class="CENTAUR_NAMESPACE::CenListCtrl" name="listWatchList">
            <property name="styleSheet">
             <string notr="true">
-QTableView QTableCornerButton::section {
-    background: rgb(48,48,48);
-    border: 0px;
-}
+                                                    QTableView QTableCornerButton::section {
+                                                    background: rgb(48,48,48);
+                                                    border: 0px;
+                                                    }
 
-QTableView::item {
-	border: 0px;
-	min-height: 100px;
-}
+                                                    QTableView::item {
+                                                    border: 0px;
+                                                    min-height: 100px;
+                                                    }
 
-QTableView::item:hover{
-	background-color: rgb(48,48,48);
-}
+                                                    QTableView::item:hover{
+                                                    background-color: rgb(48,48,48);
+                                                    }
 
-QTableView::item:selected{
-	background-color: rgb(78,78,78);
-}</string>
+                                                    QTableView::item:selected{
+                                                    background-color: rgb(78,78,78);
+                                                    }
+                                                </string>
            </property>
            <property name="sortingEnabled">
             <bool>true</bool>
@@ -353,7 +354,7 @@ QTableView::item:selected{
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="m_dockOrderbookBids">
+  <widget class="QDockWidget" name="dockOrderbookBids">
    <property name="floating">
     <bool>false</bool>
    </property>
@@ -363,8 +364,8 @@ QTableView::item:selected{
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="m_dockOrderbookBidsLayout">
-    <layout class="QVBoxLayout" name="m_orderBookBidsLayout">
+   <widget class="QWidget" name="dockOrderbookBidsLayout">
+    <layout class="QVBoxLayout" name="orderBookBidsLayout">
      <property name="spacing">
       <number>2</number>
      </property>
@@ -381,16 +382,17 @@ QTableView::item:selected{
       <number>2</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="m_bidsGrid">
+      <layout class="QHBoxLayout" name="bidsGrid">
        <item>
-        <widget class="QLabel" name="m_bidsSymbol">
+        <widget class="QLabel" name="bidsSymbol">
          <property name="font">
           <font/>
          </property>
          <property name="styleSheet">
           <string notr="true">QLabel{
                                             color: rgb(61, 90, 255);
-                                            }</string>
+                                            }
+                                        </string>
          </property>
          <property name="text">
           <string/>
@@ -398,7 +400,7 @@ QTableView::item:selected{
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="m_bidsLatency">
+        <widget class="QLabel" name="bidsLatency">
          <property name="font">
           <font>
            <pointsize>11</pointsize>
@@ -415,7 +417,7 @@ QTableView::item:selected{
       </layout>
      </item>
      <item>
-      <widget class="QTableWidget" name="m_ctrlBids">
+      <widget class="QTableWidget" name="bidsTable">
        <property name="styleSheet">
         <string notr="true"/>
        </property>
@@ -439,15 +441,15 @@ QTableView::item:selected{
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="m_dockOrderbookAsks">
+  <widget class="QDockWidget" name="dockOrderbookAsks">
    <property name="windowTitle">
     <string>Orderbook - Asks</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="m_dockOrderbookAsksLayout">
-    <layout class="QVBoxLayout" name="m_orderBookAsksLayout">
+   <widget class="QWidget" name="dockOrderbookAsksLayout">
+    <layout class="QVBoxLayout" name="orderBookAsksLayout">
      <property name="spacing">
       <number>2</number>
      </property>
@@ -464,16 +466,17 @@ QTableView::item:selected{
       <number>2</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="m_asksGrid">
+      <layout class="QHBoxLayout" name="asksGrid">
        <item>
-        <widget class="QLabel" name="m_asksSymbol">
+        <widget class="QLabel" name="asksSymbol">
          <property name="font">
           <font/>
          </property>
          <property name="styleSheet">
           <string notr="true">QLabel{
                                             color: rgb(61, 90, 255);
-                                            }</string>
+                                            }
+                                        </string>
          </property>
          <property name="text">
           <string/>
@@ -481,7 +484,7 @@ QTableView::item:selected{
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="m_asksLatency">
+        <widget class="QLabel" name="asksLatency">
          <property name="font">
           <font>
            <pointsize>11</pointsize>
@@ -498,7 +501,7 @@ QTableView::item:selected{
       </layout>
      </item>
      <item>
-      <widget class="QTableWidget" name="m_ctrlAsks">
+      <widget class="QTableWidget" name="asksTable">
        <property name="styleSheet">
         <string notr="true">QTableView:item{ font-size: 10pt;}</string>
        </property>

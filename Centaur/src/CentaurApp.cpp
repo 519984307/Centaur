@@ -53,8 +53,6 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     // Load plugins
     loadPlugins();
 
-    g_globals->visuals.releaseVisuals();
-
     END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
     logInfo("app", QString(LS("trace-initialize-time")).arg(initializationTime.count(), 0, 'f', 4));
 }
@@ -81,35 +79,6 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 {
     logTrace("app", "CENTAUR_NAMESPACE::CentaurApp::initializeInterface()");
 
-    // Create Fonts
-    QFont headerFont {
-        g_globals->visuals.dockSymbols->headerFont.name,
-        g_globals->visuals.dockSymbols->headerFont.size,
-        g_globals->visuals.dockSymbols->headerFont.weight,
-        g_globals->visuals.dockSymbols->headerFont.italic
-    };
-    if (g_globals->visuals.dockSymbols->headerFont.spacing > 0)
-        headerFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->headerFont.spacing);
-
-    QFont searchFont {
-        g_globals->visuals.dockSymbols->searchFont.name,
-        g_globals->visuals.dockSymbols->searchFont.size,
-        g_globals->visuals.dockSymbols->searchFont.weight,
-        g_globals->visuals.dockSymbols->searchFont.italic
-    };
-
-    if (g_globals->visuals.dockSymbols->searchFont.spacing > 0)
-        searchFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->searchFont.spacing);
-
-    // Set fonts
-    m_ui->editWatchListFilter->setFont(searchFont);
-
-    // Set stylesheets
-    if (!g_globals->visuals.dockSymbols->headerCSS.isEmpty())
-        m_ui->listWatchList->setStyleSheet(g_globals->visuals.dockSymbols->headerCSS);
-    if (!g_globals->visuals.dockSymbols->searchCSS.isEmpty())
-        m_ui->editWatchListFilter->setStyleSheet(g_globals->visuals.dockSymbols->searchCSS);
-
     auto *aboutMenu         = new QMenu,
          *preferencesMenu   = new QMenu,
          *pluginsMenu       = new QMenu;
@@ -131,6 +100,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 
     m_ui->m_statusBar->setStyleSheet("QStatusBar::item { border: 2px; }");
 
+    m_ui->tabSymbols->setTabText(m_ui->tabSymbols->indexOf(m_ui->tabWatchList), LS("ui-docks-watchlist"));
     // Menu actions
     connect(m_ui->m_actionTileWindows, SIGNAL(triggered()), this, SLOT(onActionTileWindowsTriggered()));
     connect(m_ui->m_actionCascadeWindows, SIGNAL(triggered()), this, SLOT(onActionCascadeWindowsTriggered()));
@@ -149,8 +119,8 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->m_actionSymbols->setChecked(!m_ui->dockSymbols->isHidden());
     m_ui->m_actionLogging->setChecked(!m_ui->m_dockLogging->isHidden());
     m_ui->m_actionBalances->setChecked(!m_ui->m_dockBalances->isHidden());
-    m_ui->m_actionBids->setChecked(!m_ui->m_dockOrderbookBids->isHidden());
-    m_ui->m_actionAsks->setChecked(!m_ui->m_dockOrderbookAsks->isHidden());
+    m_ui->m_actionBids->setChecked(!m_ui->dockOrderbookBids->isHidden());
+    m_ui->m_actionAsks->setChecked(!m_ui->dockOrderbookAsks->isHidden());
     m_ui->m_actionDepth->setChecked(!m_ui->m_dockDepth->isHidden());
 
     // Init the watchlist QLineEdit
@@ -162,14 +132,14 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->listWatchList->setModel(sortProxyModel);
     m_ui->listWatchList->setRemove();
     m_ui->listWatchList->allowClickMessages();
-    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
-    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgSetSelection, this, &CentaurApp::onSetWatchlistSelection);
-    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::sgRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
+    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::snRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
+    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::snSetSelection, this, &CentaurApp::onSetWatchlistSelection);
+    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::snRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
 
     sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
     connect(m_ui->editWatchListFilter, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
 
-    m_ui->listWatchList->verticalHeader()->setFont(QFont("Arial", 10));
+    m_ui->listWatchList->verticalHeader()->setFont(g_globals->fonts.symbolsDock.headerFont);
     m_ui->listWatchList->sortByColumn(0, Qt::AscendingOrder);
     m_ui->listWatchList->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
@@ -180,17 +150,17 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
             LS("ui-docks-latency"),
             "UUID" });
 
-    m_watchlistItemModel->horizontalHeaderItem(0)->setFont(headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    m_watchlistItemModel->horizontalHeaderItem(1)->setFont(headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignLeft);
-    m_watchlistItemModel->horizontalHeaderItem(2)->setFont(headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignLeft);
-    m_watchlistItemModel->horizontalHeaderItem(3)->setFont(headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(3)->setTextAlignment(Qt::AlignLeft);
+    m_watchlistItemModel->horizontalHeaderItem(0)->setFont(g_globals->fonts.symbolsDock.headerFont);
+    m_watchlistItemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_watchlistItemModel->horizontalHeaderItem(1)->setFont(g_globals->fonts.symbolsDock.headerFont);
+    m_watchlistItemModel->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_watchlistItemModel->horizontalHeaderItem(2)->setFont(g_globals->fonts.symbolsDock.headerFont);
+    m_watchlistItemModel->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_watchlistItemModel->horizontalHeaderItem(3)->setFont(g_globals->fonts.symbolsDock.headerFont);
+    m_watchlistItemModel->horizontalHeaderItem(3)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     // This column, although hidden, will be used to find uuid source of all watchlist items
-    m_watchlistItemModel->horizontalHeaderItem(4)->setFont(headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignLeft);
+    m_watchlistItemModel->horizontalHeaderItem(4)->setFont(g_globals->fonts.symbolsDock.headerFont);
+    m_watchlistItemModel->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_ui->listWatchList->setColumnHidden(4, true);
 
     m_ui->listWatchList->setColumnWidth(0, m_uiState.wlcols.symbol);
@@ -228,35 +198,36 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     logger->setItemDelegateForColumn(5, new HTMLDelegate);
 
     // Orderbook asks
-    QString styleSheet = "::section {" // "QHeaderView::section {"
-                         "font-family: arial;"
-                         "font-size: 10px; }";
+    //    QString styleSheet = "::section {" // "QHeaderView::section {"
+    //                        "font-family: arial;"
+    //                       "font-size: 10px; }";
 
-    m_ui->m_ctrlAsks->setHorizontalHeaderLabels({ "Price", "Amount", "Total" });
-    m_ui->m_ctrlAsks->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlAsks->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    m_ui->m_ctrlAsks->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlAsks->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
-    m_ui->m_ctrlAsks->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlAsks->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
-    m_ui->m_ctrlAsks->setColumnWidth(0, m_uiState.askscols.price);
-    m_ui->m_ctrlAsks->setColumnWidth(1, m_uiState.askscols.amount);
-    m_ui->m_ctrlAsks->setColumnWidth(2, m_uiState.askscols.total);
-    m_ui->m_ctrlAsks->verticalHeader()->setStyleSheet(styleSheet);
+    m_ui->asksTable->setHorizontalHeaderLabels({ "Price", "Amount", "Total" });
+    m_ui->asksTable->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
+    m_ui->asksTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_ui->asksTable->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
+    m_ui->asksTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
+    m_ui->asksTable->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
+    m_ui->asksTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
+    m_ui->asksTable->setColumnWidth(0, m_uiState.askscols.price);
+    m_ui->asksTable->setColumnWidth(1, m_uiState.askscols.amount);
+    m_ui->asksTable->setColumnWidth(2, m_uiState.askscols.total);
+    //   m_ui->asksTable->verticalHeader()->setStyleSheet(styleSheet);
 
     // Orderbook bids
-    m_ui->m_ctrlBids->setHorizontalHeaderLabels({ "Price", "Amount", "Total" });
-    m_ui->m_ctrlBids->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlBids->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    m_ui->m_ctrlBids->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlBids->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
-    m_ui->m_ctrlBids->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
-    m_ui->m_ctrlBids->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
-    m_ui->m_ctrlBids->setColumnWidth(0, m_uiState.bidscols.price);
-    m_ui->m_ctrlBids->setColumnWidth(1, m_uiState.bidscols.amount);
-    m_ui->m_ctrlBids->setColumnWidth(2, m_uiState.bidscols.total);
-    m_ui->m_ctrlBids->verticalHeader()->setStyleSheet(styleSheet);
+    m_ui->bidsTable->setHorizontalHeaderLabels({ "Price", "Amount", "Total" });
+    m_ui->bidsTable->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
+    m_ui->bidsTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
+    m_ui->bidsTable->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
+    m_ui->bidsTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
+    m_ui->bidsTable->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
+    m_ui->bidsTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
+    m_ui->bidsTable->setColumnWidth(0, m_uiState.bidscols.price);
+    m_ui->bidsTable->setColumnWidth(1, m_uiState.bidscols.amount);
+    m_ui->bidsTable->setColumnWidth(2, m_uiState.bidscols.total);
+    //  m_ui->bidsTable->verticalHeader()->setStyleSheet(styleSheet);
 
+    /*
     m_ui->m_asksDepth->setAxisVisible(QwtPlot::Axis::yLeft, false);
     m_ui->m_asksDepth->setAxisVisible(QwtPlot::Axis::yRight);
 
@@ -289,7 +260,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_plotAsksDepth->setRenderHint(QwtPlotItem::RenderAntialiased);
     m_plotAsksDepth->attach(m_ui->m_asksDepth);
     m_ui->m_asksDepth->setAxisScaleEngine(QwtPlot::Axis::yRight, new QwtLinearScaleEngine);
-    m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight)->setAttribute(QwtScaleEngine::Floating, true);
+    m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight)->setAttribute(QwtScaleEngine::Floating, true);*/
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
@@ -325,15 +296,15 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("OrderbookAsksState");
-    settings.setValue("c0", m_ui->m_ctrlAsks->columnWidth(0));
-    settings.setValue("c1", m_ui->m_ctrlAsks->columnWidth(1));
-    settings.setValue("c2", m_ui->m_ctrlAsks->columnWidth(2));
+    settings.setValue("c0", m_ui->asksTable->columnWidth(0));
+    settings.setValue("c1", m_ui->asksTable->columnWidth(1));
+    settings.setValue("c2", m_ui->asksTable->columnWidth(2));
     settings.endGroup();
 
     settings.beginGroup("OrderbookBidsState");
-    settings.setValue("c0", m_ui->m_ctrlBids->columnWidth(0));
-    settings.setValue("c1", m_ui->m_ctrlBids->columnWidth(1));
-    settings.setValue("c2", m_ui->m_ctrlBids->columnWidth(2));
+    settings.setValue("c0", m_ui->bidsTable->columnWidth(0));
+    settings.setValue("c1", m_ui->bidsTable->columnWidth(1));
+    settings.setValue("c2", m_ui->bidsTable->columnWidth(2));
     settings.endGroup();
 
     logInfo("app", "UI state saved");
@@ -430,11 +401,11 @@ void CENTAUR_NAMESPACE::CentaurApp::onActionBalancesToggled(bool status)
 }
 void CENTAUR_NAMESPACE::CentaurApp::onActionAsksToggled(bool status)
 {
-    status ? m_ui->m_dockOrderbookAsks->show() : m_ui->m_dockOrderbookAsks->hide();
+    status ? m_ui->dockOrderbookAsks->show() : m_ui->dockOrderbookAsks->hide();
 }
 void CENTAUR_NAMESPACE::CentaurApp::onActionBidsToggled(bool status)
 {
-    status ? m_ui->m_dockOrderbookBids->show() : m_ui->m_dockOrderbookBids->hide();
+    status ? m_ui->dockOrderbookBids->show() : m_ui->dockOrderbookBids->hide();
 }
 void CENTAUR_NAMESPACE::CentaurApp::onActionDepthToggled(bool status)
 {
@@ -461,18 +432,18 @@ void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, cons
     if (watchInterface->addSymbol(symbol, id))
     {
         auto itemSymbol  = new QStandardItem(symbol);
-        auto itemPrice   = new QStandardItem("$ ");
+        auto itemPrice   = new QStandardItem("$ 0.00");
         auto itemSource  = new QStandardItem(interface->second.listName);
         auto itemLatency = new QStandardItem("0");
         auto itemUUID    = new QStandardItem(interface->second.uuid.to_string().c_str());
         int curRow       = m_watchlistItemModel->rowCount();
-        itemSymbol->setFont(QFont("Arial", 10));
+        itemSymbol->setFont(g_globals->fonts.symbolsDock.tableFont);
         itemSymbol->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemPrice->setFont(QFont("Arial", 10));
+        itemPrice->setFont(g_globals->fonts.symbolsDock.tableFont);
         itemPrice->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemSource->setFont(QFont("Arial", 10));
+        itemSource->setFont(g_globals->fonts.symbolsDock.tableFont);
         itemSource->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemLatency->setFont(QFont("Arial", 10));
+        itemLatency->setFont(g_globals->fonts.symbolsDock.tableFont);
         itemLatency->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         m_watchlistItemModel->insertRow(curRow, { itemSymbol, itemPrice, itemSource, itemLatency, itemUUID });
         m_watchlistItems[id] = { itemSymbol, 0. };
@@ -510,12 +481,17 @@ void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, const 
     if (price > previousPrice)
     {
         item->setIcon(g_globals->icons.upArrow);
-        itemPrice->setData(QBrush(Qt::green), Qt::ForegroundRole);
+        itemPrice->setData(QBrush(g_globals->colors.symbolsDockColors.priceUp), Qt::ForegroundRole);
+    }
+    else if (price < previousPrice)
+    {
+        item->setIcon(g_globals->icons.downArrow);
+        itemPrice->setData(QBrush(g_globals->colors.symbolsDockColors.priceDown), Qt::ForegroundRole);
     }
     else
     {
         item->setIcon(g_globals->icons.downArrow);
-        itemPrice->setData(QBrush(Qt::red), Qt::ForegroundRole);
+        itemPrice->setData(QBrush(g_globals->colors.symbolsDockColors.priceNeutral), Qt::ForegroundRole);
     }
     itemPrice->setText("$ " + QLocale(QLocale::English).toString(price, 'f', 5));
 
@@ -523,17 +499,17 @@ void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, const 
     const auto ms      = static_cast<quint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     const auto latency = receivedTime > ms ? 0ull : ms - receivedTime;
 
-    if (latency <= 150)
+    if (latency >= g_globals->params.symbolsDockParameters.latencyLowMin && latency <= g_globals->params.symbolsDockParameters.latencyLowMax)
     {
-        itemLatency->setData(QBrush(Qt::green), Qt::ForegroundRole);
+        itemLatency->setData(QBrush(g_globals->colors.symbolsDockColors.latencyLow), Qt::ForegroundRole);
     }
-    else if (latency > 150 && latency <= 300)
+    else if (latency >= g_globals->params.symbolsDockParameters.latencyMediumMin && latency <= g_globals->params.symbolsDockParameters.latencyMediumMax)
     {
-        itemLatency->setData(QBrush(Qt::yellow), Qt::ForegroundRole);
+        itemLatency->setData(QBrush(g_globals->colors.symbolsDockColors.latencyMedium), Qt::ForegroundRole);
     }
-    else if (latency > 300)
+    else if (latency >= g_globals->params.symbolsDockParameters.latencyHighMin && latency <= g_globals->params.symbolsDockParameters.latencyHighMax)
     {
-        itemLatency->setData(QBrush(Qt::red), Qt::ForegroundRole);
+        itemLatency->setData(QBrush(g_globals->colors.symbolsDockColors.latencyHigh), Qt::ForegroundRole);
     }
     itemLatency->setText(QString("%1 ms").arg(latency));
 }
@@ -607,7 +583,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onSetWatchlistSelection(const QString &sourc
 
     const auto &[curSource, curSymbol] = m_currentViewOrderbookSymbol;
 
-    if (curSource == source || curSymbol == symbol)
+    if (curSource == source && curSymbol == symbol)
     {
         logInfo("wlOrderbookSend", "Symbol data is already being received");
         return;
@@ -616,8 +592,8 @@ void CENTAUR_NAMESPACE::CentaurApp::onSetWatchlistSelection(const QString &sourc
     auto &interface = itemIter->second.exchange;
     interface->updateOrderbook(symbol);
     m_currentViewOrderbookSymbol = { source, symbol };
-    m_ui->m_bidsSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
-    m_ui->m_asksSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
+    m_ui->bidsSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
+    m_ui->asksSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onWatchlistRemoveSelection() noexcept
@@ -679,23 +655,23 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
 
     int nRowIndex = -1;
 
-    m_ui->m_ctrlAsks->setRowCount(static_cast<int>(asks.size()));
+    m_ui->asksTable->setRowCount(static_cast<int>(asks.size()));
     nRowIndex = 0;
     for (auto iter = asks.begin(); iter != asks.end(); ++iter)
     {
-        insertTable(iter.key(), m_ui->m_ctrlAsks, nRowIndex, 0, 1);
-        insertTable(iter.value().first, m_ui->m_ctrlAsks, nRowIndex, 1, 1);
-        insertTable(iter.value().second, m_ui->m_ctrlAsks, nRowIndex, 2, 1);
+        insertTable(iter.key(), m_ui->asksTable, nRowIndex, 0, 1);
+        insertTable(iter.value().first, m_ui->asksTable, nRowIndex, 1, 1);
+        insertTable(iter.value().second, m_ui->asksTable, nRowIndex, 2, 1);
         ++nRowIndex;
     }
 
-    m_ui->m_ctrlBids->setRowCount(static_cast<int>(bids.size()));
+    m_ui->bidsTable->setRowCount(static_cast<int>(bids.size()));
     nRowIndex = 0;
     for (auto iter = bids.begin(); iter != bids.end(); ++iter)
     {
-        insertTable(iter.key(), m_ui->m_ctrlBids, nRowIndex, 0, 0);
-        insertTable(iter.value().first, m_ui->m_ctrlBids, nRowIndex, 1, 0);
-        insertTable(iter.value().second, m_ui->m_ctrlBids, nRowIndex, 2, 0);
+        insertTable(iter.key(), m_ui->bidsTable, nRowIndex, 0, 0);
+        insertTable(iter.value().first, m_ui->bidsTable, nRowIndex, 1, 0);
+        insertTable(iter.value().second, m_ui->bidsTable, nRowIndex, 2, 0);
         ++nRowIndex;
     }
 
@@ -708,24 +684,24 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
         pal.setColor(ctr->foregroundRole(), color);
         ctr->setPalette(pal);
     };
-    if (latency <= 150)
+    if (latency >= g_globals->params.symbolsDockParameters.latencyLowMin <= g_globals->params.symbolsDockParameters.latencyLowMax)
     {
-        changeColor(m_ui->m_asksLatency, Qt::green);
-        changeColor(m_ui->m_bidsLatency, Qt::green);
+        changeColor(m_ui->asksLatency, Qt::green);
+        changeColor(m_ui->bidsLatency, Qt::green);
     }
-    else if (latency > 150 && latency <= 300)
+    else if (latency >= g_globals->params.symbolsDockParameters.latencyMediumMin && latency <= g_globals->params.symbolsDockParameters.latencyMediumMin)
     {
-        changeColor(m_ui->m_asksLatency, Qt::yellow);
-        changeColor(m_ui->m_bidsLatency, Qt::yellow);
+        changeColor(m_ui->asksLatency, Qt::yellow);
+        changeColor(m_ui->bidsLatency, Qt::yellow);
     }
-    else if (latency > 300)
+    else if (latency >= g_globals->params.symbolsDockParameters.latencyHighMin && latency <= g_globals->params.symbolsDockParameters.latencyHighMax)
     {
-        changeColor(m_ui->m_asksLatency, Qt::red);
-        changeColor(m_ui->m_bidsLatency, Qt::red);
+        changeColor(m_ui->asksLatency, Qt::red);
+        changeColor(m_ui->bidsLatency, Qt::red);
     }
 
-    m_ui->m_asksLatency->setText(QString("%1 ms").arg(latency));
-    m_ui->m_bidsLatency->setText(QString("%1 ms").arg(latency));
+    m_ui->asksLatency->setText(QString("%1 ms").arg(latency));
+    m_ui->bidsLatency->setText(QString("%1 ms").arg(latency));
 
     if (m_ui->m_dockDepth->isVisible())
     {
@@ -787,40 +763,40 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<QString, QPair<QString,
 
     double maxY                            = std::max(bidsMaxY, asksMaxY);
 
-    reinterpret_cast<QwtLinearScaleEngine *>(m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight))->autoScale(10, asksMinY, maxY, asksStepsY);
-    m_ui->m_asksDepth->setAxisScale(QwtPlot::Axis::yRight, asksMinY, maxY, asksStepsY);
-    m_ui->m_asksDepth->setAxisAutoScale(QwtPlot::Axis::yRight, true);
+    //   reinterpret_cast<QwtLinearScaleEngine *>(m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight))->autoScale(10, asksMinY, maxY, asksStepsY);
+    //   m_ui->m_asksDepth->setAxisScale(QwtPlot::Axis::yRight, asksMinY, maxY, asksStepsY);
+    //   m_ui->m_asksDepth->setAxisAutoScale(QwtPlot::Axis::yRight, true);
 
-    m_ui->m_asksDepth->setAxisScale(QwtPlot::Axis::xBottom, asksMinX, asksMaxX, asksStepsX);
-    m_plotAsksDepth->setSamples(asksX, asksY);
+    //  m_ui->m_asksDepth->setAxisScale(QwtPlot::Axis::xBottom, asksMinX, asksMaxX, asksStepsX);
+    //   m_plotAsksDepth->setSamples(asksX, asksY);
 
-    reinterpret_cast<QwtLinearScaleEngine *>(m_ui->m_bidsDepth->axisScaleEngine(QwtPlot::Axis::yLeft))->autoScale(10, bidsMinY, maxY, bidsStepsY);
-    m_ui->m_bidsDepth->setAxisScale(QwtPlot::Axis::yLeft, bidsMinY, maxY, bidsStepsY);
-    m_ui->m_bidsDepth->setAxisAutoScale(QwtPlot::Axis::yLeft, true);
+    //   reinterpret_cast<QwtLinearScaleEngine *>(m_ui->m_bidsDepth->axisScaleEngine(QwtPlot::Axis::yLeft))->autoScale(10, bidsMinY, maxY, bidsStepsY);
+    // m_ui->m_bidsDepth->setAxisScale(QwtPlot::Axis::yLeft, bidsMinY, maxY, bidsStepsY);
+    // m_ui->m_bidsDepth->setAxisAutoScale(QwtPlot::Axis::yLeft, true);
 
-    m_ui->m_bidsDepth->setAxisScale(QwtPlot::Axis::xBottom, bidsMaxX, bidsMinX, bidsStepsX);
-    m_plotBidsDepth->setSamples(bidsX, bidsY);
+    // m_ui->m_bidsDepth->setAxisScale(QwtPlot::Axis::xBottom, bidsMaxX, bidsMinX, bidsStepsX);
+    // m_plotBidsDepth->setSamples(bidsX, bidsY);
 
-    m_ui->m_bidsDepth->replot();
-    m_ui->m_asksDepth->replot();
+    // m_ui->m_bidsDepth->replot();
+    // m_ui->m_asksDepth->replot();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::clearOrderbookListsAndDepth() noexcept
 {
     m_currentViewOrderbookSymbol = { "", "" };
-    m_ui->m_bidsSymbol->setText("");
-    m_ui->m_asksSymbol->setText("");
-    m_ui->m_bidsLatency->setText("");
-    m_ui->m_asksLatency->setText("");
-    m_ui->m_ctrlAsks->setRowCount(0);
-    m_ui->m_ctrlBids->setRowCount(0);
+    m_ui->bidsSymbol->setText("");
+    m_ui->asksSymbol->setText("");
+    m_ui->bidsLatency->setText("");
+    m_ui->asksLatency->setText("");
+    m_ui->asksTable->setRowCount(0);
+    m_ui->bidsTable->setRowCount(0);
 
     double *dnptr = nullptr;
-    m_plotAsksDepth->setSamples(dnptr, 0);
-    m_plotBidsDepth->setSamples(dnptr, 0);
+    //  m_plotAsksDepth->setSamples(dnptr, 0);
+    //  m_plotBidsDepth->setSamples(dnptr, 0);
 
-    m_ui->m_bidsDepth->replot();
-    m_ui->m_asksDepth->replot();
+    //  m_ui->m_bidsDepth->replot();
+    //  m_ui->m_asksDepth->replot();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onPlugins() noexcept

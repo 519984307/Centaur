@@ -44,7 +44,6 @@ void CENTAUR_NAMESPACE::CentaurApp::loadConfigurationData() noexcept
     // Load visuals elements for the user interface
     loadVisualsUI();
 
-
     try
     {
         xercesc::XMLPlatformUtils::Terminate();
@@ -88,7 +87,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadLocaleData() noexcept
 
 void cen::CentaurApp::loadVisualsUI() noexcept
 {
-    auto res = g_globals->visuals.loadVisualsUI();
+    auto res = g_globals->visuals.loadVisualsUI(m_ui.get());
 
     switch (res)
     {

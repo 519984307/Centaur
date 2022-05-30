@@ -120,7 +120,8 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                             loader.unload();
                             logWarn("plugin", QString(LS("warning-iexchange-plugin-unloaded")).arg(plFile));
                         }
-                        updatePluginsMenu(exInterface->getPluginUUID(), doc, baseInterface);
+                        else
+                            updatePluginsMenu(exInterface->getPluginUUID(), doc, baseInterface);
                     }
                     else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                     {
@@ -184,7 +185,7 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, xercesc:
 
                 auto type     = dataElem->getAttributeNode(typeStr);
                 auto name     = dataElem->getAttributeNode(nameStr);
-                //// auto id   = dataElem.getAttribute("id");
+
                 if (type != nullptr)
                 {
                     if (xercesc::XMLString::equals(type->getNodeValue(), sepStr))
@@ -304,11 +305,11 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
     m_exchangeList[QString { uuid.to_string().c_str() }] = ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first };
 
     // clang-format off
-    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
-    connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)), this, SLOT(onOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)));
-    //connect(exchange->getPluginObject(), SIGNAL(emitAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)), this, SLOT(onBalanceAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)));
-    //connect(exchange->getPluginObject(), SIGNAL(emitBalanceUpdate(QList<QString>,int)), this, SLOT(onBalanceUpdate(QList<QString>,int)));
-    //  clang-format on
+    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString, int, quint64, double)), this, SLOT(onTickerUpdate(QString, int, quint64, double)));
+    connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString, QString, quint64, QMap<QString, QPair<QString, QString>>, QMap<QString, QPair<QString, QString>>)), this, SLOT(onOrderbookUpdate(QString, QString, quint64, QMap<QString, QPair<QString, QString>>, QMap<QString, QPair<QString, QString>>)));
+    // connect(exchange->getPluginObject(), SIGNAL(emitAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)), this, SLOT(onBalanceAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)));
+    // connect(exchange->getPluginObject(), SIGNAL(emitBalanceUpdate(QList<QString>,int)), this, SLOT(onBalanceUpdate(QList<QString>,int)));
+    // clang-format on
 
     return true;
 }
@@ -316,26 +317,6 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
 CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
 {
     logTrace("plugins", "CentaurApp::populateExchangeSymbolList");
-
-    // Create Fonts
-    QFont headerFont {
-        g_globals->visuals.dockSymbols->headerFont.name,
-        g_globals->visuals.dockSymbols->headerFont.size,
-        g_globals->visuals.dockSymbols->headerFont.weight,
-        g_globals->visuals.dockSymbols->headerFont.italic
-    };
-    if (g_globals->visuals.dockSymbols->headerFont.spacing > 0)
-        headerFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->headerFont.spacing);
-
-    QFont searchFont {
-        g_globals->visuals.dockSymbols->searchFont.name,
-        g_globals->visuals.dockSymbols->searchFont.size,
-        g_globals->visuals.dockSymbols->searchFont.weight,
-        g_globals->visuals.dockSymbols->searchFont.italic
-    };
-
-    if (g_globals->visuals.dockSymbols->searchFont.spacing > 0)
-        searchFont.setLetterSpacing(QFont::SpacingType::PercentageSpacing, g_globals->visuals.dockSymbols->searchFont.spacing);
 
     auto widget             = new QWidget();
     const auto [name, icon] = exchange->getSymbolListName();
@@ -350,19 +331,17 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
     verticalLayout->setContentsMargins(2, 2, 2, 2);
 
     auto editCtrl = new QLineEdit(widget);
-    editCtrl->setFont(searchFont);
+    editCtrl->setFont(m_ui->editWatchListFilter->font());
     editCtrl->setPlaceholderText(LS("ui-docks-search"));
     editCtrl->setClearButtonEnabled(true);
     editCtrl->addAction(g_globals->icons.searchIcon, QLineEdit::LeadingPosition);
-    if (!g_globals->visuals.dockSymbols->searchCSS.isEmpty())
-        editCtrl->setStyleSheet(g_globals->visuals.dockSymbols->searchCSS);
+    editCtrl->setStyleSheet(m_ui->editWatchListFilter->styleSheet());
     verticalLayout->addWidget(editCtrl);
 
     auto symbolsList    = new CenListCtrl(widget);
     auto itemModel      = new QStandardItemModel(0, 1, widget);
     auto sortProxyModel = new QSortFilterProxyModel(widget);
-    if (!g_globals->visuals.dockSymbols->headerCSS.isEmpty())
-        symbolsList->setStyleSheet(g_globals->visuals.dockSymbols->headerCSS);
+    symbolsList->setStyleSheet(m_ui->listWatchList->horizontalHeader()->styleSheet());
 
     sortProxyModel->setSourceModel(itemModel);
     symbolsList->setModel(sortProxyModel);
@@ -370,18 +349,18 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
 
     sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
     connect(editCtrl, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
-    connect(symbolsList, &CenListCtrl::sgAddToWatchList, this, &CentaurApp::onAddToWatchList);
+    connect(symbolsList, &CenListCtrl::snAddToWatchList, this, &CentaurApp::onAddToWatchList);
 
-    symbolsList->verticalHeader()->setFont(headerFont);
+    symbolsList->verticalHeader()->setFont(g_globals->fonts.symbolsDock.headerFont);
     symbolsList->setEditTriggers(QAbstractItemView::NoEditTriggers);
     symbolsList->setGridStyle(Qt::NoPen);
     symbolsList->setSortingEnabled(true);
     symbolsList->sortByColumn(0, Qt::AscendingOrder);
     symbolsList->verticalHeader()->setVisible(false);
 
-    itemModel->setHorizontalHeaderLabels({ tr("Symbol") });
-    itemModel->horizontalHeaderItem(0)->setFont(headerFont);
-    itemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
+    itemModel->setHorizontalHeaderLabels({ LS("ui-docks-symbol") });
+    itemModel->horizontalHeaderItem(0)->setFont(g_globals->fonts.symbolsDock.headerFont);
+    itemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     verticalLayout->addWidget(symbolsList);
 
@@ -391,7 +370,7 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
     {
         auto item  = new QStandardItem(sym);
         int curRow = itemModel->rowCount();
-        item->setFont(QFont("Arial", 10));
+        item->setFont(g_globals->fonts.symbolsDock.tableFont);
         item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         item->setIcon(*icon);
 
