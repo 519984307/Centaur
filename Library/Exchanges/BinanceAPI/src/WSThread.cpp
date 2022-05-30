@@ -10,14 +10,15 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-BINAPI_NAMESPACE::ws::WSThread::WSThread(std::string url, std::string endPoint) :
+BINAPI_NAMESPACE::ws::WSThread::WSThread(std::string url, std::string endPoint, int32_t port) :
     m_url { std::move(url) },
-    m_endPoint { std::move(endPoint) }
+    m_endPoint { std::move(endPoint) },
+    m_port { port }
 {
     m_jsonData.reserve(1024 * 1024);
 
     // Init protocol
-    m_protocols[0] = { "wsProtocol", WSThread::eventManager, 0, 65536, 0, nullptr, 0 };
+    m_protocols[0] = { "wsProtocol", WSThread::eventManager, 0, 65535, 0, nullptr, 0 };
     m_protocols[1] = { nullptr, nullptr, 0, 0, 0, nullptr, 0 };
     // lws_set_log_level(LLL_THREAD | LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO, nullptr);
     lws_set_log_level(0, nullptr);
@@ -68,6 +69,11 @@ auto BINAPI_NAMESPACE::ws::WSThread::getJsonData() const -> const std::string &
     return m_jsonData;
 }
 
+auto binapi::ws::WSThread::setEndPoint(const std::string &endpoint) -> void
+{
+    m_endPoint = endpoint;
+}
+
 auto BINAPI_NAMESPACE::ws::WSThread::run() -> void
 {
     if (m_running)
@@ -79,14 +85,13 @@ auto BINAPI_NAMESPACE::ws::WSThread::run() -> void
         lws_context_destroy(m_context);
 
     // Init Context
-    lws_context_creation_info info {} /*C++ Initialization just to get rid of clang-tidy and clang warnings of uninitialized variables*/;
-    memset(&info, 0, sizeof(info)); // Proper zero initialization of a C struct
+    lws_context_creation_info info {};                   /*C++ Initialization just to get rid of clang-tidy and clang warnings of uninitialized variables*/
+    memset(&info, 0, sizeof(lws_context_creation_info)); // Proper zero initialization of a C struct
 
-    info.port      = CONTEXT_PORT_NO_LISTEN;
+    info.options   = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+    info.port      = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
     info.protocols = m_protocols;
-    info.gid       = static_cast<gid_t>(0);
-    info.uid       = static_cast<uid_t>(0);
-    info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+    // info.fd_limit_per_thread = 1 + 1 + 1;
 
     m_context = lws_create_context(&info);
 
@@ -94,7 +99,7 @@ auto BINAPI_NAMESPACE::ws::WSThread::run() -> void
     memset(&ccinfo, 0, sizeof(lws_client_connect_info));
     ccinfo.context        = m_context;
     ccinfo.address        = m_url.c_str();
-    ccinfo.port           = 443;
+    ccinfo.port           = m_port;
     ccinfo.path           = m_endPoint.c_str();
     ccinfo.host           = lws_canonical_hostname(m_context);
     ccinfo.origin         = "origin";
@@ -140,7 +145,7 @@ auto BINAPI_NAMESPACE::ws::WSThread::eventManager(struct lws *wsi, lws_callback_
 
         case LWS_CALLBACK_CLIENT_RECEIVE:
             {
-                std::string msg = std::string(reinterpret_cast<char *>(in), len);
+                // std::string msg = std::string(reinterpret_cast<char *>(in), len);
 
                 if (client)
                 {

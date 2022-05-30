@@ -11,23 +11,39 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-#define SUBSCRIBE_METHOD(stream)            \
-    if (!m_running)                         \
-        return { stream };                  \
-    else                                    \
-    {                                       \
-        int id = randNumber();              \
-        subscribe(std::string(stream), id); \
-        return { id };                      \
+#define SUBSCRIBE_METHOD(stream)              \
+    if (!isRunning())                         \
+        return { stream };                    \
+    else                                      \
+    {                                         \
+        int id = randNumber();                \
+        while (true)                          \
+        {                                     \
+            if (!m_subscribeIds.contains(id)) \
+            {                                 \
+                m_subscribeIds.insert(id);    \
+                break;                        \
+            }                                 \
+        }                                     \
+        subscribe(std::string(stream), id);   \
+        return { id };                        \
     }
 
-#define UNSUBSCRIBE_METHOD(stream)            \
-    if (m_running)                            \
-    {                                         \
-        int id = randNumber(false);           \
-        unsubscribe(std::string(stream), id); \
-        return id;                            \
-    }                                         \
+#define UNSUBSCRIBE_METHOD(stream)              \
+    if (isRunning())                            \
+    {                                           \
+        int id = randNumber();                  \
+        while (true)                            \
+        {                                       \
+            if (!m_unsubscribeIds.contains(id)) \
+            {                                   \
+                m_unsubscribeIds.insert(id);    \
+                break;                          \
+            }                                   \
+        }                                       \
+        unsubscribe(std::string(stream), id);   \
+        return id;                              \
+    }                                           \
     return -1;
 
 #define JTO_STRING(x, y)                         \
@@ -43,13 +59,9 @@ static std::string symbolToLower(const std::string &symbol)
     return str;
 }
 
-BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::WSSpotBinanceAPI()
+BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::WSSpotBinanceAPI(std::string endpoint) :
+    WSThread("stream.binance.com", std::move(endpoint), 9443)
 {
-    // Init protocol
-    m_protocols[0] = { "wsProtocol", WSSpotBinanceAPI::eventManager, 0, 65536, 0, nullptr, 0 };
-    m_protocols[1] = { nullptr, nullptr, 0, 0, 0, nullptr, 0 };
-    // lws_set_log_level(LLL_THREAD | LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO, nullptr);
-    lws_set_log_level(0, nullptr);
 }
 
 void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe(const std::string &stream, const int &id)
@@ -64,6 +76,22 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribe(const std::string &stre
     sendData(unsubscribe);
 }
 
+/**
+ * \brief ccinfo.context        = m_context;
+ccinfo.address        = "stream.binance.com";
+ccinfo.port           = 9443;
+ccinfo.path           = endpoint.c_str();
+ccinfo.host           = lws_canonical_hostname(m_context);
+ccinfo.origin         = "origin";
+ccinfo.protocol       = m_protocols[0].name;
+ccinfo.userdata       = reinterpret_cast<void *>(this);
+ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
+
+
+ 9443
+ */
+
+/*
 void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::run(const std::string &endpoint, const bool &multipleStreams)
 {
     lws_set_log_level(7, nullptr);
@@ -76,7 +104,7 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::run(const std::string &endpoint, co
         lws_context_destroy(m_context);
 
     // Init Context
-    lws_context_creation_info info {} /*C++ Initialization just to get rid of clang-tidy and clang warnings of uninitialized variables*/;
+    lws_context_creation_info info {} // C++ Initialization just to get rid of clang-tidy and clang warnings of uninitialized variables;
     memset(&info, 0, sizeof(info)); // Proper zero initialization of a C struct
 
     info.port      = CONTEXT_PORT_NO_LISTEN;
@@ -107,20 +135,22 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::run(const std::string &endpoint, co
     m_combined = multipleStreams;
     while (!m_terminate)
     {
-        lws_service(m_context, 0 /*As documentation denotes it, this value is deprecated and must be zero*/);
+       /// lws_service(m_context, 0 As documentation denotes it, this value is deprecated and must be zero);
     }
     lws_context_destroy(m_context);
     m_context = nullptr;
 }
+*/
 
+/*
 void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::terminate()
 {
-    if (!m_running)
-        return;
-    m_terminate = true;
-    if (m_lws != nullptr)
-        lws_callback_on_writable(m_lws);
-}
+if (!m_running)
+    return;
+m_terminate = true;
+if (m_lws != nullptr)
+    lws_callback_on_writable(m_lws);
+}*/
 
 std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribeKline(const std::string &symbol, const BinanceTimeIntervals &interval)
 {
@@ -227,7 +257,7 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::bookTicker([[maybe_unused]] const s
 void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::depthUpdate([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamDepthUpdate &sdp)
 {
 }
-
+/*
 void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::sendData(const std::string &msg)
 {
     char *str = new char[msg.size() + LWS_PRE + 1];
@@ -237,10 +267,11 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::sendData(const std::string &msg)
     // All previous calls are C functions and do not throw so we can be assure that delete is going to be called
     delete[] str;
 }
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::receivedData(const std::string &msg)
+*/
+auto BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::receivedData() -> void
 {
     rapidjson::Document jsonDoc;
-    jsonDoc.Parse(msg.c_str());
+    jsonDoc.Parse(getJsonData().c_str());
     if (jsonDoc.HasParseError())
     {
         fmt::print(fmt::fg(fmt::color::red), "STREAM ERROR: ");
@@ -262,6 +293,7 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::receivedData(const std::string &msg
             if (siid != m_subscribeIds.end())
             {
                 m_subscribeIds.erase(siid);
+
                 subscribe(result, id);
             }
             else
@@ -451,96 +483,5 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::receivedData(const std::string &msg
     {
         fmt::print(fmt::fg(fmt::color::red), "JSON STREAM ERROR: ");
         fmt::print("JSON data could not be parsed: {}\n", ex.what());
-    }
-}
-
-int BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::eventManager(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
-{
-    auto client = reinterpret_cast<BINAPI_NAMESPACE::ws::WSSpotBinanceAPI *>(user);
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wswitch-enum"
-#endif /*__clang__*/
-    switch (reason)
-    {
-        case LWS_CALLBACK_CLIENT_ESTABLISHED:
-            lws_callback_on_writable(wsi);
-            if (client)
-            {
-                client->m_running = true;
-                client->connected();
-            }
-            break;
-
-        case LWS_CALLBACK_CLIENT_RECEIVE:
-            {
-                std::string msg = std::string(reinterpret_cast<char *>(in), len);
-
-                if (client)
-                {
-                    if (lws_frame_is_binary(wsi))
-                    {
-                        fmt::print("LWS received binary data and was ignored.\n");
-                    }
-                    else
-                        client->receivedData(std::string(reinterpret_cast<char *>(in), len));
-                }
-            }
-            break;
-
-        case LWS_CALLBACK_CLIENT_WRITEABLE:
-            break;
-
-        case LWS_CALLBACK_CLOSED:
-        case LWS_CALLBACK_CLIENT_CLOSED:
-            if (client)
-            {
-                // Set proper flags to allow reconnection
-                client->m_running   = false;
-                client->m_terminate = true;
-
-                client->close();
-            }
-            break;
-        case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-            if (client)
-            {
-                client->m_running   = false;
-                client->m_terminate = true;
-                client->connectionError();
-            }
-            break;
-
-        default:
-            break;
-    }
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
-
-    return 0;
-}
-
-int BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::randNumber(const bool &subscribe)
-{
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(1, 1'147'483'648);
-
-    auto &list    = subscribe ? m_subscribeIds : m_unsubscribeIds;
-    auto generate = [&distrib, &gen]() {
-        return distrib(gen);
-    };
-
-    while (true)
-    {
-        int rdn = generate();
-        if (!list.contains(rdn))
-        {
-            list.insert(rdn);
-            return rdn;
-        }
     }
 }

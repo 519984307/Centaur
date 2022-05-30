@@ -13,7 +13,6 @@
 #ifndef FUTURES_WSTHREAD_HPP
 #define FUTURES_WSTHREAD_HPP
 
-
 #include "BinanceAPIGlobal.hpp"
 
 namespace BINAPI_NAMESPACE::ws
@@ -21,7 +20,7 @@ namespace BINAPI_NAMESPACE::ws
     class WSThread
     {
     public:
-        WSThread(std::string url, std::string endPoint);
+        WSThread(std::string url, std::string endPoint, int32_t port);
         virtual ~WSThread();
 
         auto run() -> void;
@@ -47,10 +46,15 @@ namespace BINAPI_NAMESPACE::ws
         auto isTerminated() -> bool;
         auto setPingTimer(const uint64_t &timer) -> void;
 
+    public:
+        /// \brief This function can be called to change the endpoint. Just make sure to call it before a calling run()
+        /// \param endpoint New base endpoint
+        auto setEndPoint(const std::string &endpoint) -> void;
+
     protected:
         virtual auto receivedData() -> void = 0;
         auto sendData(const std::string &msg) -> void;
-        auto randNumber() -> int;
+        static auto randNumber() -> int;
 
     private:
         lws_context *m_context { nullptr };
@@ -61,13 +65,15 @@ namespace BINAPI_NAMESPACE::ws
         std::string m_endPoint;
         std::string m_jsonData;
 
-        uint64_t m_pingTimer{0};
+        uint64_t m_pingTimer { 0 };
+
+        int32_t m_port;
 
         std::atomic_bool m_running;
         std::atomic_bool m_terminate;
 
         static auto eventManager(struct lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len) -> int;
     };
-} // namespace trader::api::ws
+} // namespace BINAPI_NAMESPACE::ws
 
 #endif // FUTURES_WSTHREAD_HPP

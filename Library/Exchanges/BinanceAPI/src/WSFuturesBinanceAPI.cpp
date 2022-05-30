@@ -119,7 +119,7 @@ namespace
 } // namespace
 
 BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::WSFuturesBinanceAPI(std::string endPoint) :
-    BINAPI_NAMESPACE::ws::WSThread("fstream.binance.com", std::move(endPoint))
+    BINAPI_NAMESPACE::ws::WSThread("fstream.binance.com", std::move(endPoint), 443)
 {
 }
 
