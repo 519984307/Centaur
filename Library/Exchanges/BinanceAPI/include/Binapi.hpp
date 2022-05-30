@@ -298,6 +298,7 @@ namespace BINAPI_NAMESPACE
         BinanceAPISpot(BinanceKeys *keys, BinanceLimits *exl);
         ~BinanceAPISpot() override;
 
+        // WALLET ENDPOINTS
     public:
         /// \brief Get Exchange Status
         ///
@@ -430,6 +431,92 @@ namespace BINAPI_NAMESPACE
         /// \param assets Array of assets
         /// \return Transfer data
         T_NODISCARD auto dustTransfer(const std::vector<asset_t> &assets) -> SPOT::DustTransfer;
+
+        /// \brief Query Asset Dividend Record
+        /// \param asset Asset Name (can be empty)
+        /// \param limit Max is 500 will assert when limit > 500
+        /// \param startTime Start time of the query. Can be omitted
+        /// \param endTime End time of the query. Can be omitted
+        /// \return A pair in the first value the number of rows and the second is a vector with the row data
+        T_NODISCARD auto assetDividendRecord(v_asset_t asset, uint64_t limit = 20, uint64_t startTime = 0, uint64_t endTime = 0) -> std::pair<int64_t, std::vector<SPOT::AssetDividend>>;
+
+        /// \brief Fetch deatails of asset supported on Binance
+        /// \param asset Asset Name (can be empty)
+        /// \return The corresponding information
+        T_NODISCARD auto assetDetail(v_asset_t asset) -> SPOT::AssetDetail;
+
+        /// \brief Fetch trade fee
+        /// \param symbol Symbol Name (can be empty)
+        /// \return The corresponding fees
+        T_NODISCARD auto tradeFee(v_sym_t symbol) -> std::map<sym_t, SPOT::TradeFee>;
+
+        /// \brief User Universal Transfer. Make user your API Key has enabled the Permits Universal Transfer
+        /// \param type Transfer type
+        /// \param asset Asset Name
+        /// \param amount Amount
+        /// \param precision Amount precision
+        /// \param fromSymbol If you pass something when is not needed it will be ignored. Optional: VIEW THE API BINANCE DOCUMENTATION!
+        /// \param toSymbol If you pass something when is not needed it will be ignored. Optional: VIEW THE API BINANCE DOCUMENTATION!
+        /// \return A transfer ID
+        T_NODISCARD auto userUniversalTransfer(SPOT::UniversalTransferType type,
+            v_asset_t asset,
+            currency_t amount,
+            int64_t precision,
+            v_sym_t fromSymbol,
+            v_sym_t toSymbol) -> uint64_t;
+
+        /// \brief Query a universal transfer
+        /// \param type  Transfer type
+        /// \param fromSymbol If you pass something when is not needed it will be ignored. Optional: VIEW THE API BINANCE DOCUMENTATION!
+        /// \param toSymbol If you pass something when is not needed it will be ignored. Optional: VIEW THE API BINANCE DOCUMENTATION!
+        /// \param current Current
+        /// \param size Size. Max is 100. will assert when size > 100
+        /// \param startTime Start time of the query
+        /// \param endTime End time of the query
+        /// \return A key with the first parameter with the number of rows (as returned from the exchange). The second has a vector with the information of the query
+        T_NODISCARD auto queryUserUniversalTransferHistory(
+            SPOT::UniversalTransferType type,
+            v_sym_t fromSymbol,
+            v_sym_t toSymbol,
+            int64_t current    = 1,
+            int64_t size       = 10,
+            uint64_t startTime = 0,
+            uint64_t endTime   = 0) -> std::pair<int64_t, std::vector<SPOT::UniversalTransferQuery>>;
+
+        /// \brief Funding wallet for an specific asset
+        /// \param asset Asset Name
+        /// \param needBtcValuation When BTC Valuation is needed
+        /// \return Funding Wallet history
+        T_NODISCARD auto fundingWallet(v_asset_t asset, bool needBtcValuation) -> std::vector<SPOT::FundingWallet>;
+
+        /// \brief Funding wallet without an asset
+        /// \param needBtcValuation When BTC Valuation is needed
+        /// \return Funding Wallet history
+        T_NODISCARD auto fundingWallet(bool needBtcValuation) -> std::vector<SPOT::FundingWallet>;
+
+        /// \brief Retrieve the API Key permissions
+        /// \return API Key Permissions
+        T_NODISCARD auto getAPIKeyPermission() -> SPOT::APIKeyPermissions;
+
+        // MARKET DATA ENDPOINTS
+    public:
+        /// \brief Test for server ping. In case a ping failure happens. The function will throw an exception
+        auto ping() -> void;
+
+        /// \brief Check for server time
+        /// \return Server time
+        T_NODISCARD auto checkServerTime() -> uint64_t;
+
+        /// \brief Retrieve Exchange Information
+        /// \return The exchange information
+        T_NODISCARD auto getExchangeInformation() -> SPOT::ExchangeInformation;
+
+        /// \brief Retrive the book order. Useful for keeping in order the WebSocket orderbook
+        /// \param symbol Symbol name
+        /// \param limit Limit of the entries. 100 is the default and the max is 5000. If the max is exceeded it will be truncated to 5000. Although the BinanceAPI does this,
+        ///                this wrapper does it before sending it to the servers
+        /// \return Returns the order book
+        T_NODISCARD auto getOrderBook(v_sym_t symbol, uint32_t limit = 100) -> SPOT::OrderBook;
     };
 
     // COIN-M Futures end-points wrapper
