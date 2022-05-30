@@ -166,6 +166,20 @@ namespace BINAPI_NAMESPACE
             CMFUTURE_FUNDING,              // CMFUTURE account transfer to Funding account
         };
 
+        enum class TradingStatus : int32_t
+        {
+            Trading,
+            Break
+        };
+
+        /// \brief Bits on AccountInformation::permissions
+        enum AccountPermissions
+        {
+            spot = 0,
+            margin,
+            leveraged
+        };
+
         struct CoinInformation
         {
             struct NetworkList
@@ -366,8 +380,8 @@ namespace BINAPI_NAMESPACE
         {
             struct CTRDetail
             {
-                int64_t fee;
                 std::string depositTip;
+                currency_t withdrawFee;
                 currency_t minWithdrawAmount;
                 bool depositStatus;
                 bool withdrawStatus;
@@ -387,7 +401,6 @@ namespace BINAPI_NAMESPACE
 
         struct TradeFee
         {
-            sym_t symbol;
             currency_t makerCommission;
             currency_t takerCommission;
         };
@@ -416,6 +429,7 @@ namespace BINAPI_NAMESPACE
         {
             uint64_t tradingAuthorityExpirationTime;
             uint64_t createTime;
+            bool ipRestrict;
             bool enableWithdrawals;
             bool enableInternalTransfer;
             bool permitsUniversalTransfer;
@@ -424,6 +438,138 @@ namespace BINAPI_NAMESPACE
             bool enableFutures;
             bool enableMargin;
             bool enableSpotAndMarginTrading;
+        };
+
+        struct EIRateLimits
+        {
+            uint32_t seconds { 0 };
+            uint32_t limit { 0 };
+        };
+
+        namespace EIFilters
+        {
+            struct PriceFilter
+            {
+                bool present { false };
+                currency_t minPrice { 0 };
+                currency_t maxPrice { 0 };
+                quantity_t tickSize { 0 };
+            };
+
+            struct PercentPrice
+            {
+
+                currency_t multiplierUp { 0 };
+                currency_t multiplierDown { 0 };
+                currency_t multiplierDecimal { 0 }; // Used in futures
+                int32_t averagePriceMins { 0 };     // Not used in futures
+                bool present { false };
+            };
+
+            struct LotSize
+            {
+                quantity_t minQty { 0 };
+                quantity_t maxQty { 0 };
+                quantity_t stepSize { 0 };
+                bool present { false };
+            };
+
+            struct MinNotional
+            {
+                currency_t minNotional { 0 };
+                int32_t averagePriceMins { 0 }; // Not used in futures
+                bool applyToMarket { false };   // Not used in futures
+                bool present { false };
+            };
+
+            struct IcebergParts
+            {
+                int limit { 0 };
+                bool present { false };
+            };
+
+            struct MarketLotSize
+            {
+                quantity_t minQty { 0 };
+                quantity_t maxQty { 0 };
+                quantity_t stepSize { 0 };
+                bool present { false };
+            };
+
+            struct MaxNumOrders
+            {
+                int32_t maxNumOrders { 0 };
+                bool present { false };
+            };
+
+            struct MaxNumAlgoOrders
+            {
+                int32_t maxNumAlgoOrders { 0 };
+                bool present { false };
+            };
+
+            struct MaxNumIcerbergOrders
+            {
+                int32_t maxNumIcebergOrders { 0 };
+                bool present { false };
+            };
+
+            struct MaxPosition
+            {
+                quantity_t maxPosition { 0 };
+                bool present { false };
+            };
+        } // namespace EIFilters
+
+        struct ExchangeInformationSymbol
+        {
+            sym_t symbol;
+            asset_t baseAsset;
+            asset_t quoteAsset;
+            TradingStatus status;
+            int32_t dbSymbolId { -1 };
+            int32_t baseAssetPrecision { 0 };
+            int32_t quotePrecision { 0 };
+            int32_t quoteAssetPrecision { 0 };
+            int32_t baseCommissionPrecision { 0 };
+            int32_t quoteCommissionPrecision { 0 };
+            std::bitset<7> orderType;
+            std::bitset<3> permissions;
+            EIFilters::PriceFilter eifPrice;
+            EIFilters::PercentPrice eifPercentPrice;
+            EIFilters::LotSize eifLotSize;
+            EIFilters::MinNotional eifMinNotional;
+            EIFilters::IcebergParts eifIcebergParts;
+            EIFilters::MarketLotSize eifMarketLotSize;
+            EIFilters::MaxNumOrders eifMaxNumOrders;
+            EIFilters::MaxNumAlgoOrders eifMaxNumAlgoOrders;
+            EIFilters::MaxNumIcerbergOrders eifMaxNumIcerbergOrders;
+            EIFilters::MaxPosition eifMaxPosition;
+            bool icebergAllowed { false };
+            bool ocoAllowed { false };
+            bool quoteOrderQtyMarketAllowed { false };
+        };
+
+        struct ExchangeInformation
+        {
+            std::string timezone;
+            EIRateLimits limitWeight;
+            EIRateLimits limitOrderSecond;
+            EIRateLimits limitOrderDay;
+            std::unordered_map<sym_t, ExchangeInformationSymbol> symbols;
+        };
+
+        struct OrderBookEntry
+        {
+            currency_t price {};
+            currency_t quantity {};
+        };
+
+        struct OrderBook
+        {
+            uint64_t lastUpdateId { 0 };
+            std::vector<OrderBookEntry> asks;
+            std::vector<OrderBookEntry> bids;
         };
 
     } // namespace SPOT
@@ -437,12 +583,6 @@ namespace BINAPI_NAMESPACE
             SHORT // hedge-mode
         };
     }
-
-    enum class TradingStatus : int
-    {
-        Trading,
-        Break
-    };
 
     // In  ExchangeInformationSymbol::orderType each value correspond to the bits in the bitset
     enum class OrderType
@@ -459,14 +599,6 @@ namespace BINAPI_NAMESPACE
         takeProfitMarket,   // FuturesAPI
         trailingStopMarket, // FuturesAPI
         unknown,            // Returned on Stream. must not happen, API updates may occur in returning the unknow type
-    };
-
-    /// \brief Bits on AccountInformation::permissions
-    enum AccountPermissions
-    {
-        spot = 0,
-        margin,
-        leveraged
     };
 
     enum class StreamOrderTypeFutures
@@ -596,178 +728,59 @@ namespace BINAPI_NAMESPACE
         int64_t lastTradeId { 0 };  /// Stream field otherwise always 0
     };
 
-    struct EIRateLimits
-    {
-        uint32_t seconds { 0 };
-        uint32_t limit { 0 };
-    };
-
-    namespace EIFilters
-    {
-        struct PriceFilter
-        {
-            bool present { false };
-            currency_t minPrice { 0 };
-            currency_t maxPrice { 0 };
-            quantity_t tickSize { 0 };
-        };
-
-        struct PercentPrice
-        {
-            bool present { false };
-            currency_t multiplierUp { 0 };
-            currency_t multiplierDown { 0 };
-            int averagePriceMins { 0 };         // Not used in futures
-            currency_t multiplierDecimal { 0 }; // Used in futures
-        };
-
-        struct LotSize
-        {
-            bool present { false };
-            quantity_t minQty { 0 };
-            quantity_t maxQty { 0 };
-            quantity_t stepSize { 0 };
-        };
-
-        struct MinNotional
-        {
-            bool present { false };
-            currency_t minNotional { 0 };
-            int averagePriceMins { 0 };   // Not used in futures
-            bool applyToMarket { false }; // Not used in futures
-        };
-
-        struct IcebergParts
-        {
-            bool present { false };
-            int limit { 0 };
-        };
-
-        struct MarketLotSize
-        {
-            bool present { false };
-            quantity_t minQty { 0 };
-            quantity_t maxQty { 0 };
-            quantity_t stepSize { 0 };
-        };
-
-        struct MaxNumOrders
-        {
-            bool present { false };
-            int maxNumOrders { 0 };
-        };
-
-        struct MaxNumAlgoOrders
-        {
-            bool present { false };
-            int maxNumAlgoOrders { 0 };
-        };
-
-        struct MaxNumIcerbergOrders
-        {
-            bool present { false };
-            int maxNumIcebergOrders { 0 };
-        };
-
-        struct MaxPosition
-        {
-            bool present { false };
-            quantity_t maxPosition { 0 };
-        };
-    } // namespace EIFilters
-
-    struct ExchangeInformationSymbol
-    {
-        sym_t symbol;
-        asset_t baseAsset;
-        asset_t quoteAsset;
-        int dbSymbolId { -1 };
-        TradingStatus status;
-        int baseAssetPrecision { 0 };
-        int quotePrecision { 0 };
-        int quoteAssetPrecision { 0 };
-        int baseCommissionPrecision { 0 };
-        int quoteCommissionPrecision { 0 };
-        std::bitset<7> orderType;
-        std::bitset<3> permissions;
-        bool icebergAllowed { false };
-        bool ocoAllowed { false };
-        bool quoteOrderQtyMarketAllowed { false };
-        EIFilters::PriceFilter eifPrice;
-        EIFilters::PercentPrice eifPercentPrice;
-        EIFilters::LotSize eifLotSize;
-        EIFilters::MinNotional eifMinNotional;
-        EIFilters::IcebergParts eifIcebergParts;
-        EIFilters::MarketLotSize eifMarketLotSize;
-        EIFilters::MaxNumOrders eifMaxNumOrders;
-        EIFilters::MaxNumAlgoOrders eifMaxNumAlgoOrders;
-        EIFilters::MaxNumIcerbergOrders eifMaxNumIcerbergOrders;
-        EIFilters::MaxPosition eifMaxPosition;
-    };
-
-    struct ExchangeInformation
-    {
-        std::string timezone;
-        EIRateLimits limitWeight;
-        EIRateLimits limitOrderSecond;
-        EIRateLimits limitOrderDay;
-
-        std::unordered_map<std::string, ExchangeInformationSymbol> symbols;
-    };
-
     struct FutureAssets
     {
         std::string asset;
         bool marginAvailable;
         double autoAssetExchange;
     };
+    /*
+        struct FuturesExchangeInformationSymbol
+        {
+            std::string symbol;
+            std::string pair;
+            ContractType contractType;
+            uint64_t deliveryDate;
+            uint64_t onboardDate;
+            FutureSymbolStatus status;
+            percentage_t maintMarginPercent;
+            percentage_t requiredMarginPercent;
+            std::string baseAsset;
+            std::string quoteAsset;
+            std::string marginAsset;
+            int64_t pricePrecision;
+            int64_t quantityPrecision;
+            int64_t baseAssetPrecision;
+            int64_t quotePrecision;
+            FutureUnderlyingType underlyingType;
+            std::vector<FutureUnderlyingSubType> underlyingSubType;
+            int64_t settlePlan;
+            quantity_t triggerProtect;
+            quantity_t liquidationFee;
+            quantity_t marketTakeBound;
+            EIFilters::PriceFilter eifPrice;
+            EIFilters::PercentPrice eifPercentPrice;
+            EIFilters::LotSize eifLotSize;
+            EIFilters::MinNotional eifMinNotional;
+            EIFilters::MarketLotSize eifMarketLotSize;
+            EIFilters::MaxNumOrders eifMaxNumOrders;
+            EIFilters::MaxNumAlgoOrders eifMaxNumAlgoOrders;
+            std::set<OrderType> orderTypes;
+            std::set<OrderTimeInForce> orderTimeInForce;
+        };
 
-    struct FuturesExchangeInformationSymbol
-    {
-        std::string symbol;
-        std::string pair;
-        ContractType contractType;
-        uint64_t deliveryDate;
-        uint64_t onboardDate;
-        FutureSymbolStatus status;
-        percentage_t maintMarginPercent;
-        percentage_t requiredMarginPercent;
-        std::string baseAsset;
-        std::string quoteAsset;
-        std::string marginAsset;
-        int64_t pricePrecision;
-        int64_t quantityPrecision;
-        int64_t baseAssetPrecision;
-        int64_t quotePrecision;
-        FutureUnderlyingType underlyingType;
-        std::vector<FutureUnderlyingSubType> underlyingSubType;
-        int64_t settlePlan;
-        quantity_t triggerProtect;
-        quantity_t liquidationFee;
-        quantity_t marketTakeBound;
-        EIFilters::PriceFilter eifPrice;
-        EIFilters::PercentPrice eifPercentPrice;
-        EIFilters::LotSize eifLotSize;
-        EIFilters::MinNotional eifMinNotional;
-        EIFilters::MarketLotSize eifMarketLotSize;
-        EIFilters::MaxNumOrders eifMaxNumOrders;
-        EIFilters::MaxNumAlgoOrders eifMaxNumAlgoOrders;
-        std::set<OrderType> orderTypes;
-        std::set<OrderTimeInForce> orderTimeInForce;
-    };
+        struct FuturesExchangeInformation
+        {
+            uint64_t serverTime;
+            std::string futuresType;
+            EIRateLimits limitWeight;
+            EIRateLimits limitOrderSecond;
+            EIRateLimits limitOrderMinute;
 
-    struct FuturesExchangeInformation
-    {
-        uint64_t serverTime;
-        std::string futuresType;
-        EIRateLimits limitWeight;
-        EIRateLimits limitOrderSecond;
-        EIRateLimits limitOrderMinute;
-
-        std::unordered_map<sym_t, FutureAssets> assets;
-        std::unordered_map<sym_t, FuturesExchangeInformationSymbol> symbols;
-    };
-
+            std::unordered_map<sym_t, FutureAssets> assets;
+            std::unordered_map<sym_t, FuturesExchangeInformationSymbol> symbols;
+        };
+    */
     struct AccountInformation
     {
         std::string accountType;
@@ -782,26 +795,13 @@ namespace BINAPI_NAMESPACE
         std::bitset<3> permissions;
     };
 
-    struct OrderbookEntry
-    {
-        std::string price;
-        std::string quantity;
-    };
-
-    struct Orderbook
-    {
-        uint64_t lastUpdateId { 0 };
-        std::vector<OrderbookEntry> asks;
-        std::vector<OrderbookEntry> bids;
-    };
-
     struct FuturesOrderBook
     {
         uint64_t lastTimeUpdate { 0 };
         uint64_t messageOutputTime;
         uint64_t transactionTime;
-        std::vector<OrderbookEntry> asks;
-        std::vector<OrderbookEntry> bids;
+        //     std::vector<OrderbookEntry> asks;
+        //    std::vector<OrderbookEntry> bids;
     };
 
     struct UserStreamOrder
