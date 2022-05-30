@@ -27,10 +27,10 @@ namespace CENTAUR_NAMESPACE
         void showContextMenu(const QPoint &pos);
 
     signals:
-        void sgAddToWatchList(const QString &symbol, const QString &listName);
-        void sgRemoveWatchList(const int &row);
-        void sgSetSelection(const QString &source, const QString &symbol);
-        void sgRemoveSelection();
+        void snAddToWatchList(const QString &symbol, const QString &listName);
+        void snRemoveWatchList(const int &row);
+        void snSetSelection(const QString &source, const QString &symbol);
+        void snRemoveSelection();
 
     private:
         bool m_remove { false };

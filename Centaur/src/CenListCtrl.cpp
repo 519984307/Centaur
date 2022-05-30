@@ -43,12 +43,12 @@ void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
         if (!m_remove)
         {
             connect(&action, &QAction::triggered, this,
-                [&]() { emit sgAddToWatchList(itemData, objectName()); });
+                [&]() { emit snAddToWatchList(itemData, objectName()); });
         }
         else
         {
             connect(&action, &QAction::triggered, this,
-                [&]() { emit sgRemoveWatchList(index.row()); });
+                [&]() { emit snRemoveWatchList(index.row()); });
         }
 
         contextMenu.addAction(&action);
@@ -89,10 +89,10 @@ void CENTAUR_NAMESPACE::CenListCtrl::mousePressEvent(QMouseEvent *event)
     {
         QString source = itemModel.siblingAtColumn(4).data().toString();
         QString symbol = itemModel.siblingAtColumn(0).data().toString();
-        emit sgSetSelection(source, symbol);
+        emit snSetSelection(source, symbol);
     }
     else
     {
-        emit sgRemoveSelection();
+        emit snRemoveSelection();
     }
 }
