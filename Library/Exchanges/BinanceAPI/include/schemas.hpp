@@ -45,6 +45,10 @@ namespace BINAPI_NAMESPACE::local::schemas
         extern char query_user_universal_transfer[];
         extern char funding_wallet[];
         extern char get_api_key_permissions[];
+        extern char *test_connectivity;
+        extern char check_server_time[];
+        extern char exchange_info[];
+        extern char order_book[];
 
     } // namespace SPOT
 
