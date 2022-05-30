@@ -140,9 +140,58 @@ TEST_CASE("Communication JSON Protocols")
     CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test","implementation":"exchange"}})");
 }
 
-TEST_CASE("Protocol Generation private key")
+TEST_CASE("Protocol: load private key")
 {
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
 
-    ec.generatePrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Keys/privateKey.key");
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+}
+
+TEST_CASE("Protocol: load public key")
+{
+    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
+
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+}
+
+TEST_CASE("Protocol: Private Encrypt/Public decrypt")
+{
+    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
+
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+
+    std::string text = "plain text to be encrypted";
+
+    std::string base64, base16, decBase64, decBase16;
+
+    CHECK_NOTHROW((base64 = ec.encryptPrivate(text, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+    CHECK_NOTHROW((decBase64 = ec.decryptPrivate(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+
+    CHECK(decBase64 != text);
+
+    CHECK_NOTHROW((decBase64 = ec.decryptPublic(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+
+    CHECK(decBase64 == text);
+}
+
+TEST_CASE("Protocol: Public Encrypt/Private decrypt")
+{
+    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
+
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+
+    std::string text = "plain text to be encrypted";
+
+    std::string base64, base16, decBase64, decBase16;
+
+    CHECK_NOTHROW((base64 = ec.encryptPublic(text, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+    CHECK_NOTHROW((decBase64 = ec.decryptPublic(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+
+    CHECK(decBase64 != text);
+
+    CHECK_NOTHROW((decBase64 = ec.decryptPrivate(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+
+    CHECK(decBase64 == text);
 }
