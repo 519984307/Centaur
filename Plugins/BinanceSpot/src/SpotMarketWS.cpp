@@ -6,20 +6,18 @@
 
 #include "BinanceSPOT.hpp"
 
-CENTAUR_NAMESPACE::SpotMarketWS::SpotMarketWS()
+CENTAUR_NAMESPACE::SpotMarketWS::SpotMarketWS() :
+    BINAPI_NAMESPACE::ws::WSSpotBinanceAPI("")
 {
-    qRegisterMetaType<BINAPI_NAMESPACE::StreamDepthUpdate>("trader::api::StreamDepthUpdate");
+    qRegisterMetaType<binapi::StreamDepthUpdate>("binapi::StreamDepthUpdate");
 }
 
-CENTAUR_NAMESPACE::SpotMarketWS::~SpotMarketWS()
-{
-}
+CENTAUR_NAMESPACE::SpotMarketWS::~SpotMarketWS() = default;
 
 void CENTAUR_NAMESPACE::SpotMarketWS::initialize(BinanceSpotPlugin *obj, CENTAUR_INTERFACE_NAMESPACE::ILogger *logger)
 {
     m_obj    = obj;
     m_logger = logger;
-    logger->trace("SpotMarketWS", "SpotMarketWS::initialize");
 }
 
 void CENTAUR_NAMESPACE::SpotMarketWS::connected()
@@ -84,5 +82,10 @@ void CENTAUR_NAMESPACE::SpotMarketWS::depthUpdate(const std::string &symbol, con
         Qt::QueuedConnection,
         Q_ARG(QString, QString(symbol.c_str())),
         Q_ARG(quint64, static_cast<quint64>(eventTime)),
-        Q_ARG(BINAPI_NAMESPACE::StreamDepthUpdate, sdp));
+        Q_ARG(binapi::StreamDepthUpdate, sdp));
+}
+
+void cen::SpotMarketWS::pingSent(const bool &success) noexcept
+{
+    logTrace("SpotMarketWS", QString("Market SpotWS ping sent: %1").arg(success ? "Succeeded" : "Failed"));
 }

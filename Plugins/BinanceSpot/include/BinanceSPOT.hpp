@@ -67,7 +67,7 @@ namespace CENTAUR_NAMESPACE
     public slots:
         void onTickerUpdate(const QString &symbol, const quint64 &receivedTime, const double &price) noexcept;
         void onSubscription(const bool &subscribe, const bool &status, const int &id) noexcept;
-        void onDepthUpdate(const QString &symbol, const quint64 &eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) noexcept;
+        void onDepthUpdate(const QString &symbol, const quint64 &eventTime, const binapi::StreamDepthUpdate &sdp) noexcept;
         void onSpotStatus() noexcept;
         void onCoinInformation() noexcept;
         void onSpotDepositHistory() noexcept;
@@ -94,8 +94,8 @@ namespace CENTAUR_NAMESPACE
         CENTAUR_PLUGIN_NAMESPACE::StringIconVector m_symbols;
 
     private:
-        std::unique_ptr<BINAPI_NAMESPACE::BinanceAPI> m_api { nullptr };
-        BINAPI_NAMESPACE::ExchangeInformation m_exchInfo;
+        std::unique_ptr<BINAPI_NAMESPACE::BinanceAPISpot> m_api { nullptr };
+        BINAPI_NAMESPACE::SPOT::ExchangeInformation m_exchInfo;
         BINAPI_NAMESPACE::BinanceLimits m_limits;
         BINAPI_NAMESPACE::BinanceKeys m_keys;
 
@@ -117,6 +117,7 @@ namespace CENTAUR_NAMESPACE
         void connected() override;
         void close() override;
         void connectionError() override;
+        void pingSent(const bool &success) noexcept override;
 
     protected:
         void subscribe(const bool &status, const int &id) override;

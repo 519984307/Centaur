@@ -19,62 +19,58 @@ namespace
     constexpr char g_uuidString[]               = "{85261bc6-8f92-57ca-802b-f08b819031db}";
 } // namespace
 
-#define CATCH_API_EXCEPTION()                                                                                                                                                  \
-    catch (const trader::api::APIException &ex)                                                                                                                                \
-    {                                                                                                                                                                          \
-        switch (ex.type())                                                                                                                                                     \
-        {                                                                                                                                                                      \
-            case trader::api::APIException::Type::request:                                                                                                                     \
-                {                                                                                                                                                              \
-                    auto request = ex.request();                                                                                                                               \
-                    logError("BinanceSPOTPlugin", fmt::format("REQUEST.\nCode: {}. URL: {}\n{}\n", std::get<0>(request), std::get<1>(request), std::get<2>(request)).c_str()); \
-                }                                                                                                                                                              \
-                break;                                                                                                                                                         \
-            case trader::api::APIException::Type::limits:                                                                                                                      \
-                logError("BinanceSPOTPlugin", fmt::format("LIMITS.\n{}\n", std::get<0>(ex.limits())).c_str());                                                                 \
-                break;                                                                                                                                                         \
-            case trader::api::APIException::Type::http1:                                                                                                                       \
-                {                                                                                                                                                              \
-                    auto http1 = ex.http1();                                                                                                                                   \
-                    logError("BinanceSPOTPlugin", fmt::format("HTTPa.\nCode: {}\nURL: {}\n{}\n", std::get<0>(http1), std::get<1>(http1), std::get<2>(http1)).c_str());         \
-                }                                                                                                                                                              \
-                break;                                                                                                                                                         \
-            case trader::api::APIException::Type::http2:                                                                                                                       \
-                {                                                                                                                                                              \
-                    auto http2 = ex.http2();                                                                                                                                   \
-                    logError("BinanceSPOTPlugin", fmt::format("HTTPb.\nStatus: {}. Code: {}\nURL: {}.\n{}\n",                                                                  \
-                                                      std::get<0>(http2),                                                                                                      \
-                                                      std::get<1>(http2),                                                                                                      \
-                                                      std::get<2>(http2),                                                                                                      \
-                                                      std::get<4>(http2))                                                                                                      \
-                                                      .c_str());                                                                                                               \
-                }                                                                                                                                                              \
-                break;                                                                                                                                                         \
-            case trader::api::APIException::Type::json:                                                                                                                        \
-                {                                                                                                                                                              \
-                    auto json = ex.json();                                                                                                                                     \
-                    logError("BinanceSPOTPlugin", fmt::format("JSON.\nURL: {}\n{}\n", std::get<0>(json), std::get<1>(json)).c_str());                                          \
-                }                                                                                                                                                              \
-                break;                                                                                                                                                         \
-            case trader::api::APIException::Type::api:                                                                                                                         \
-                {                                                                                                                                                              \
-                    auto api1 = ex.api();                                                                                                                                      \
-                    logError("BinanceSPOTPlugin", fmt::format("API.\nCode: {}\nURL: {}\n{}", std::get<0>(api1), std::get<1>(api1), std::get<2>(api1)).c_str());                \
-                }                                                                                                                                                              \
-                break;                                                                                                                                                         \
-            case trader::api::APIException::Type::schema:                                                                                                                      \
-                {                                                                                                                                                              \
-                    auto schema = ex.schema();                                                                                                                                 \
-                    logError("BinanceSPOTPlugin", fmt::format("SCHEMA.\nURL: {}\n{}\n", std::get<0>(schema), std::get<1>(schema)).c_str());                                    \
-                }                                                                                                                                                              \
-                break;                                                                                                                                                         \
-        }                                                                                                                                                                      \
-        return false;                                                                                                                                                          \
+#define CATCH_API_EXCEPTION()                                                                                                                                              \
+    switch (ex.type())                                                                                                                                                     \
+    {                                                                                                                                                                      \
+        case BINAPI_NAMESPACE::APIException::Type::request:                                                                                                                \
+            {                                                                                                                                                              \
+                auto request = ex.request();                                                                                                                               \
+                logError("BinanceSPOTPlugin", fmt::format("REQUEST.\nCode: {}. URL: {}\n{}\n", std::get<0>(request), std::get<1>(request), std::get<2>(request)).c_str()); \
+            }                                                                                                                                                              \
+            break;                                                                                                                                                         \
+        case BINAPI_NAMESPACE::APIException::Type::limits:                                                                                                                 \
+            logError("BinanceSPOTPlugin", fmt::format("LIMITS.\n{}\n", std::get<0>(ex.limits())).c_str());                                                                 \
+            break;                                                                                                                                                         \
+        case BINAPI_NAMESPACE::APIException::Type::http1:                                                                                                                  \
+            {                                                                                                                                                              \
+                auto http1 = ex.http1();                                                                                                                                   \
+                logError("BinanceSPOTPlugin", fmt::format("HTTPa.\nCode: {}\nURL: {}\n{}\n", std::get<0>(http1), std::get<1>(http1), std::get<2>(http1)).c_str());         \
+            }                                                                                                                                                              \
+            break;                                                                                                                                                         \
+        case BINAPI_NAMESPACE::APIException::Type::http2:                                                                                                                  \
+            {                                                                                                                                                              \
+                auto http2 = ex.http2();                                                                                                                                   \
+                logError("BinanceSPOTPlugin", fmt::format("HTTPb.\nStatus: {}. Code: {}\nURL: {}.\n{}\n",                                                                  \
+                                                  std::get<0>(http2),                                                                                                      \
+                                                  std::get<1>(http2),                                                                                                      \
+                                                  std::get<2>(http2),                                                                                                      \
+                                                  std::get<4>(http2))                                                                                                      \
+                                                  .c_str());                                                                                                               \
+            }                                                                                                                                                              \
+            break;                                                                                                                                                         \
+        case BINAPI_NAMESPACE::APIException::Type::json:                                                                                                                   \
+            {                                                                                                                                                              \
+                auto json = ex.json();                                                                                                                                     \
+                logError("BinanceSPOTPlugin", fmt::format("JSON.\nURL: {}\n{}\n", std::get<0>(json), std::get<1>(json)).c_str());                                          \
+            }                                                                                                                                                              \
+            break;                                                                                                                                                         \
+        case BINAPI_NAMESPACE::APIException::Type::api:                                                                                                                    \
+            {                                                                                                                                                              \
+                auto api1 = ex.api();                                                                                                                                      \
+                logError("BinanceSPOTPlugin", fmt::format("API.\nCode: {}\nURL: {}\n{}", std::get<0>(api1), std::get<1>(api1), std::get<2>(api1)).c_str());                \
+            }                                                                                                                                                              \
+            break;                                                                                                                                                         \
+        case BINAPI_NAMESPACE::APIException::Type::schema:                                                                                                                 \
+            {                                                                                                                                                              \
+                auto schema = ex.schema();                                                                                                                                 \
+                logError("BinanceSPOTPlugin", fmt::format("SCHEMA.\nURL: {}\n{}\n", std::get<0>(schema), std::get<1>(schema)).c_str());                                    \
+            }                                                                                                                                                              \
+            break;                                                                                                                                                         \
     }
 
 CENTAUR_NAMESPACE::BinanceSpotPlugin::BinanceSpotPlugin(QObject *parent) :
     QObject(parent),
-    m_spotWS { std::make_unique<SpotMarketWS>() },
+    m_spotWS { nullptr },
     m_globalPluginUuid { g_uuidString }
 {
 }
@@ -109,7 +105,6 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE
 {
     m_logger = logger;
     m_config = config;
-
 }
 
 CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() noexcept
@@ -141,38 +136,40 @@ CENTAUR_PLUGIN_NAMESPACE::FuncPointer CENTAUR_NAMESPACE::BinanceSpotPlugin::conn
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::initialization");
-    /*
-m_api = std::make_unique<trader::api::BinanceAPI>(&m_keys, &m_limits);
 
-try
-{
-m_spotWS->initialize(this, m_logger);
-m_api->apiPing();
-logInfo("BinanceSpotPlugin", "Binance Server SPOT ping correctly");
-if (!m_api->apiExchangeStatus())
-{
-logError("BinanceSpotPlugin", "Binance Server is under maintenance");
-return false;
-}
+    m_api = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
 
-logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
-m_exchInfo = m_api->apiExchangeInformation();
-logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(m_api->getLastCallTime()));
+    try
+    {
+        m_api->ping();
+        logInfo("BinanceSpotPlugin", "Binance Server SPOT ping correctly");
+        if (!m_api->getExchangeStatus())
+        {
+            logError("BinanceSpotPlugin", "Binance Server is under maintenance");
+            return false;
+        }
 
-m_limits.setAPIRequestsLimits(m_exchInfo.limitWeight.limit, m_exchInfo.limitWeight.seconds);
-m_limits.setAPIOrderLimitLow(m_exchInfo.limitOrderSecond.limit, m_exchInfo.limitOrderSecond.seconds);
-m_limits.setAPIOrderLimitHigh(m_exchInfo.limitOrderDay.limit, m_exchInfo.limitOrderDay.seconds);
+        logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
+        m_exchInfo = m_api->getExchangeInformation();
+        logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(m_api->getLastCallTime()));
 
-logInfo("BinanceSpotPlugin", "Binance SPOT limits changed.");
+        m_limits.setAPIRequestsLimits(m_exchInfo.limitWeight.limit, m_exchInfo.limitWeight.seconds);
+        m_limits.setAPIOrderLimitLow(m_exchInfo.limitOrderSecond.limit, m_exchInfo.limitOrderSecond.seconds);
+        m_limits.setAPIOrderLimitHigh(m_exchInfo.limitOrderDay.limit, m_exchInfo.limitOrderDay.seconds);
 
-for (const auto &[sym, info] : m_exchInfo.symbols)
-{
-if (info.permissions.test(trader::api::AccountPermissions::SPOT))
-  m_symbols.push_back({ QString { info.symbol.c_str() }, &m_cryptoIcon });
-}
-logInfo("BinanceSpotPlugin", QString("Symbols handled: ##00FFFF#%1#").arg(m_symbols.size()));
-}
-CATCH_API_EXCEPTION()                                          */
+        logInfo("BinanceSpotPlugin", "Binance SPOT limits changed.");
+
+        for (const auto &[sym, info] : m_exchInfo.symbols)
+        {
+            if (info.permissions.test(BINAPI_NAMESPACE::SPOT::AccountPermissions::spot))
+                m_symbols.push_back({ QString { info.symbol.c_str() }, &m_cryptoIcon });
+        }
+        logInfo("BinanceSpotPlugin", QString("Symbols handled: ##00FFFF#%1#").arg(m_symbols.size()));
+    } catch (const BINAPI_NAMESPACE::APIException &ex)
+    {
+        CATCH_API_EXCEPTION()
+        return false;
+    }
     return true;
 }
 
@@ -194,15 +191,25 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::runMarketWS");
 
+    if (m_spotWSThread && m_spotWSThread->joinable())
+    {
+        m_spotWS->terminate();
+        m_spotWSThread->join();
+    }
+    m_spotWSThread.reset();
+    m_spotWS.reset();
+
+    m_spotWS = std::make_unique<SpotMarketWS>();
+    m_spotWS->initialize(this, m_logger);
+
     auto ticker          = m_spotWS->subscribeIndividualMiniTicker(symbol.toStdString());
     const std::string ep = m_spotWS->constructEndPoint(std::get<std::string>(ticker));
 
-    //
-    m_spotWSThread = std::make_unique<std::thread>([&, ep] {
+    m_spotWS->setEndPoint(ep);
+
+    m_spotWSThread = std::make_unique<std::thread>([&] {
         logInfo("BinanceSpotPlugin", "Spot WebSocket thread created.");
-        // Run the ticker, with the multiple stream as true
-        // because the use might want more streams
-        m_spotWS->run(ep, true);
+        m_spotWS->run();
     });
 }
 
@@ -219,7 +226,7 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, const 
 
     logInfo("BinanceSpotPlugin", QString("Attempting to add %1 to the watchlist").arg(name));
 
-    if (m_spotWSThread == nullptr) // The WS is not running
+    if (!m_spotWSThread || !m_spotWS) // The WS is not running
     {
         logInfo("BinanceSpotPlugin", "Adding the symbol will attempt to run a websocket.");
         // Start the thread and specify the new data
@@ -358,35 +365,35 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::stopOrderbook(const QString &symbol) 
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, const quint64 &eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) noexcept
 {
     /*
-   Open a stream to wss://stream.binance.com:9443/ws/bnbbtc@@depth.
-   Buffer the events you receive from the stream.
-   Get a depth snapshot from https://api.binance.com/api/v3/depth?symbol=BNBBTC&limit=1000 .
-   Drop any event where u is <= lastUpdateId in the snapshot.
-   The first processed event should have U <= lastUpdateId+1 AND u >= lastUpdateId+1.
-   While listening to the stream, each new event's U should be equal to the previous event's u+1.
-   The data in each event is the absolute quantity for a price level.
-   If the quantity is 0, remove the price level.
-   Receiving an event that removes a price level that is not in your local order book can happen and is normal.
-   */
-    /*
+    Open a stream to wss://stream.binance.com:9443/ws/bnbbtc@@depth.
+    Buffer the events you receive from the stream.
+    Get a depth snapshot from https://api.binance.com/api/v3/depth?symbol=BNBBTC&limit=1000 .
+    Drop any event where u is <= lastUpdateId in the snapshot.
+    The first processed event should have U <= lastUpdateId+1 AND u >= lastUpdateId+1.
+    While listening to the stream, each new event's U should be equal to the previous event's u+1.
+    The data in each event is the absolute quantity for a price level.
+    If the quantity is 0, remove the price level.
+    Receiving an event that removes a price level that is not in your local order book can happen and is normal.
+    */
+
     const auto &[snap, lastUpdate] = m_symbolOrderbookSnapshot[symbol];
     uint64_t lastUpdateId          = lastUpdate;
     if (!snap)
     {
         // Take the snapshot
-        trader::api::BinanceLimits limits;
-        trader::api::BinanceKeys keys;
-        trader::api::BinanceAPI api(&keys, &limits);
+
+        BINAPI_NAMESPACE::BinanceAPISpot api(nullptr, nullptr);
 
         try
         {
-            auto orderbook                    = m_api->apiOrderbook(symbol.toStdString(), trader::api::OrderBookLimits::l1000);
+            auto orderbook                    = m_api->getOrderBook(symbol.toStdString(), 1000);
             m_symbolOrderbookSnapshot[symbol] = { true, lastUpdateId };
             lastUpdateId                      = orderbook.lastUpdateId;
             logInfo("BinanceSpotPlugin", QString("Orderbook snapshot successfully taken for %1").arg(symbol));
-        } catch (const std::exception &)
+        } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
-            logError("BinanceSpotPlugin", QString("failed to retrieve the orderbook snapshot for the %1 symbol").arg(symbol));
+            CATCH_API_EXCEPTION()
+            return;
         }
     }
 
@@ -430,20 +437,24 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
 
     emit snOrderbookUpdate(g_uuidString, symbol, eventTime, bids, asks);
 
-    m_symbolOrderbookSnapshot[symbol] = { true, sdp.finalUpdateId };           */
+    m_symbolOrderbookSnapshot[symbol] = { true, sdp.finalUpdateId };
 }
+
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotStatus() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotStatus");
 }
+
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onCoinInformation() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onCoinInformation");
 }
+
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotDepositHistory() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotDepositHistory");
 }
+
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotWithdrawHistory() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotWithdrawHistory");
