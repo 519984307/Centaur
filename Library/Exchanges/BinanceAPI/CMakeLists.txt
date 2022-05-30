@@ -8,10 +8,12 @@ find_package(cpr REQUIRED)
 find_package(libwebsockets REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-
 message(STATUS "OpenSSL: Version ${OPENSSL_VERSION}")
 message(STATUS "OpenSSL: include dir at ${OPENSSL_INCLUDE_DIR}")
 message(STATUS "OpenSSL: libraries at ${OPENSSL_LIBRARIES} ${OPENSSL_SSL_LIBRARIES}")
+
+
+message(STATUS "LibWebSockets: libraries at ${Libwebsockets_INCLUDE_DIRS}")
 
 
 add_library(BinanceAPI SHARED
@@ -38,6 +40,7 @@ add_library(BinanceAPI SHARED
 
 
 include_directories(include PRIVATE)
+include_directories(Mongoose PRIVATE)
 
 
 target_link_libraries(BinanceAPI PRIVATE fmt::fmt)
