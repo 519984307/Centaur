@@ -22,7 +22,7 @@ CENTAUR_NAMESPACE::Globals *CENTAUR_NAMESPACE::g_globals { nullptr };
 auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noexcept -> ErrorDetail
 {
     assert(g_globals != nullptr);
-    const QString localeFile = QString("%1/Local/%2.xml").arg(g_globals->paths.installPath, language);
+    const QString localeFile = QString("%1/Locale/%2.xml").arg(g_globals->paths.installPath, language);
     {
         // make the unique_ptr's being release before the call to terminate
         std::unique_ptr<xercesc::XercesDOMParser> parser = std::make_unique<xercesc::XercesDOMParser>();
@@ -103,7 +103,7 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
 
 namespace
 {
-    // clang-format off
+// clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF(exit-time-destructors)
