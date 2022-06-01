@@ -109,8 +109,6 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE
 
 CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() noexcept
 {
-    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::getPluginUUID");
-
     return m_globalPluginUuid;
 }
 
