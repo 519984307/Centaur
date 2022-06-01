@@ -87,9 +87,8 @@ CENTAUR_WARN_OFF(weak-vtables)
 CENTAUR_WARN_OFF(suggest-destructor-override)
 // clang-format on
 #endif /*__clang__*/
-#include "../ui/ui_CentaurApp.h"
-#include <qwt_plot_curve.h>
-#include <qwt_scale_engine.h>
+//#include <qwt_plot_curve.h>
+//#include <qwt_scale_engine.h>
 #if defined(__clang__) || defined(__GNUC__)
 CENTAUR_WARN_POP()
 #endif /*__clang__*/
