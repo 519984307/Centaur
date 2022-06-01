@@ -75,8 +75,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         C_NODISCARD virtual QString getPluginVersionString() noexcept = 0;
 
         /// \brief init the logger and the configuration interfaces
-        /// \param logger Use to set the logging capabilities from the main application
-        /// \param config Configuration access from the configuration file
+        /// \param logger Use to communicate plugin logs in the user interface
+        /// \param config Configuration access from the configuration file. This structure wont hold data by the time this function is called. However, by the time the initialization methods
+        ///               of an IBase derived class this structure will hold the plugin data
         virtual void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept = 0;
 
         /// \brief Get the plugin UUID

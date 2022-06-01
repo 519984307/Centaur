@@ -97,8 +97,49 @@ namespace CENTAUR_INTERFACE_NAMESPACE
     };
 
     /// \brief Provide the methods to access the main configuration file in the plugin data
+    ///        In case you want to store an encrypted password you must use the libProtocol interfaces.
+    ///        The data must be encrypted with the plugin private key (stored on the Resources/Private folder
+    ///        And the plugin must use the public key to decrypt the data
     struct IConfiguration
     {
+        virtual ~IConfiguration() = default;
+
+    public:
+        /// \brief Returns the file name containing the plugin key
+        /// \return The file containing the data
+        virtual auto getPluginPublicKeyPath() -> std::string = 0;
+
+    public:
+        /// \brief Get a value from the configuration file as string
+        /// \param key Key name value
+        /// \param error If the key does not exists error will be set to true
+        /// \return The value.
+        virtual auto getValue(const std::string &key, bool *error) -> std::string = 0;
+
+        /// \brief Get a value from the configuration file as uint32_t
+        /// \param key Key name value
+        /// \param error If the key does not exists error will be set to true
+        virtual auto getUint32(const std::string &key, bool *error) -> uint32_t = 0;
+
+        /// \brief Get a value from the configuration file as string
+        /// \param key Key name value
+        /// \param error If the key does not exists error will be set to true
+        virtual auto getUint64(const std::string &key, bool *error) -> uint64_t = 0;
+
+        /// \brief Get a value from the configuration file as string
+        /// \param key Key name value
+        /// \param error If the key does not exists error will be set to true
+        virtual auto getInt32(const std::string &key, bool *error) -> int32_t = 0;
+
+        /// \brief Get a value from the configuration file as string
+        /// \param key Key name value
+        /// \param error If the key does not exists error will be set to true
+        virtual auto getInt64(const std::string &key, bool *error) -> int64_t = 0;
+
+        /// \brief Get a value from the configuration file as string
+        /// \param key Key name value
+        /// \param error If the key does not exists error will be set to true
+        virtual auto getBool(const std::string &key, bool *error) -> bool = 0;
     };
 
 } // namespace CENTAUR_INTERFACE_NAMESPACE
