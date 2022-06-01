@@ -7,6 +7,7 @@
 #include "ExchangeRate.hpp"
 #include "CentaurInterface.hpp"
 #include "CentaurPlugin.hpp"
+#include "protocol.hpp"
 
 #include <QObject>
 
@@ -164,8 +165,6 @@ void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_I
 }
 CENTAUR_NAMESPACE::uuid CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginUUID() noexcept
 {
-    logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::setPluginInterfaces");
-
     return m_thisUUID;
 }
 
@@ -184,13 +183,41 @@ void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::updateExchangeRate() noexcept
 {
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::updateExchangeRate");
 
-    std::string base, quote;
-    base                   = "USD";
-    quote                  = "MXN";
+    std::string base, quote, key;
+
+    bool baseError, quoteError, keyError;
+    base  = m_config->getValue("base", &baseError);
+    quote = m_config->getValue("quote", &quoteError);
+    key   = m_config->getValue("apiKey", &keyError);
+
+    if (!baseError || !quoteError || !keyError)
+    {
+        logError("ExchangeRatePlugin", QString("Configuration data is incomplete."));
+        return;
+    }
+
+    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
+    try
+    {
+        ec.loadPublicKey(m_config->getPluginPublicKeyPath());
+    } catch (const std::exception &ex)
+    {
+        logError("ExchangeRatePlugin", QString { "RSA Key could not be opened. %1" }.arg(ex.what()));
+        return;
+    }
+
+    auto decryptedKey = ec.decryptPublic(key, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
+
+    // API_KEY: KJX64L888HD5U5T9
+    if (decryptedKey.empty())
+    {
+        logError("ExchangeRatePlugin", "Error deciphering the https://www.alphavantage.co/query API Key ");
+        return;
+    }
 
     cpr::Response exchange = cpr::Get(cpr::Url { "https://www.alphavantage.co/query" },
         cpr::Parameters { { "function", "CURRENCY_EXCHANGE_RATE" },
-            { "apikey", "KJX64L888HD5U5T9" },
+            { "apikey", decryptedKey },
             { "from_currency", "USD" },
             { "to_currency", "MXN" } });
 
