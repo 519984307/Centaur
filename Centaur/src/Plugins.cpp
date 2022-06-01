@@ -110,8 +110,16 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                 {
                     m_pluginsData.push_back(baseInterface);
                     // Init the plugin
-                    baseInterface->setPluginInterfaces(g_logger, nullptr);
+
+                    auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
+
+                    loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
+                    baseInterface->setPluginInterfaces(g_logger, static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig));
+
                     logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
+                    // Generate the plugin data
+                    m_configurationInterface[baseInterface->getPluginUUID().to_string().c_str()] = pluginConfig;
+
                     if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
                     {
                         logInfo("plugin", QString(LS("info-plugin-iexchange")).arg(plFile));
@@ -121,14 +129,14 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                             logWarn("plugin", QString(LS("warning-iexchange-plugin-unloaded")).arg(plFile));
                         }
                         else
-                            updatePluginsMenu(exInterface->getPluginUUID(), doc, baseInterface);
+                            updatePluginsMenus(exInterface->getPluginUUID(), doc, baseInterface);
                     }
                     else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                     {
                         logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
                         // Init the plugin
                         stInterface->initialization(m_ui->m_statusBar);
-                        updatePluginsMenu(stInterface->getPluginUUID(), doc, baseInterface);
+                        updatePluginsMenus(stInterface->getPluginUUID(), doc, baseInterface);
                     }
                 }
             }
@@ -148,7 +156,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
     }
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, xercesc::DOMDocument *doc, CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc::DOMDocument *doc, CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
 {
 
     auto pluginUuidStr = XMLStr { uuid.to_string().c_str() };
@@ -288,6 +296,73 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenu(const uuid &uuid, xercesc:
     }
 }
 
+void CENTAUR_NAMESPACE::CentaurApp::loadPluginLocalData(const CENTAUR_NAMESPACE::uuid &uuid, xercesc::DOMDocument *doc, PluginConfiguration *config) noexcept
+{
+    auto pluginUuidStr = XMLStr { uuid.to_string().c_str() };
+
+    auto docElem       = doc->getDocumentElement();
+
+    if (docElem == nullptr)
+    {
+        logWarn("plugins", LS("warning-plugins-file-empty"));
+        return;
+    }
+
+    auto nodeList = docElem->getElementsByTagName(XMLStr { "plugin" });
+
+    auto uuidStr  = XMLStr { "uuid" };
+    auto localStr = XMLStr { "local" };
+
+    for (auto i = 0ull; i < nodeList->getLength(); ++i)
+    {
+        auto node = nodeList->item(i);
+
+        if (node->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
+        {
+            auto attributes = node->getAttributes();
+            if (attributes == nullptr || attributes->getLength() == 0ull)
+                continue;
+
+            auto attribute = attributes->getNamedItem(uuidStr);
+            if (attribute == nullptr)
+                continue;
+
+            if (!xercesc::XMLString::equals(attribute->getNodeValue(), pluginUuidStr))
+                continue;
+
+            if (!node->hasChildNodes())
+                continue;
+
+            auto nodeChildrenLocals = (dynamic_cast<xercesc::DOMElement *>(node))->getElementsByTagName(localStr);
+
+            if (nodeChildrenLocals->getLength() == 0)
+                continue;
+
+            auto nodeChildren = nodeChildrenLocals->item(0)->getChildNodes(); // Only one element will be parsed
+            for (auto idx = 0ull; idx < nodeChildren->getLength(); ++idx)
+            {
+                auto localChildren = nodeChildren->item(idx);
+                if (localChildren->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
+                {
+                    StrXML localNodeName { localChildren->getNodeName() };
+                    auto localNodeChildren = localChildren->getChildNodes();
+                    for (auto jdx = 0ull; jdx < localNodeChildren->getLength(); ++jdx)
+                    {
+                        auto localNodeChild = localNodeChildren->item(jdx);
+                        if (localNodeChild->getNodeType() == xercesc::DOMNode::NodeType::TEXT_NODE)
+                        {
+                            XMLCh *value = const_cast<XMLCh *>(localNodeChild->getNodeValue());
+                            xercesc::XMLString::trim(value);
+                            config->addValue(std::string { localNodeName }, std::string { StrXML { value } });
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
 {
     logTrace("plugins", "CentaurApp::initExchangePlugin");
@@ -305,8 +380,8 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
     m_exchangeList[QString { uuid.to_string().c_str() }] = ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first };
 
     // clang-format off
-    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString, int, quint64, double)), this, SLOT(onTickerUpdate(QString, int, quint64, double)));
-    connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString, QString, quint64, QMap<QString, QPair<QString, QString>>, QMap<QString, QPair<QString, QString>>)), this, SLOT(onOrderbookUpdate(QString, QString, quint64, QMap<QString, QPair<QString, QString>>, QMap<QString, QPair<QString, QString>>)));
+    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
+    connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString,QString,quint64,QMap<QString,QPair<QString,QString> >,QMap<QString,QPair<QString,QString> >)), this, SLOT(onOrderbookUpdate(QString, QString, quint64, QMap<QString, QPair<QString, QString>>, QMap<QString, QPair<QString, QString>>)));
     // connect(exchange->getPluginObject(), SIGNAL(emitAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)), this, SLOT(onBalanceAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)));
     // connect(exchange->getPluginObject(), SIGNAL(emitBalanceUpdate(QList<QString>,int)), this, SLOT(onBalanceUpdate(QList<QString>,int)));
     // clang-format on
