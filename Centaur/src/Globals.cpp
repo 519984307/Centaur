@@ -282,7 +282,8 @@ auto cen::Globals::VisualsUI::parseVisuals(xercesc::DOMDocument *doc, Ui::Centau
         QFont font;
         QString qss;
         parseHeader(node, qss, font);
-        edit->setStyleSheet(qss);
+        if (!qss.isEmpty())
+            edit->setStyleSheet(qss);
         edit->setFont(font);
     };
 
@@ -290,7 +291,8 @@ auto cen::Globals::VisualsUI::parseVisuals(xercesc::DOMDocument *doc, Ui::Centau
         QString qss;
         QFont font;
         parseHeader(node, qss, font);
-        label->setStyleSheet(qss);
+        if (!qss.isEmpty())
+            label->setStyleSheet(qss);
         label->setFont(font);
     };
 
@@ -344,12 +346,13 @@ auto cen::Globals::VisualsUI::parseVisuals(xercesc::DOMDocument *doc, Ui::Centau
             if (node->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
             {
                 auto elementNode = dynamic_cast<xercesc::DOMElement *>(node);
-                qDebug() << StrXML { elementNode->getNodeName() };
+                //// qDebug() << StrXML { elementNode->getNodeName() };
                 if (elementNode->getNodeName() == headerStr)
                 {
                     QString qssHeader;
                     parseHeader(elementNode, qssHeader, g_globals->fonts.symbolsDock.headerFont);
-                    ui->listWatchList->horizontalHeader()->setStyleSheet(qssHeader);
+                    if (!qssHeader.isEmpty())
+                        ui->listWatchList->horizontalHeader()->setStyleSheet(qssHeader);
                 }
                 else if (elementNode->getNodeName() == searchStr)
                 {
@@ -367,10 +370,13 @@ auto cen::Globals::VisualsUI::parseVisuals(xercesc::DOMDocument *doc, Ui::Centau
                             if (tableElementNode->getNodeName() == qssStr)
                             {
                                 const QString tableStyleSheet = parseQSS(tableElementNode);
-                                ui->listWatchList->setStyleSheet(tableStyleSheet);
+                                if (!tableStyleSheet.isEmpty())
+                                    ui->listWatchList->setStyleSheet(tableStyleSheet);
                             }
                             else if (tableElementNode->getNodeName() == fontStr)
+                            {
                                 parseFont(g_globals->fonts.symbolsDock.tableFont, tableElementNode);
+                            }
                             else if (tableElementNode->getNodeName() == priceStr)
                             {
                                 g_globals->colors.symbolsDockColors.priceUp.setNamedColor(retrieveAttributeString(tableElementNode->getAttributeNode(upColorStr)));
@@ -423,13 +429,15 @@ auto cen::Globals::VisualsUI::parseVisuals(xercesc::DOMDocument *doc, Ui::Centau
                     {
                         QString qssHeader;
                         parseHeader(sideNode, qssHeader, headerFont);
-                        table->horizontalHeader()->setStyleSheet(qssHeader);
+                        if (!qssHeader.isEmpty())
+                            table->horizontalHeader()->setStyleSheet(qssHeader);
                     }
                     else if (sideNode->getNodeName() == tableStr)
                     {
                         QString qssTable;
                         parseSimpleTable(sideNode, qssTable, tableFont);
-                        table->setStyleSheet(qssTable);
+                        if (!qssTable.isEmpty())
+                            table->setStyleSheet(qssTable);
                     }
                     else if (sideNode->getNodeName() == titleStr)
                     {
