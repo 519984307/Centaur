@@ -10,3 +10,6 @@
 /conan/debug
 /conan/release
 
+Library/Exchanges/BinanceAPI/binapi-old.cpp
+Library/Exchanges/BinanceAPI/binapi-old.hpp
+Library/Exchanges/BinanceAPI/WSThread-old.cpp
