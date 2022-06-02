@@ -8,4 +8,9 @@
     <qresource prefix="/svg/edit">
         <file alias="search_gray">../res/img/search_gray_48dp.svg</file>
     </qresource>
+
+    <qresource prefix="/svg/favorites">
+        <file alias="star">../res/img/star_gold_48dp.svg</file>
+    </qresource>
 </RCC>
+

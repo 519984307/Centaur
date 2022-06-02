@@ -45,6 +45,10 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/LoggerFormatter.cpp
         src/Plugins.cpp
         src/PluginsDialog.cpp
+        src/FavoritesDialog.cpp
+        src/LongOperation.cpp
+        src/ConfigurationInterface.cpp
+        src/CentaurLoadData.cpp
         include/CentaurApp.hpp
         include/CentaurGlobal.hpp
         include/CentaurUIState.hpp
@@ -53,16 +57,18 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         include/HTMLDelegate.hpp
         include/Globals.hpp
         include/PluginsDialog.hpp
+        include/LongOperation.hpp
+        include/FavoritesDialog.hpp
+        include/ConfigurationInterface.hpp
+        include/XMLHelper.hpp
+        include/crc64.hpp
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
         ui/LenghtyDialog.ui
-        include/crc64.hpp
-        src/CentaurLoadData.cpp
-        include/ConfigurationInterface.hpp
-        include/XMLHelper.hpp
-        src/ConfigurationInterface.cpp include/LongOperation.hpp src/LongOperation.cpp)
+        ui/FavoritesDialog.ui
+        )
 
 set_target_properties(Centaur PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER centaur.project.com

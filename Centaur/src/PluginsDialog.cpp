@@ -18,6 +18,12 @@
 
 namespace CENTAUR_NAMESPACE
 {
+#if defined(__clang__) || defined(__GNUC__)
+    // clang-format off
+CENTAUR_WARN_PUSH()
+CENTAUR_WARN_OFF(weak-vtables)
+    // clang-format on
+#endif /*__clang__*/
     class PluginsSQLModel final : public QSqlQueryModel
     {
     public:
@@ -48,6 +54,7 @@ namespace CENTAUR_NAMESPACE
                             {
                                 value.setValue(LS("ui-dialog-loaded"));
                                 loaded = true;
+                                break;
                             }
                         }
                         if (!loaded)
@@ -82,6 +89,9 @@ namespace CENTAUR_NAMESPACE
             return value;
         }
     };
+#if defined(__clang__) || defined(__GNUC__)
+    CENTAUR_WARN_POP()
+#endif /*__clang__*/
 } // namespace CENTAUR_NAMESPACE
 
 CENTAUR_NAMESPACE::PluginsDialog::PluginsDialog(QWidget *parent) :

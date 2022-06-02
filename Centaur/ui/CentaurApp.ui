@@ -81,13 +81,13 @@
     <addaction name="m_actionTileWindows"/>
     <addaction name="m_actionCascadeWindows"/>
    </widget>
-   <widget class="QMenu" name="m_menuSymbols">
+   <widget class="QMenu" name="menuSymbols">
     <property name="title">
      <string>Symbols</string>
     </property>
-    <addaction name="m_actionWatchlistFavorites"/>
+    <addaction name="actionWatchlistFavorites"/>
    </widget>
-   <addaction name="m_menuSymbols"/>
+   <addaction name="menuSymbols"/>
    <addaction name="m_menuView"/>
    <addaction name="m_menuWindow"/>
   </widget>
@@ -643,7 +643,7 @@
   <action name="m_actionTileWindows">
    <property name="icon">
     <iconset theme="˙">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../../../../../Users/ricardo/.designer/backup</normaloff>../../../../../../../../Users/ricardo/.designer/backup</iconset>
    </property>
    <property name="text">
     <string>Tile windows</string>
@@ -674,9 +674,12 @@
     <string>Ctrl+Alt+5</string>
    </property>
   </action>
-  <action name="m_actionWatchlistFavorites">
+  <action name="actionWatchlistFavorites">
    <property name="text">
-    <string>Watchlist Favorites</string>
+    <string notr="true">Watchlist Favorites</string>
+   </property>
+   <property name="iconText">
+    <string notr="true">Watchlist Favorites</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+Ƒ</string>

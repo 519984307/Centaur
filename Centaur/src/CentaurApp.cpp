@@ -5,6 +5,7 @@
 //
 
 #include "CentaurApp.hpp"
+#include "FavoritesDialog.hpp"
 #include "HTMLDelegate.hpp"
 #include "PluginsDialog.hpp"
 #include <QMessageBox>
@@ -104,7 +105,7 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     g_globals->paths.installPath = "/Volumes/RicardoESSD/Projects/Centaur/local";
     g_globals->paths.pluginsPath = g_globals->paths.installPath + "/Plugin";
     g_globals->paths.resPath     = g_globals->paths.installPath + "/Resources";
-    
+
     // Start logging service
     startLoggingService();
 
@@ -194,6 +195,16 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->m_menuBar->addMenu(pluginsMenu);
 
     connect(pluginsAction, SIGNAL(triggered()), this, SLOT(onPlugins()));
+
+    // Connect favorites action
+    connect(m_ui->actionWatchlistFavorites,
+        &QAction::triggered,
+        this,
+        [&](C_UNUSED bool triggered) {
+            FavoritesDialog dlg(this);
+            dlg.setModal(true);
+            dlg.exec();
+        });
 
     m_ui->m_statusBar->setStyleSheet("QStatusBar::item { border: 2px; }");
 

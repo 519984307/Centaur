@@ -77,7 +77,7 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
                         const uint64_t crc64 = CENTAUR_NAMESPACE::crc64::compute(idValue, strlen(idValue));
                         if (m_locale.contains(crc64))
                         {
-                            qDebug() << "CRC64 for " << localeValue << "already exists";
+                            qDebug() << "CRC64 for " << idValue << "already exists";
                         }
                         else
                             m_locale[crc64] = localeValue;
@@ -164,12 +164,12 @@ auto cen::Globals::VisualsUI::loadVisualsUI(Ui::CentaurApp *ui) noexcept -> cen:
 
     return cen::Globals::VisualsUI::ErrorDetail::noError;
 }
-
+/*
 static bool operator==(const CENTAUR_NAMESPACE::XMLStr &p1, const CENTAUR_NAMESPACE::XMLStr &p2)
 {
     return xercesc::XMLString::equals(p1, p2);
 }
-
+*/
 static bool operator==(const XMLCh *p1, const CENTAUR_NAMESPACE::XMLStr &p2)
 {
     return xercesc::XMLString::equals(p1, p2);

@@ -61,6 +61,17 @@ namespace CENTAUR_NAMESPACE
             int lded { 120 };
         } datacols;
     };
+
+    struct FavoritesDialogInterfaceState
+    {
+        struct DataCols
+        {
+            int id { 80 };
+            int symbol { 80 };
+            int plugin { 80 };
+        } datacols;
+    };
+
 } // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_CENTAURUISTATE_HPP
