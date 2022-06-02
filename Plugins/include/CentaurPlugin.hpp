@@ -57,6 +57,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     using StringIcon       = std::pair<QString, QIcon *>;
     using StringIconVector = std::vector<StringIcon>;
 
+    // Use this UUID to generate v5 UUID for the plugins as well as to identify the plugin compatibility with the UI
+    constexpr char centaurUUID[] =  "{a15c48b4-460b-4a79-a0a8-8ece90603f85}";
+
     struct IBase
     {
         virtual ~IBase() = default;
