@@ -84,4 +84,4 @@ implements the Exchange User WebSockets, Market WebSockets as well as some basic
 
 ### Installing
 
-You can download the binaries for macOS x86/arm, Win32, linux, and follow the installation instructions.
+You can download the binaries for macOS Intel/arm, Windows, Linux, and follow the installation instructions.
