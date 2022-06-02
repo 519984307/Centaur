@@ -2,6 +2,7 @@
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include <catch2/catch.hpp>
 #include <chrono>
+#include <iostream>
 #include <protocol.hpp>
 #include <uuid.hpp>
 
@@ -158,10 +159,10 @@ TEST_CASE("Protocol: Private Encrypt/Public decrypt")
 {
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
 
-    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
-    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{f77ecf55-8162-5570-a9dc-3a79c6757c72}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{f77ecf55-8162-5570-a9dc-3a79c6757c72}.pem"));
 
-    std::string text = "plain text to be encrypted";
+    std::string text = "KJX64L888HD5U5T9";
 
     std::string base64, base16, decBase64, decBase16;
 
@@ -172,6 +173,7 @@ TEST_CASE("Protocol: Private Encrypt/Public decrypt")
 
     CHECK_NOTHROW((decBase64 = ec.decryptPublic(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
 
+    std::cout << base64;
     CHECK(decBase64 == text);
 }
 
@@ -179,10 +181,10 @@ TEST_CASE("Protocol: Public Encrypt/Private decrypt")
 {
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
 
-    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
-    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{f77ecf55-8162-5570-a9dc-3a79c6757c72}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{f77ecf55-8162-5570-a9dc-3a79c6757c72}.pem"));
 
-    std::string text = "plain text to be encrypted";
+    std::string text = "DSDSDDS";
 
     std::string base64, base16, decBase64, decBase16;
 
