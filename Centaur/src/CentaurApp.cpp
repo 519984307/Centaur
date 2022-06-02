@@ -8,8 +8,75 @@
 #include "HTMLDelegate.hpp"
 #include "PluginsDialog.hpp"
 #include <QMessageBox>
+#include <QSqlDatabase>
+#include <QSqlError>
+#include <QSqlField>
+#include <QSqlQuery>
+#include <QSqlRecord>
 
 CENTAUR_NAMESPACE::CentaurApp *CENTAUR_NAMESPACE::g_app = nullptr;
+namespace CENTAUR_NAMESPACE
+{
+    class FavoritesDBManager final
+    {
+    public:
+        inline FavoritesDBManager()
+        {
+            m_insert.prepare("INSERT INTO favorites(symbol,plugin) VALUES(:symbol, :plugin);");
+            m_delete.prepare("DELETE FROM favorites WHERE symbol = :symbol AND plugin = :plugin;");
+            m_select.prepare("SELECT symbol,plugin FROM favorites;");
+        }
+        ~FavoritesDBManager() = default;
+
+    public:
+        inline void add(const QString &symbol, const QString &uuid)
+        {
+            m_insert.bindValue(":symbol", symbol);
+            m_insert.bindValue(":plugin", uuid);
+
+            if (!m_insert.exec())
+            {
+                logError("app", QString(LS("error-fav-db-insert").arg(m_insert.lastError().text())));
+            }
+        }
+
+        inline QList<QPair<QString, QString>> selectAll()
+        {
+            QList<QPair<QString, QString>> data;
+            if (!m_select.exec())
+            {
+                logError("app", QString(LS("error-fav-db-select").arg(m_select.lastError().text())));
+                return data;
+            }
+
+            while (m_select.next())
+            {
+                const QSqlRecord currentRecord = m_select.record();
+                QSqlField genre                = currentRecord.field("plugin");
+                data.emplaceBack(currentRecord.field("symbol").value().toString(), currentRecord.field("plugin").value().toString());
+            }
+
+            return data;
+        }
+
+        inline void del(const QString &symbol, const QString &uuid)
+        {
+            m_delete.bindValue(":symbol", symbol);
+            m_delete.bindValue(":plugin", uuid);
+
+            if (!m_delete.exec())
+            {
+                logError("app", QString(LS("error-fav-db-delete").arg(m_delete.lastError().text())));
+            }
+        }
+
+    private:
+        QSqlQuery m_insert;
+        QSqlQuery m_delete;
+        QSqlQuery m_select;
+        QSqlDatabase m_db;
+    };
+} // namespace CENTAUR_NAMESPACE
 
 CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
@@ -44,6 +111,9 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     // Load External XML Configuration Data
     loadConfigurationData();
 
+    // Init the database internal file
+    initializeDatabaseServices();
+
     // Restore file
     loadInterfaceState();
 
@@ -53,11 +123,23 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     // Load plugins
     loadPlugins();
 
+    // Load the favorites list. Since all plugins must be loaded
+    loadFavoritesWatchList();
+
     END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
     logInfo("app", QString(LS("trace-initialize-time")).arg(initializationTime.count(), 0, 'f', 4));
 }
 CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
 {
+    for (auto &pli : m_configurationInterface)
+    {
+        delete pli.second;
+    }
+    if (m_sqlFavorites != nullptr)
+    {
+        delete m_sqlFavorites;
+        m_sqlFavorites = nullptr;
+    }
     if (g_logger != nullptr)
     {
         g_logger->terminate();
@@ -73,6 +155,21 @@ bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
         saveInterfaceState();
 
     return QObject::eventFilter(obj, event);
+}
+
+void cen::CentaurApp::initializeDatabaseServices() noexcept
+{
+    auto db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(g_globals->paths.resPath + "/Local/centaur.db");
+
+    if (!db.open())
+    {
+        logFatal("app", LS("fatal-centaur-db"));
+        QMessageBox::critical(this, LS("error-error"), LS("fatal-centaur-db"));
+        exit(EXIT_FAILURE);
+    }
+
+    m_sqlFavorites = new FavoritesDBManager;
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
@@ -309,6 +406,7 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
 
     logInfo("app", "UI state saved");
 }
+
 void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
 {
     logTrace("app", "CentaurApp::loadInterfaceState()");
@@ -354,6 +452,35 @@ void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
     settings.endGroup();
 
     logInfo("app", "UI state loaded");
+}
+
+void cen::CentaurApp::loadFavoritesWatchList() noexcept
+{
+    auto data = m_sqlFavorites->selectAll();
+
+    if (data.isEmpty())
+    {
+        logInfo("app", LS("info-fav-db-empty"));
+        return;
+    }
+
+    for (const auto &[sym, plid] : data)
+    {
+        if (sym.isEmpty())
+        {
+            logWarn("app", LS("warning-fav-symbol-empty"));
+            continue;
+        }
+
+        if (plid.isEmpty())
+        {
+            logWarn("app", LS("warning-fav-uuid-empty"));
+            continue;
+        }
+
+        // Insert the element
+        onAddToWatchList(sym, plid, false);
+    }
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::startLoggingService() noexcept
@@ -412,7 +539,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onActionDepthToggled(bool status)
     status ? m_ui->m_dockDepth->show() : m_ui->m_dockDepth->hide();
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept
 {
     logTrace("watchlist", "CentaurApp::onAddToWatchList()");
 
@@ -447,6 +574,10 @@ void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, cons
         itemLatency->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         m_watchlistItemModel->insertRow(curRow, { itemSymbol, itemPrice, itemSource, itemLatency, itemUUID });
         m_watchlistItems[id] = { itemSymbol, 0. };
+
+        // Add to the database
+        if (addToDatabase)
+            addFavoritesWatchListDB(symbol, sender);
     }
     else
     {
@@ -562,6 +693,9 @@ void CENTAUR_NAMESPACE::CentaurApp::onRemoveWatchList(const int &row) noexcept
     {
         m_watchlistItems.erase(id);
         logInfo("watchlist", QString(tr("%1 from %2 removed from the watchlist")).arg(itemSymbol, itemSource));
+        // Remove from the favorites DB
+        removeFavoritesWatchListDB(itemSymbol, itemSource);
+
         if (m_watchlistItems.empty())
         {
             // Clear all the data
@@ -684,20 +818,31 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
         pal.setColor(ctr->foregroundRole(), color);
         ctr->setPalette(pal);
     };
-    if (latency >= g_globals->params.symbolsDockParameters.latencyLowMin <= g_globals->params.symbolsDockParameters.latencyLowMax)
+
+    if (latency >= g_globals->params.orderBookParameters.asksSide.latencyLowMin <= g_globals->params.orderBookParameters.asksSide.latencyLowMax)
     {
-        changeColor(m_ui->asksLatency, Qt::green);
-        changeColor(m_ui->bidsLatency, Qt::green);
+        changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyLow);
     }
-    else if (latency >= g_globals->params.symbolsDockParameters.latencyMediumMin && latency <= g_globals->params.symbolsDockParameters.latencyMediumMin)
+    else if (latency >= g_globals->params.orderBookParameters.asksSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.asksSide.latencyMediumMin)
     {
-        changeColor(m_ui->asksLatency, Qt::yellow);
-        changeColor(m_ui->bidsLatency, Qt::yellow);
+        changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyMedium);
     }
-    else if (latency >= g_globals->params.symbolsDockParameters.latencyHighMin && latency <= g_globals->params.symbolsDockParameters.latencyHighMax)
+    else if (latency >= g_globals->params.orderBookParameters.asksSide.latencyHighMin && latency <= g_globals->params.orderBookParameters.asksSide.latencyHighMax)
     {
-        changeColor(m_ui->asksLatency, Qt::red);
-        changeColor(m_ui->bidsLatency, Qt::red);
+        changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyHigh);
+    }
+
+    if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyLowMin <= g_globals->params.orderBookParameters.bidsSide.latencyLowMax)
+    {
+        changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyLow);
+    }
+    else if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.bidsSide.latencyMediumMin)
+    {
+        changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyMedium);
+    }
+    else if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyHighMin && latency <= g_globals->params.orderBookParameters.bidsSide.latencyHighMax)
+    {
+        changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyHigh);
     }
 
     m_ui->asksLatency->setText(QString("%1 ms").arg(latency));
@@ -803,4 +948,14 @@ void CENTAUR_NAMESPACE::CentaurApp::onPlugins() noexcept
 {
     CENTAUR_NAMESPACE::PluginsDialog dlg(this);
     dlg.exec();
+}
+
+void cen::CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
+{
+    m_sqlFavorites->add(symbol, sender);
+}
+
+void cen::CentaurApp::removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
+{
+    m_sqlFavorites->del(symbol, sender);
 }

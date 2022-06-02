@@ -43,7 +43,7 @@ void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
         if (!m_remove)
         {
             connect(&action, &QAction::triggered, this,
-                [&]() { emit snAddToWatchList(itemData, objectName()); });
+                [&]() { emit snAddToWatchList(itemData, objectName(), true); });
         }
         else
         {

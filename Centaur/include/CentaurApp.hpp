@@ -13,27 +13,24 @@
 #ifndef CENTAUR_CENTAURAPP_HPP
 #define CENTAUR_CENTAURAPP_HPP
 
+#include "../ui/ui_CentaurApp.h"
+#include "CenListCtrl.hpp"
 #include "CentaurGlobal.hpp"
 #include "CentaurInterface.hpp"
 #include "CentaurPlugin.hpp"
 #include "CentaurUIState.hpp"
+#include "ConfigurationInterface.hpp"
 #include "Globals.hpp"
 #include "Logger.hpp"
 #include "XMLHelper.hpp"
-#include <QDomDocument>
+
 #include <chrono>
 #include <memory>
 
 namespace CENTAUR_NAMESPACE
 {
-    QT_BEGIN_NAMESPACE
-    namespace Ui
-    {
-        class CentaurApp;
-        class CenListCtrl;
-    } // namespace Ui
-    QT_END_NAMESPACE
 
+    class FavoritesDBManager;
     class CentaurApp final : public QMainWindow
     {
         struct ExchangeInformation
@@ -61,6 +58,8 @@ namespace CENTAUR_NAMESPACE
     private:
         /// \brief initializeInterface Set interface status
         void initializeInterface() noexcept;
+        /// \brief Load the internal centaur database file
+        void initializeDatabaseServices() noexcept;
         /// \brief Store the user interface geometry and state before closing
         void saveInterfaceState() noexcept;
         /// \brief Load the user interface geometry and state
@@ -75,10 +74,24 @@ namespace CENTAUR_NAMESPACE
         void loadLocaleData() noexcept;
         /// \brief Load the general personalized data to visualized the user interface
         void loadVisualsUI() noexcept;
+        /// \brief Load the favorites watchlist
+        void loadFavoritesWatchList() noexcept;
 
     protected:
         /// \brief Update the menus from the plugins.xml file
-        void updatePluginsMenu(const uuid &uuid, xercesc::DOMDocument *doc, plugin::IBase *base) noexcept;
+        void updatePluginsMenus(const uuid &uuid, xercesc::DOMDocument *doc, plugin::IBase *base) noexcept;
+        /// \brief Load the local data
+        void loadPluginLocalData(const uuid &uuid, xercesc::DOMDocument *doc, PluginConfiguration *config) noexcept;
+
+    protected:
+        /// \brief Add the symbol to the favorites Database
+        /// \param symbol Symbol Name
+        /// \param sender Plugin UUID
+        void addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept;
+        /// \brief Remove the symbol from the favorites Database
+        /// \param symbol Symbol Name
+        /// \param sender Plugin UUID
+        void removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept;
 
     protected:
         bool initExchangePlugin(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange) noexcept;
@@ -98,7 +111,7 @@ namespace CENTAUR_NAMESPACE
         void onActionBidsToggled(bool status);
         void onActionDepthToggled(bool status);
         void onLog(const unsigned long long &date, const int &session, const int &level, const QString &usr, const QString &source, const QString &msg) noexcept;
-        void onAddToWatchList(const QString &symbol, const QString &sender) noexcept;
+        void onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept;
         void onWatchlistRemoveSelection() noexcept;
         void onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept;
         void onRemoveWatchList(const int &row) noexcept;
@@ -116,6 +129,7 @@ namespace CENTAUR_NAMESPACE
 
         // Plugins
     private:
+        std::unordered_map<QString, PluginConfiguration *> m_configurationInterface;
         std::map<QString, ExchangeInformation> m_exchangeList;
         std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item
         std::pair<QString, QString> m_currentViewOrderbookSymbol;
@@ -126,12 +140,15 @@ namespace CENTAUR_NAMESPACE
 
         // Plotting
     private:
-        QwtPlotCurve *m_plotAsksDepth { nullptr };
-        QwtPlotCurve *m_plotBidsDepth { nullptr };
+        // QwtPlotCurve *m_plotAsksDepth { nullptr };
+        // QwtPlotCurve *m_plotBidsDepth { nullptr };
 
     private:
         // It will just be incremented
         int m_sessionIds { 0 };
+
+    private:
+        FavoritesDBManager *m_sqlFavorites { nullptr };
 
     public:
         std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> m_pluginsData;
