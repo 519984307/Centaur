@@ -58,7 +58,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     using StringIconVector = std::vector<StringIcon>;
 
     // Use this UUID to generate v5 UUID for the plugins as well as to identify the plugin compatibility with the UI
-    constexpr char centaurUUID[] =  "{a15c48b4-460b-4a79-a0a8-8ece90603f85}";
+    constexpr char centaurUUID[] = "{a15c48b4-460b-4a79-a0a8-8ece90603f85}";
 
     struct IBase
     {
@@ -81,7 +81,8 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \param logger Use to communicate plugin logs in the user interface
         /// \param config Configuration access from the configuration file. This structure wont hold data by the time this function is called. However, by the time the initialization methods
         ///               of an IBase derived class this structure will hold the plugin data
-        virtual void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept = 0;
+        /// \param lOper Allows access to the LongOperation dialog
+        virtual void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept = 0;
 
         /// \brief Get the plugin UUID
         /// \return Beware that versions are check in order to run the plugin

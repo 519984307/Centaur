@@ -6,8 +6,10 @@
 
 #include "BinanceSPOT.hpp"
 
-CENTAUR_NAMESPACE::SpotMarketWS::SpotMarketWS() :
-    BINAPI_NAMESPACE::ws::WSSpotBinanceAPI("")
+CENTAUR_NAMESPACE::SpotMarketWS::SpotMarketWS(std::promise<void> connected) :
+    BINAPI_NAMESPACE::ws::WSSpotBinanceAPI(""),
+    m_connected { std::move(connected) }
+
 {
     qRegisterMetaType<binapi::StreamDepthUpdate>("binapi::StreamDepthUpdate");
 }
@@ -27,17 +29,21 @@ void CENTAUR_NAMESPACE::SpotMarketWS::connected()
         m_logger->trace("SpotMarketWS", "SpotMarketWS::initialize");
         m_logger->info("SpotMarketWS", "Binance Spot WebSocket is connected");
     }
+
+    m_connected.set_value();
 }
 
 void CENTAUR_NAMESPACE::SpotMarketWS::close()
 {
-    qDebug() << "Warning: SpotMarketWS is closed.";
+    //    qDebug() << "Warning: SpotMarketWS is closed.";
 }
 
 void CENTAUR_NAMESPACE::SpotMarketWS::connectionError()
 {
     if (m_logger)
         m_logger->error("spotWS", "Binance Spot WebSocket failed to connect");
+
+    m_connected.set_value();
 }
 
 void CENTAUR_NAMESPACE::SpotMarketWS::subscribe(const bool &status, const int &id)

@@ -22,6 +22,7 @@
 #include "ConfigurationInterface.hpp"
 #include "Globals.hpp"
 #include "Logger.hpp"
+#include "LongOperation.hpp"
 #include "XMLHelper.hpp"
 
 #include <chrono>
@@ -133,6 +134,10 @@ namespace CENTAUR_NAMESPACE
         std::map<QString, ExchangeInformation> m_exchangeList;
         std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item
         std::pair<QString, QString> m_currentViewOrderbookSymbol;
+
+        // Long Operation Dialog
+    private:
+        std::unique_ptr<LongOperation> m_longOperation { nullptr };
 
         // Watchlist
     private:

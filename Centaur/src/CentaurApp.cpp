@@ -104,7 +104,7 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     g_globals->paths.installPath = "/Volumes/RicardoESSD/Projects/Centaur/local";
     g_globals->paths.pluginsPath = g_globals->paths.installPath + "/Plugin";
     g_globals->paths.resPath     = g_globals->paths.installPath + "/Resources";
-
+    
     // Start logging service
     startLoggingService();
 

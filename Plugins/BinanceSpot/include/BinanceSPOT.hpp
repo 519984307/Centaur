@@ -22,6 +22,7 @@
 #include <QMetaType>
 #include <QObject>
 #include <QPair>
+#include <future>
 #include <memory>
 #include <thread>
 #include <unordered_map>
@@ -48,7 +49,7 @@ namespace CENTAUR_NAMESPACE
         // IBase
     public:
         QObject *getPluginObject() noexcept override;
-        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
+        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept override;
         QString getPluginName() noexcept override;
         QString getPluginVersionString() noexcept override;
         uuid getPluginUUID() noexcept override;
@@ -87,6 +88,7 @@ namespace CENTAUR_NAMESPACE
     private:
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
         CENTAUR_INTERFACE_NAMESPACE::IConfiguration *m_config { nullptr };
+        CENTAUR_INTERFACE_NAMESPACE::ILongOperation *m_longOperation { nullptr };
         std::unique_ptr<SpotMarketWS> m_spotWS { nullptr };
         std::unique_ptr<std::thread> m_spotWSThread { nullptr };
 
@@ -109,7 +111,7 @@ namespace CENTAUR_NAMESPACE
     class SpotMarketWS : public BINAPI_NAMESPACE::ws::WSSpotBinanceAPI
     {
     public:
-        SpotMarketWS();
+        SpotMarketWS(std::promise<void> connected);
         ~SpotMarketWS() override;
 
     public:
@@ -128,6 +130,7 @@ namespace CENTAUR_NAMESPACE
     private:
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
         BinanceSpotPlugin *m_obj { nullptr };
+        std::promise<void> m_connected;
     };
 } // namespace CENTAUR_NAMESPACE
 

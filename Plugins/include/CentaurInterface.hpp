@@ -16,6 +16,7 @@
 #include "../../Centaur.hpp"
 
 #ifndef DONT_INCLUDE_QT
+#include <QIcon>
 #include <QString>
 #if defined(__clang__) || defined(__GNUC__)
 #pragma clang diagnostic push
@@ -100,6 +101,7 @@ namespace CENTAUR_INTERFACE_NAMESPACE
     ///        In case you want to store an encrypted password you must use the libProtocol interfaces.
     ///        The data must be encrypted with the plugin private key (stored on the Resources/Private folder
     ///        And the plugin must use the public key to decrypt the data
+    ///        As well you can access the main locale data with this structure
     struct IConfiguration
     {
         virtual ~IConfiguration() = default;
@@ -140,6 +142,23 @@ namespace CENTAUR_INTERFACE_NAMESPACE
         /// \param key Key name value
         /// \param error If the key does not exists error will be set to true
         virtual auto getBool(const std::string &key, bool *error) -> bool = 0;
+    };
+
+    /// \brief Long operation was created to allow the plugins to show a dialog showing that an operation might take some time
+    ///
+    struct ILongOperation
+    {
+        virtual ~ILongOperation() = default;
+
+    public:
+        /// \brief Show the dialog
+        /// \param message The message to be displayed
+        /// \param icon The icon to be displayed
+        /// \param modal The dialog is modal or not
+        virtual void show(const QString &message, const QIcon &icon, bool modal) = 0;
+
+        /// \brief Hide the dialog
+        virtual void hide() = 0;
     };
 
 } // namespace CENTAUR_INTERFACE_NAMESPACE

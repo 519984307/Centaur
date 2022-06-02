@@ -40,6 +40,8 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
             QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     };
 
+    m_longOperation       = std::make_unique<LongOperation>();
+
     const QString xmlFile = g_globals->paths.pluginsPath + "/local/plugins.xml";
     xercesc::DOMDocument *doc { nullptr };
     {
@@ -114,7 +116,9 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                     auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
 
                     loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
-                    baseInterface->setPluginInterfaces(g_logger, static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig));
+                    baseInterface->setPluginInterfaces(g_logger,
+                        static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig),
+                        static_cast<CENTAUR_INTERFACE_NAMESPACE::ILongOperation *>(m_longOperation.get()));
 
                     logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
                     // Generate the plugin data

@@ -101,10 +101,11 @@ QString CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginName() noexcept
     return g_BinanceSpotName;
 }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept
 {
-    m_logger = logger;
-    m_config = config;
+    m_logger        = logger;
+    m_config        = config;
+    m_longOperation = lOper;
 }
 
 CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() noexcept
@@ -189,6 +190,8 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::runMarketWS");
 
+    m_longOperation->show("Starting WebSocket service...", QIcon {}, false);
+
     if (m_spotWSThread && m_spotWSThread->joinable())
     {
         m_spotWS->terminate();
@@ -197,7 +200,10 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
     m_spotWSThread.reset();
     m_spotWS.reset();
 
-    m_spotWS = std::make_unique<SpotMarketWS>();
+    std::promise<void> connected;
+    std::future<void> future = connected.get_future();
+
+    m_spotWS                 = std::make_unique<SpotMarketWS>(std::move(connected));
     m_spotWS->initialize(this, m_logger);
 
     auto ticker          = m_spotWS->subscribeIndividualMiniTicker(symbol.toStdString());
@@ -209,6 +215,12 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
         logInfo("BinanceSpotPlugin", "Spot WebSocket thread created.");
         m_spotWS->run();
     });
+
+    future.wait();
+
+    logInfo("BinanceSpotPlugin", "The main thread is unblocked");
+
+    m_longOperation->hide();
 }
 
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, const int &item) noexcept

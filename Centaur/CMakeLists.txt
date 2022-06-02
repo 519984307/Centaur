@@ -57,11 +57,12 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
+        ui/LenghtyDialog.ui
         include/crc64.hpp
         src/CentaurLoadData.cpp
         include/ConfigurationInterface.hpp
         include/XMLHelper.hpp
-        src/ConfigurationInterface.cpp)
+        src/ConfigurationInterface.cpp include/LongOperation.hpp src/LongOperation.cpp)
 
 set_target_properties(Centaur PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER centaur.project.com
