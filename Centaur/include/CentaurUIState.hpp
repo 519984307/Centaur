@@ -56,9 +56,9 @@ namespace CENTAUR_NAMESPACE
             int name { 80 };
             int version { 80 };
             int manu { 80 };
+            int plid { 80 };
             int cver { 80 };
-            int sver { 80 };
-            int uuid { 120 };
+            int lded { 120 };
         } datacols;
     };
 } // namespace CENTAUR_NAMESPACE

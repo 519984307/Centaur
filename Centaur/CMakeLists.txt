@@ -20,6 +20,7 @@ find_package(Qt6 COMPONENTS
         Gui
         Widgets
         Xml
+        Sql
         REQUIRED)
 
 #find_library(QWT Qwt /Volumes/RicardoESSD/dev/qwt/release/lib)
@@ -55,7 +56,12 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
-        ui/PluginsDialog.ui include/crc64.hpp src/CentaurLoadData.cpp include/XMLHelper.hpp)
+        ui/PluginsDialog.ui
+        include/crc64.hpp
+        src/CentaurLoadData.cpp
+        include/ConfigurationInterface.hpp
+        include/XMLHelper.hpp
+        src/ConfigurationInterface.cpp)
 
 set_target_properties(Centaur PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER centaur.project.com
@@ -71,14 +77,14 @@ target_include_directories(Centaur PRIVATE
         )
 
 target_link_libraries(Centaur PRIVATE fmt::fmt)
-target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml)
+target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Sql)
 #target_link_libraries(Centaur PRIVATE ${QWT})
 target_link_libraries(Centaur PRIVATE SQLite3)
 target_link_libraries(Centaur PRIVATE XercesC::XercesC)
 
 
 # Local Libraries
-#target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 
 

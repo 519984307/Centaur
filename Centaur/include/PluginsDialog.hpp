@@ -35,13 +35,9 @@ namespace CENTAUR_NAMESPACE
     protected:
         void accept() override;
 
-    public:
-        void populate();
-        void loadLocalData();
-
     private:
         PluginsDialogInterfaceState m_state;
-        Ui::PluginsDialog *m_ui;
+        std::unique_ptr<Ui::PluginsDialog> m_ui;
         std::map<std::pair<uint32_t, uint16_t>, QString> m_localData;
     };
 } // namespace CENTAUR_NAMESPACE
