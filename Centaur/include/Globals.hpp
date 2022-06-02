@@ -43,6 +43,7 @@ namespace CENTAUR_NAMESPACE
             QIcon upArrow { ":/img/res/img/upArrow.svg" };
             QIcon downArrow { ":/img/res/img/downArrow.svg" };
             QIcon searchIcon { ":/svg/edit/search_gray" };
+            QIcon pluginIcon { ":/img/res/img/plugin.svg" };
         } icons;
 
         struct Fonts
