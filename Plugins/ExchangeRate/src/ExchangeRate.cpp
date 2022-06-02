@@ -157,7 +157,7 @@ QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginVersionString() n
 {
     return g_ExchangeRateVersionString;
 }
-void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept
+void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, [[maybe_unused]] CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept
 {
     m_logger = logger;
     m_config = config;
