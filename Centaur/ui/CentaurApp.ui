@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>992</width>
+    <width>1454</width>
     <height>647</height>
    </rect>
   </property>
@@ -53,7 +53,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>992</width>
+     <width>1454</width>
      <height>24</height>
     </rect>
    </property>
@@ -543,14 +543,14 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="m_dockDepth">
+  <widget class="QDockWidget" name="dockDepth">
    <property name="windowTitle">
     <string>Depth</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="m_dockDepthLayout">
+   <widget class="QWidget" name="dockDepthLayout">
     <layout class="QHBoxLayout" name="m_depthLayout">
      <property name="spacing">
       <number>0</number>
@@ -567,6 +567,12 @@
      <property name="bottomMargin">
       <number>2</number>
      </property>
+     <item>
+      <widget class="QChartView" name="bidsChart" native="true"/>
+     </item>
+     <item>
+      <widget class="QChartView" name="asksChart" native="true"/>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -691,6 +697,12 @@
    <class>CENTAUR_NAMESPACE::CenListCtrl</class>
    <extends>QTableView</extends>
    <header>CenListCtrl.hpp</header>
+  </customwidget>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QWidget</extends>
+   <header>QtCharts/QChartView</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

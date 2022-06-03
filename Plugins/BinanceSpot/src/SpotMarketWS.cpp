@@ -26,7 +26,8 @@ void CENTAUR_NAMESPACE::SpotMarketWS::connected()
 {
     if (m_logger)
     {
-        m_logger->trace("SpotMarketWS", "SpotMarketWS::initialize");
+
+        logTrace("SpotMarketWS", "SpotMarketWS::initialize");
         m_logger->info("SpotMarketWS", "Binance Spot WebSocket is connected");
     }
 
@@ -48,7 +49,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::connectionError()
 
 void CENTAUR_NAMESPACE::SpotMarketWS::subscribe(const bool &status, const int &id)
 {
-    m_logger->trace("SpotMarketWS", "SpotMarketWS::subscribe");
+    logTrace("SpotMarketWS", "SpotMarketWS::subscribe");
 
     QMetaObject::invokeMethod(m_obj->getPluginObject(), "onSubscription",
         Qt::QueuedConnection,
@@ -59,7 +60,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::subscribe(const bool &status, const int &i
 
 void CENTAUR_NAMESPACE::SpotMarketWS::unsubscribe(const bool &status, const int &id)
 {
-    m_logger->trace("SpotMarketWS", "SpotMarketWS::unsubscribe");
+    logTrace("SpotMarketWS", "SpotMarketWS::unsubscribe");
 
     QMetaObject::invokeMethod(m_obj->getPluginObject(), "onSubscription",
         Qt::QueuedConnection,

@@ -413,35 +413,26 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
         return;
     }
 
-    QMap<QString, QPair<QString, QString>> bids, asks;
+    QMap<qreal, QPair<qreal, qreal>> bids, asks;
 
     for (const auto &[price, quantity] : sdp.bids)
     {
-        const double dQuant = std::stod(quantity);
-        if (dQuant > 0.0)
+        if (quantity > 0.0)
         {
-            const double dPrice = std::stod(price);
-            const double total  = dPrice * dQuant;
+            const double total  = price * quantity;
 
-            bids[price.c_str()] = {
-                QString("$ %1").arg(QLocale(QLocale::English).toString(dQuant, 'f', 5)),
-                QString("$ %1").arg(QLocale(QLocale::English).toString(total, 'f', 5))
-            };
+            bids[price] = {quantity, total};
+
         }
     }
 
     for (const auto &[price, quantity] : sdp.asks)
     {
-        const double dQuant = std::stod(quantity);
-        if (dQuant > 0.0)
+        if (quantity > 0.0)
         {
-            const double dPrice = std::stod(price);
-            const double total  = dPrice * dQuant;
+            const double total  = price * quantity;
 
-            asks[price.c_str()] = {
-                QString("$ %1").arg(QLocale(QLocale::English).toString(dQuant, 'f', 5)),
-                QString("$ %1").arg(QLocale(QLocale::English).toString(total, 'f', 5))
-            };
+            asks[price] = {quantity, total};
         }
     }
 

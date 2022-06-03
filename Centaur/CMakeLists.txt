@@ -19,7 +19,7 @@ find_package(Qt6 COMPONENTS
         Core
         Gui
         Widgets
-        Xml
+        Charts
         Sql
         REQUIRED)
 
@@ -84,7 +84,7 @@ target_include_directories(Centaur PRIVATE
         )
 
 target_link_libraries(Centaur PRIVATE fmt::fmt)
-target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Sql)
+target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql)
 #target_link_libraries(Centaur PRIVATE ${QWT})
 target_link_libraries(Centaur PRIVATE SQLite3)
 target_link_libraries(Centaur PRIVATE XercesC::XercesC)

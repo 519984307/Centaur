@@ -8,7 +8,6 @@
 #include "../ui/ui_CentaurApp.h"
 #include "Logger.hpp"
 #include <QDebug>
-#include <QDomDocument>
 #include <QFile>
 #include <QTextStream>
 #include <concepts>
@@ -103,7 +102,7 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
 
 namespace
 {
-// clang-format off
+    // clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF(exit-time-destructors)

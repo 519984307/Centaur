@@ -425,9 +425,9 @@ auto BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::receivedData() -> void
                     .finalUpdateIdLastStream = 0
                 };
                 for (const auto &bids : value["b"].GetArray())
-                    sdp.bids[JTO_STRING(bids, 0)] = JTO_STRING(bids, 1);
+                    sdp.bids[std::stod(JTO_STRING(bids, 0))] = std::stod(JTO_STRING(bids, 1));
                 for (const auto &asks : value["a"].GetArray())
-                    sdp.asks[JTO_STRING(asks, 0)] = JTO_STRING(asks, 1);
+                    sdp.asks[std::stod(JTO_STRING(asks, 0))] = std::stod(JTO_STRING(asks, 1));
 
                 depthUpdate(JTO_STRING(value, "s"), value["E"].GetUint64(), sdp);
             }

@@ -78,7 +78,7 @@ namespace CENTAUR_NAMESPACE
 
     signals:
         void snTickerUpdate(const QString &symbol, const int &symbolId, const quint64 &receivedTime, const double &price);
-        void snOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks);
+        void snOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks);
 
         // Resources
     protected:

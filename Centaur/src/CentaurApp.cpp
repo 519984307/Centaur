@@ -8,12 +8,15 @@
 #include "FavoritesDialog.hpp"
 #include "HTMLDelegate.hpp"
 #include "PluginsDialog.hpp"
+#include <QAreaSeries>
 #include <QMessageBox>
+#include <QResizeEvent>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
 #include <QSqlRecord>
+#include <QtCharts/QValueAxis>
 
 CENTAUR_NAMESPACE::CentaurApp *CENTAUR_NAMESPACE::g_app = nullptr;
 namespace CENTAUR_NAMESPACE
@@ -53,7 +56,6 @@ namespace CENTAUR_NAMESPACE
             while (m_select.next())
             {
                 const QSqlRecord currentRecord = m_select.record();
-                QSqlField genre                = currentRecord.field("plugin");
                 data.emplaceBack(currentRecord.field("symbol").value().toString(), currentRecord.field("plugin").value().toString());
             }
 
@@ -90,6 +92,9 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
 
     m_ui->setupUi(this);
     installEventFilter(this);
+
+    m_ui->bidsChart->installEventFilter(this);
+    m_ui->asksChart->installEventFilter(this);
 
 #ifdef Q_OS_MAC
     CFURLRef appUrlRef       = CFBundleCopyBundleURL(CFBundleGetMainBundle());
@@ -154,6 +159,22 @@ bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
 {
     if (obj == this && event->type() == QEvent::Close)
         saveInterfaceState();
+
+    if (obj == m_ui->bidsChart && event->type() == QEvent::Resize && m_ui->bidsChart->chart() != nullptr)
+    {
+        auto resize    = dynamic_cast<QResizeEvent *>(event);
+        auto bidsChart = m_ui->bidsChart->chart();
+        auto size      = resize->size();
+        bidsChart->setPlotArea(QRectF(70, 0, static_cast<qreal>(size.width()) - 70, static_cast<qreal>(size.height()) - 20));
+    }
+
+    if (obj == m_ui->asksChart && event->type() == QEvent::Resize && m_ui->asksChart->chart() != nullptr)
+    {
+        auto resize    = dynamic_cast<QResizeEvent *>(event);
+        auto asksChart = m_ui->asksChart->chart();
+        auto size      = resize->size();
+        asksChart->setPlotArea(QRectF(0, 0, static_cast<qreal>(size.width()) - 70, static_cast<qreal>(size.height()) - 20));
+    }
 
     return QObject::eventFilter(obj, event);
 }
@@ -229,7 +250,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->m_actionBalances->setChecked(!m_ui->m_dockBalances->isHidden());
     m_ui->m_actionBids->setChecked(!m_ui->dockOrderbookBids->isHidden());
     m_ui->m_actionAsks->setChecked(!m_ui->dockOrderbookAsks->isHidden());
-    m_ui->m_actionDepth->setChecked(!m_ui->m_dockDepth->isHidden());
+    m_ui->m_actionDepth->setChecked(!m_ui->dockDepth->isHidden());
 
     // Init the watchlist QLineEdit
     m_ui->editWatchListFilter->setPlaceholderText(LS("ui-docks-search"));
@@ -335,40 +356,72 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->bidsTable->setColumnWidth(2, m_uiState.bidscols.total);
     //  m_ui->bidsTable->verticalHeader()->setStyleSheet(styleSheet);
 
-    /*
-    m_ui->m_asksDepth->setAxisVisible(QwtPlot::Axis::yLeft, false);
-    m_ui->m_asksDepth->setAxisVisible(QwtPlot::Axis::yRight);
+    m_ui->bidsChart->setRenderHint(QPainter::Antialiasing);
+    m_bidsDepth = new QSplineSeries;
+    m_bidsDepth->setUseOpenGL(true);
+    m_bidsDepthFill = new QSplineSeries;
+    m_bidsDepthFill->setUseOpenGL(true);
+    auto bidsAreaSeries = new QAreaSeries(m_bidsDepth, m_bidsDepthFill);
+    bidsAreaSeries->setPen(QPen(QColor(0, 255, 0), 2));
+    bidsAreaSeries->setColor(QColor(0, 255, 0, 80));
+    auto bidsChart = new QChart;
+    bidsChart->legend()->hide();
+    bidsChart->addSeries(bidsAreaSeries);
+    bidsChart->createDefaultAxes();
+    bidsChart->setBackgroundBrush(QBrush(QColor(20, 20, 20, 0)));
+    bidsChart->setPlotAreaBackgroundBrush(QBrush(QColor(0, 255, 50, 0)));
+    bidsChart->setPlotAreaBackgroundVisible(true);
+    auto yAxisBids = qobject_cast<QValueAxis *>(bidsChart->axes(Qt::Vertical).first());
+    auto xAxisBids = qobject_cast<QValueAxis *>(bidsChart->axes(Qt::Horizontal).first());
+    xAxisBids->setTickType(QValueAxis::TickType::TicksDynamic);
+    xAxisBids->setReverse(true);
+    xAxisBids->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
+    xAxisBids->setGridLineVisible(false);
+    xAxisBids->setLabelsColor(QColor(200, 200, 200));
+    yAxisBids->setTickType(QValueAxis::TickType::TicksDynamic);
+    yAxisBids->setGridLineVisible(false);
+    yAxisBids->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
+    yAxisBids->setLabelsColor(QColor(200, 200, 200));
+    bidsChart->setMargins(QMargins(0, 0, 0, 0));
+    m_ui->bidsChart->setChart(bidsChart);
 
-    m_ui->m_bidsDepth->canvas()->setStyleSheet("border: 0px;");
-    m_ui->m_asksDepth->canvas()->setStyleSheet("border: 0px;");
+    m_ui->asksChart->setRenderHint(QPainter::Antialiasing);
+    m_asksDepth = new QSplineSeries;
+    m_asksDepth->setUseOpenGL(true);
+    m_asksDepthFill = new QSplineSeries;
+    m_asksDepthFill->setUseOpenGL(true);
+    auto asksAreaSeries = new QAreaSeries(m_asksDepth, m_asksDepthFill);
+    asksAreaSeries->setPen(QPen(QColor(255, 0, 0), 2));
+    asksAreaSeries->setColor(QColor(255, 0, 0, 80));
+    auto asksChart = new QChart;
+    asksChart->legend()->hide();
+    asksChart->addSeries(asksAreaSeries);
+    asksChart->createDefaultAxes();
+    asksChart->setBackgroundBrush(QBrush(QColor(20, 20, 20, 0)));
+    asksChart->setPlotAreaBackgroundBrush(QBrush(QColor(255, 50, 50, 0)));
+    asksChart->setPlotAreaBackgroundVisible(true);
 
-    QColor green(0x2f, 0xf9, 0x24), greenLow = green;
-    greenLow.setAlpha(20);
-    QBrush greenBrush(greenLow);
-    m_plotBidsDepth = new QwtPlotCurve("Bids depth");
-    m_plotBidsDepth->setPen(green, 1.0);
-    m_plotBidsDepth->setRenderThreadCount(2);
-    m_plotBidsDepth->setBrush(greenBrush);
-    m_plotBidsDepth->setRenderHint(QwtPlotItem::RenderAntialiased);
-    m_plotBidsDepth->attach(m_ui->m_bidsDepth);
-    m_ui->m_bidsDepth->setAxisScaleEngine(QwtPlot::Axis::yLeft, new QwtLinearScaleEngine);
-    m_ui->m_bidsDepth->axisScaleEngine(QwtPlot::Axis::yRight)->setAttribute(QwtScaleEngine::Floating, true);
+    auto yAxisAsksDefault = qobject_cast<QValueAxis *>(asksChart->axes(Qt::Vertical).first());
+    asksChart->removeAxis(yAxisAsksDefault);
 
-    m_ui->m_bidsDepth->setAxisScaleEngine(QwtPlot::Axis::xBottom, new QwtLinearScaleEngine);
-    m_ui->m_bidsDepth->axisScaleEngine(QwtPlot::Axis::xBottom)->setAttribute(QwtScaleEngine::Floating, true);
-    m_ui->m_bidsDepth->axisScaleEngine(QwtPlot::Axis::xBottom)->setAttribute(QwtScaleEngine::Inverted, true);
+    auto yAxisAsks = new QValueAxis(this);
+    asksChart->addAxis(yAxisAsks, Qt::AlignRight);
+    asksAreaSeries->attachAxis(yAxisAsks);
 
-    QColor red(0xd2, 0x10, 0x04), redLow = red;
-    redLow.setAlpha(20);
-    QBrush redBrush(redLow);
-    m_plotAsksDepth = new QwtPlotCurve("Asks depth");
-    m_plotAsksDepth->setPen(red, 1.0);
-    m_plotAsksDepth->setBrush(redBrush);
-    m_plotAsksDepth->setRenderThreadCount(2);
-    m_plotAsksDepth->setRenderHint(QwtPlotItem::RenderAntialiased);
-    m_plotAsksDepth->attach(m_ui->m_asksDepth);
-    m_ui->m_asksDepth->setAxisScaleEngine(QwtPlot::Axis::yRight, new QwtLinearScaleEngine);
-    m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight)->setAttribute(QwtScaleEngine::Floating, true);*/
+    auto xAxisAsks = qobject_cast<QValueAxis *>(asksChart->axes(Qt::Horizontal).first());
+    xAxisAsks->setTickType(QValueAxis::TickType::TicksDynamic);
+    xAxisAsks->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
+    xAxisAsks->setLabelsColor(QColor(200, 200, 200));
+    xAxisAsks->setGridLineVisible(false);
+    xAxisAsks->setLabelsColor(QColor(200, 200, 200));
+    yAxisAsks->setTickType(QValueAxis::TickType::TicksDynamic);
+    yAxisAsks->setGridLineVisible(false);
+    yAxisAsks->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
+    yAxisAsks->setLabelsColor(QColor(200, 200, 200));
+
+    asksChart->setMargins(QMargins(0, 0, 0, 0));
+
+    m_ui->asksChart->setChart(asksChart);
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
@@ -533,21 +586,25 @@ void CENTAUR_NAMESPACE::CentaurApp::onActionLoggingToggled(bool status)
 {
     status ? m_ui->m_dockLogging->show() : m_ui->m_dockLogging->hide();
 }
+
 void CENTAUR_NAMESPACE::CentaurApp::onActionBalancesToggled(bool status)
 {
     status ? m_ui->m_dockBalances->show() : m_ui->m_dockBalances->hide();
 }
+
 void CENTAUR_NAMESPACE::CentaurApp::onActionAsksToggled(bool status)
 {
     status ? m_ui->dockOrderbookAsks->show() : m_ui->dockOrderbookAsks->hide();
 }
+
 void CENTAUR_NAMESPACE::CentaurApp::onActionBidsToggled(bool status)
 {
     status ? m_ui->dockOrderbookBids->show() : m_ui->dockOrderbookBids->hide();
 }
+
 void CENTAUR_NAMESPACE::CentaurApp::onActionDepthToggled(bool status)
 {
-    status ? m_ui->m_dockDepth->show() : m_ui->m_dockDepth->hide();
+    status ? m_ui->dockDepth->show() : m_ui->dockDepth->hide();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept
@@ -758,7 +815,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onWatchlistRemoveSelection() noexcept
     clearOrderbookListsAndDepth();
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept
 {
     const auto &[curSource, curSymbol] = m_currentViewOrderbookSymbol;
 
@@ -804,9 +861,10 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
     nRowIndex = 0;
     for (auto iter = asks.begin(); iter != asks.end(); ++iter)
     {
-        insertTable(iter.key(), m_ui->asksTable, nRowIndex, 0, 1);
-        insertTable(iter.value().first, m_ui->asksTable, nRowIndex, 1, 1);
-        insertTable(iter.value().second, m_ui->asksTable, nRowIndex, 2, 1);
+
+        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.key(), 'f', 5)), m_ui->asksTable, nRowIndex, 0, 1);
+        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().first, 'f', 5)), m_ui->asksTable, nRowIndex, 1, 1);
+        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().second, 'f', 5)), m_ui->asksTable, nRowIndex, 2, 1);
         ++nRowIndex;
     }
 
@@ -814,9 +872,9 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
     nRowIndex = 0;
     for (auto iter = bids.begin(); iter != bids.end(); ++iter)
     {
-        insertTable(iter.key(), m_ui->bidsTable, nRowIndex, 0, 0);
-        insertTable(iter.value().first, m_ui->bidsTable, nRowIndex, 1, 0);
-        insertTable(iter.value().second, m_ui->bidsTable, nRowIndex, 2, 0);
+        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.key(), 'f', 5)), m_ui->bidsTable, nRowIndex, 0, 0);
+        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().first, 'f', 5)), m_ui->bidsTable, nRowIndex, 1, 0);
+        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().second, 'f', 5)), m_ui->bidsTable, nRowIndex, 2, 0);
         ++nRowIndex;
     }
 
@@ -834,7 +892,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
     {
         changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyLow);
     }
-    else if (latency >= g_globals->params.orderBookParameters.asksSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.asksSide.latencyMediumMin)
+    else if (latency >= g_globals->params.orderBookParameters.asksSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.asksSide.latencyMediumMax)
     {
         changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyMedium);
     }
@@ -847,7 +905,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
     {
         changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyLow);
     }
-    else if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.bidsSide.latencyMediumMin)
+    else if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.bidsSide.latencyMediumMax)
     {
         changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyMedium);
     }
@@ -859,43 +917,49 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
     m_ui->asksLatency->setText(QString("%1 ms").arg(latency));
     m_ui->bidsLatency->setText(QString("%1 ms").arg(latency));
 
-    if (m_ui->m_dockDepth->isVisible())
+    if (m_ui->dockDepth->isVisible())
     {
         plotDepth(asks, bids);
     }
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<QString, QPair<QString, QString>> &asks, const QMap<QString, QPair<QString, QString>> &bids) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qreal>> &asks, const QMap<qreal, QPair<qreal, qreal>> &bids) noexcept
 {
-    auto generatePoints = [](const QMap<QString, QPair<QString, QString>> &data, QVector<double> &prices, QVector<double> &increments) {
+    auto generatePoints = [](const QMap<qreal, QPair<qreal, qreal>> &data, QList<QPointF> &prices, QList<QPointF> &fill) {
         double prevQuant = 0.0;
         for (auto iter = data.begin(); iter != data.end(); ++iter)
         {
-            const auto &obprices = iter.key();
-            auto quantity        = iter.value().first;
+            // const auto &obprices = iter.key();
+            // auto quantity        = iter.value().first;
+            /*
             if (!quantity.isEmpty() && !quantity[0].isDigit())
             {
-                quantity = quantity.remove(0, 1).mid(0);
+                quantity = quantity.remove(-0, 1).mid(0);
                 quantity.replace(",", "");
-            }
+            }*/
 
-            const auto &price = obprices.toDouble();
-            const auto &quant = quantity.toDouble() + prevQuant;
+            //  const auto &price = obprices.toDouble();
 
-            increments.push_back(quant);
-            prices.push_back(price);
+            const auto quant = iter.value().first + prevQuant;
+
+            prices.append({ iter.key(), quant });
+            fill.append({ iter.key(), 0.0 });
+
+            // increments.push_back(quant);
+            // prices.push_back(price);
 
             prevQuant = quant;
         }
     };
-    using minMaxType    = std::pair<std::tuple<double, double, double>, std::tuple<double, double, double>>;
-    auto generateMinMax = [](const QVector<double> &x, const QVector<double> &y) -> minMaxType {
-        double minY         = y.first(),
-               maxY         = y.last() * 2;
-        double stepsY       = (maxY - minY) / 10.0;
 
-        const double minX   = x.first(),
-                     maxX   = x.last();
+    using minMaxType    = std::pair<std::tuple<double, double, double>, std::tuple<double, double, double>>;
+    auto generateMinMax = [](const QList<QPointF> &points) -> minMaxType {
+        const double minY   = points.first().y(),
+                     maxY   = points.last().y() * 1.1;
+        const double stepsY = (maxY - minY) / 10.0;
+
+        const double minX   = points.first().x(),
+                     maxX   = points.last().x();
         const double stepsX = (maxX - minX) / 5.0;
 
         return {
@@ -904,12 +968,19 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<QString, QPair<QString,
         };
     };
 
-    QVector<double> bidsX, bidsY, asksX, asksY;
-    generatePoints(asks, asksX, asksY);
-    generatePoints(bids, bidsX, bidsY);
+    QList<QPointF> bidsPoints, bidsFill, asksPoints, asksFill;
 
-    auto [rangeAsksX, rangeAsksY]          = generateMinMax(asksX, asksY);
-    auto [rangeBidsX, rangeBidsY]          = generateMinMax(bidsX, bidsY);
+    generatePoints(asks, asksPoints, asksFill);
+    generatePoints(bids, bidsPoints, bidsFill);
+
+    if (asksPoints.isEmpty() || bidsPoints.isEmpty())
+    {
+        // No need to continue
+        return;
+    }
+
+    auto [rangeAsksX, rangeAsksY]          = generateMinMax(asksPoints);
+    auto [rangeBidsX, rangeBidsY]          = generateMinMax(bidsPoints);
 
     auto &[asksMinX, asksMaxX, asksStepsX] = rangeAsksX;
     auto &[asksMinY, asksMaxY, asksStepsY] = rangeAsksY;
@@ -917,24 +988,33 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<QString, QPair<QString,
     auto &[bidsMinX, bidsMaxX, bidsStepsX] = rangeBidsX;
     auto &[bidsMinY, bidsMaxY, bidsStepsY] = rangeBidsY;
 
-    double maxY                            = std::max(bidsMaxY, asksMaxY);
+    auto yAxisBids                         = dynamic_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Vertical).first());
+    auto xAxisBids                         = dynamic_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Horizontal).first());
 
-    //   reinterpret_cast<QwtLinearScaleEngine *>(m_ui->m_asksDepth->axisScaleEngine(QwtPlot::Axis::yRight))->autoScale(10, asksMinY, maxY, asksStepsY);
-    //   m_ui->m_asksDepth->setAxisScale(QwtPlot::Axis::yRight, asksMinY, maxY, asksStepsY);
-    //   m_ui->m_asksDepth->setAxisAutoScale(QwtPlot::Axis::yRight, true);
+    yAxisBids->setRange(bidsMinY, bidsMaxY);
+    yAxisBids->setTickInterval(bidsStepsY);
+    xAxisBids->setRange(bidsMinX, bidsMaxX);
+    xAxisBids->setTickInterval(bidsStepsX);
 
-    //  m_ui->m_asksDepth->setAxisScale(QwtPlot::Axis::xBottom, asksMinX, asksMaxX, asksStepsX);
-    //   m_plotAsksDepth->setSamples(asksX, asksY);
+    m_bidsDepthFill->clear();
+    m_bidsDepth->clear();
+    
+    m_bidsDepthFill->append(bidsFill);
+    m_bidsDepth->append(bidsPoints);
 
-    //   reinterpret_cast<QwtLinearScaleEngine *>(m_ui->m_bidsDepth->axisScaleEngine(QwtPlot::Axis::yLeft))->autoScale(10, bidsMinY, maxY, bidsStepsY);
-    // m_ui->m_bidsDepth->setAxisScale(QwtPlot::Axis::yLeft, bidsMinY, maxY, bidsStepsY);
-    // m_ui->m_bidsDepth->setAxisAutoScale(QwtPlot::Axis::yLeft, true);
+    auto yAxisAsks = dynamic_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Vertical).first());
+    auto xAxisAsks = dynamic_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Horizontal).first());
 
-    // m_ui->m_bidsDepth->setAxisScale(QwtPlot::Axis::xBottom, bidsMaxX, bidsMinX, bidsStepsX);
-    // m_plotBidsDepth->setSamples(bidsX, bidsY);
+    yAxisAsks->setRange(asksMinY, asksMaxY);
+    yAxisAsks->setTickInterval(asksStepsY);
+    xAxisAsks->setRange(asksMinX, asksMaxX);
+    xAxisAsks->setTickInterval(asksStepsX);
 
-    // m_ui->m_bidsDepth->replot();
-    // m_ui->m_asksDepth->replot();
+    m_asksDepthFill->clear();
+    m_asksDepth->clear();
+
+    m_asksDepthFill->append(asksFill);
+    m_asksDepth->append(asksPoints);
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::clearOrderbookListsAndDepth() noexcept
@@ -947,12 +1027,11 @@ void CENTAUR_NAMESPACE::CentaurApp::clearOrderbookListsAndDepth() noexcept
     m_ui->asksTable->setRowCount(0);
     m_ui->bidsTable->setRowCount(0);
 
-    double *dnptr = nullptr;
-    //  m_plotAsksDepth->setSamples(dnptr, 0);
-    //  m_plotBidsDepth->setSamples(dnptr, 0);
+    m_bidsDepthFill->clear();
+    m_bidsDepth->clear();
 
-    //  m_ui->m_bidsDepth->replot();
-    //  m_ui->m_asksDepth->replot();
+    m_asksDepthFill->clear();
+    m_asksDepth->clear();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onPlugins() noexcept

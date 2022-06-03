@@ -24,7 +24,8 @@
 #include "Logger.hpp"
 #include "LongOperation.hpp"
 #include "XMLHelper.hpp"
-
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QSplineSeries>
 #include <chrono>
 #include <memory>
 
@@ -99,7 +100,7 @@ namespace CENTAUR_NAMESPACE
         CenListCtrl *populateExchangeSymbolList(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange, const QString &uuidString) noexcept;
 
     protected:
-        void plotDepth(const QMap<QString, QPair<QString, QString>> &asks, const QMap<QString, QPair<QString, QString>> &bids) noexcept;
+        void plotDepth(const QMap<qreal, QPair<qreal, qreal>> &asks, const QMap<qreal, QPair<qreal, qreal>> &bids) noexcept;
         void clearOrderbookListsAndDepth() noexcept;
 
     private slots:
@@ -117,7 +118,7 @@ namespace CENTAUR_NAMESPACE
         void onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept;
         void onRemoveWatchList(const int &row) noexcept;
         void onTickerUpdate(const QString &symbol, const int &id, const quint64 &receivedTime, const double &price) noexcept;
-        void onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks) noexcept;
+        void onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept;
         void onPlugins() noexcept;
 
         // General application state
@@ -145,8 +146,10 @@ namespace CENTAUR_NAMESPACE
 
         // Plotting
     private:
-        // QwtPlotCurve *m_plotAsksDepth { nullptr };
-        // QwtPlotCurve *m_plotBidsDepth { nullptr };
+        QSplineSeries *m_asksDepth { nullptr };
+        QSplineSeries *m_asksDepthFill { nullptr };
+        QSplineSeries *m_bidsDepth { nullptr };
+        QSplineSeries *m_bidsDepthFill { nullptr };
 
     private:
         // It will just be incremented

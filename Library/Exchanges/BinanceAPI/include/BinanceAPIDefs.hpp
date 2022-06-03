@@ -1232,9 +1232,9 @@ namespace BINAPI_NAMESPACE
         uint64_t transactionTime; // Transaction Time is not available on Spot
         uint64_t firstUpdateId;
         uint64_t finalUpdateId;
-        uint64_t finalUpdateIdLastStream;        // Final Update Id is not available on Spot
-        std::map<std::string, std::string> bids; // FIRST: price level; SECOND: quantity
-        std::map<std::string, std::string> asks; // FIRST: price level; SECOND: quantity
+        uint64_t finalUpdateIdLastStream;      // Final Update Id is not available on Spot
+        std::map<currency_t, currency_t> bids; // FIRST: price level; SECOND: quantity
+        std::map<currency_t, currency_t> asks; // FIRST: price level; SECOND: quantity
     };
 
     struct StreamBLVTInfo
