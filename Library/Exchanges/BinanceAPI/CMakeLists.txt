@@ -36,7 +36,8 @@ add_library(BinanceAPI SHARED
         src/WSFuturesBinanceUser.cpp
         src/WSSpotBinanceAPI.cpp
         src/WSThread.cpp
-        src/BinanceAPISpot.cpp)
+        src/BinanceAPISpot.cpp
+        )
 
 
 include_directories(include PRIVATE)

@@ -192,6 +192,8 @@ namespace BINAPI_NAMESPACE
                 std::string network;
                 std::string specialTips;
                 std::string withdrawDescription;
+                std::string specialWithdrawTips;
+                std::string addressRule;
                 currency_t withdrawFee;
                 currency_t withdrawIntegerMultiple;
                 currency_t withdrawMin;

@@ -308,7 +308,7 @@ namespace BINAPI_NAMESPACE
 
         /// \brief Get information of coins (available for deposit and withdraw) for user
         /// \return Data
-        T_NODISCARD auto getAllCoinsInformation() -> std::vector<SPOT::CoinInformation>;
+        T_NODISCARD auto getAllCoinsInformation() -> std::unordered_map<sym_t, SPOT::CoinInformation>;
 
         /// \brief Get account snapshot for the spot account
         /// \param limit Min: 7, Max 30

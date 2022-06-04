@@ -45,20 +45,17 @@ namespace BINAPI_NAMESPACE::local::schemas
 "required": [ "status", "msg"],
 "properties": {  "status": {    "$id": "#/properties/status",    "type": "integer",    "description": "0: normal. 1: system maintenance"  },  "msg": { "$id": "#/properties/msg", "type": "string",  "description": "normal or system maintenance"  }
 },"additionalProperties": false})" };
-        char all_coins_information[]         = { R"({"$schema": "http://json-schema.org/draft-04/schema#",
-"type": "array","items": [{"type": "object","properties": {"coin": {"type": "string"},"depositAllEnable": {"type": "boolean"},"free": {"type": "string"},"freeze": {"type": "string"},"ipoable": {"type": "string"},
-"ipoing": {"type": "string"},"isLegalMoney": {"type": "boolean"},"locked": {"type": "string"},"name": {
-"type": "string"},"networkList": {"type": "array","items": [{"type": "object","properties": {"addressRegex": {"type": "string"},"coin": {"type": "string"},"depositDesc": {"type": "string"},
-"depositEnable": {"type": "boolean"},"isDefault": {"type": "boolean"},"memoRegex": {"type": "string"},"minConfirm": {"type": "integer"},"name": {"type": "string"},"network": {"type": "string"},"resetAddressStatus": {
-"type": "boolean"},"specialTips": {"type": "string"},"unLockConfirm": {"type": "integer"},"withdrawDesc": {"type": "string"},"withdrawEnable": {"type": "boolean"},"withdrawFee": {"type": "string"},"withdrawIntegerMultiple": {
-"type": "string"},"withdrawMax": {"type": "string"},"withdrawMin": {"type": "string"},"sameAddress": {"type": "boolean"}},"additionalProperties": false,"required": ["addressRegex","coin","depositEnable","isDefault",
-"memoRegex","minConfirm","name","network","resetAddressStatus","specialTips","unLockConfirm","withdrawEnable","withdrawFee","withdrawIntegerMultiple","withdrawMax","withdrawMin","sameAddress"]},{"type": "object",
-"properties": {"addressRegex": {"type": "string"},"coin": {"type": "string"},"depositEnable": {"type": "boolean"},"isDefault": {"type": "boolean"},"memoRegex": {"type": "string"},"minConfirm": {"type": "integer"},
-"name": {"type": "string"},"network": {"type": "string"},"resetAddressStatus": {"type": "boolean"},"specialTips": {"type": "string"},"unLockConfirm": {"type": "integer"},"withdrawEnable": {"type": "boolean"},"withdrawFee": {"type": "string"
-},"withdrawIntegerMultiple": {"type": "string"},"withdrawMax": {"type": "string"},"withdrawMin": {"type": "string"},"sameAddress": {"type": "boolean"}},"additionalProperties": false,"required": ["addressRegex",
-"coin","depositEnable","isDefault","memoRegex","minConfirm","name","network","resetAddressStatus","specialTips","unLockConfirm","withdrawEnable","withdrawFee","withdrawIntegerMultiple","withdrawMax","withdrawMin","sameAddress"
-]}],"additionalItems": false},"storage": {"type": "string"},"trading": {"type": "boolean"},"withdrawAllEnable": {"type": "boolean"},"withdrawing": {"type": "string"}},"additionalProperties": false,"required": [
-"coin","depositAllEnable","free","freeze","ipoable","ipoing","isLegalMoney","locked","name","networkList","storage","trading","withdrawAllEnable","withdrawing"]}],"additionalItems": false})" };
+        char all_coins_information[]         = { R"({"$schema":"http://json-schema.org/draft-04/schema#","type":"array","items":{"type":"object","properties":{"coin":{"type":"string"},
+"depositAllEnable":{"type":"boolean"},"withdrawAllEnable":{"type":"boolean"},"name":{"type":"string"},"free":{"type":"string"},"locked":{"type":"string"},"freeze":{"type":"string"},
+"withdrawing":{"type":"string"},"ipoing":{"type":"string"},"ipoable":{"type":"string"},"storage":{"type":"string"},"isLegalMoney":{"type":"boolean"},"trading":{"type":"boolean"},
+"networkList":{"type":"array","items":{"type":"object","properties":{"network":{"type":"string"},"coin":{"type":"string"},"withdrawIntegerMultiple":{"type":"string"},"isDefault":
+{"type":"boolean"},"depositEnable":{"type":"boolean"},"withdrawEnable":{"type":"boolean"},"depositDesc":{"type":"string"},"withdrawDesc":{"type":"string"},"specialTips":{"type":"string"},
+"specialWithdrawTips":{"type":"string"},"name":{"type":"string"},"resetAddressStatus":{"type":"boolean"},"addressRegex":{"type":"string"},"addressRule":{"type":"string"},"memoRegex":{
+"type":"string"},"withdrawFee":{"type":"string"},"withdrawMin":{"type":"string"},"withdrawMax":{"type":"string"},"minConfirm":{"type":"integer"},"unLockConfirm":{"type":"integer"},
+"sameAddress":{"type":"boolean"},"depositDust":{"type":"string"}},"additionalProperties":false,"required":["network","coin","withdrawIntegerMultiple","isDefault","depositEnable",
+"withdrawEnable","name","resetAddressStatus","addressRegex","addressRule","memoRegex","withdrawFee","withdrawMin","withdrawMax","minConfirm","unLockConfirm",
+"sameAddress"]},"additionalItems":false}},"additionalProperties":false,"required":["coin","depositAllEnable","withdrawAllEnable","name","free","locked","freeze","withdrawing","ipoing",
+"ipoable","storage","isLegalMoney","trading","networkList"]},"additionalItems":false})" };
         char snapshot_spot[]                 = { R"({"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":
 {"code":{"type":"integer"},"msg":{"type":"string"},"snapshotVos":{"type":"array","items":[{"type":"object","properties":{"data":{"type":"object",
 "properties":{"balances":{"type":"array","items":[{"type":"object","properties":{"asset":{"type":"string"},"free":{"type":"string"},"locked":{"type":"string"}},
@@ -151,12 +148,12 @@ false,"required":["asset","free","locked","freeze","withdrawing","btcValuation"]
 "baseAssetPrecision","quoteAsset","quotePrecision","quoteAssetPrecision","baseCommissionPrecision","quoteCommissionPrecision","orderTypes","icebergAllowed","ocoAllowed","quoteOrderQtyMarketAllowed",
 "allowTrailingStop","isSpotTradingAllowed","isMarginTradingAllowed","filters","permissions"]},"additionalItems": true  }},"additionalProperties": true,"required": [  "timezone",  "serverTime",
  "rateLimits",  "exchangeFilters",  "symbols"]})" };
-        char order_book[] = {R"({"$schema": "http://json-schema.org/draft-07/schema","$id": "http://richardqpc.com/schema/order_book_ticker.json","type": "object","required": [ "lastUpdateId", "bids",
+        char order_book[]                    = { R"({"$schema": "http://json-schema.org/draft-07/schema","$id": "http://richardqpc.com/schema/order_book_ticker.json","type": "object","required": [ "lastUpdateId", "bids",
  "asks"],"properties": { "lastUpdateId": { "$id": "#/properties/lastUpdateId", "type": "integer" }, "bids": { "$id": "#/properties/bids", "type": "array", "additionalItems": true, "items": { "$id":
 "#/properties/bids/items", "anyOf": [ { "$id": "#/properties/bids/items/anyOf/0", "type": "array", "additionalItems": true, "items": { "$id": "#/properties/bids/items/anyOf/0/items", "anyOf":
  [ { "$id": "#/properties/bids/items/anyOf/0/items/anyOf/0", "type": "string" } ] } } ] } }, "asks": { "$id": "#/properties/asks", "type": "array", "additionalItems": true, "items":
  { "$id": "#/properties/asks/items", "anyOf": [ { "$id": "#/properties/asks/items/anyOf/0", "type": "array", "additionalItems": true, "items": { "$id": "#/properties/asks/items/anyOf/0/items",
-"anyOf": [ { "$id": "#/properties/asks/items/anyOf/0/items/anyOf/0", "type": "string" } ] } } ] } }},"additionalProperties": false})"};
+"anyOf": [ { "$id": "#/properties/asks/items/anyOf/0/items/anyOf/0", "type": "string" } ] } } ] } }},"additionalProperties": false})" };
     } // namespace SPOT
     namespace Futures
     {

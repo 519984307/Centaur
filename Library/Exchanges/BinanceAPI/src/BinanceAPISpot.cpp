@@ -143,13 +143,13 @@ auto binapi::BinanceAPISpot::getExchangeStatus() -> bool
 #define JTO_DOB(x, y) \
     std::stod(JTO_STRING(x, y))
 
-auto binapi::BinanceAPISpot::getAllCoinsInformation() -> std::vector<SPOT::CoinInformation>
+auto binapi::BinanceAPISpot::getAllCoinsInformation() -> std::unordered_map<sym_t, SPOT::CoinInformation>
 {
     auto doc = apiRequest(g_spotRequests[ALL_COINS_INFORMATION],
         { { "recvWindow", fmt::to_string(getRecvWindow()) },
             { "timestamp", fmt::to_string(getTime()) } },
         true);
-    std::vector<SPOT::CoinInformation> info;
+    std::unordered_map<sym_t, SPOT::CoinInformation> info;
 
     for (const auto &data : doc.GetArray())
     {
@@ -180,16 +180,28 @@ auto binapi::BinanceAPISpot::getAllCoinsInformation() -> std::vector<SPOT::CoinI
                     else
                         return "";
                 }(),
-                .memoRegEx           = JTO_STRING(list, "memoRegex"),
-                .name                = JTO_STRING(list, "name"),
-                .network             = JTO_STRING(list, "network"),
-                .specialTips         = JTO_STRING(list, "specialTips"),
+                .memoRegEx   = JTO_STRING(list, "memoRegex"),
+                .name        = JTO_STRING(list, "name"),
+                .network     = JTO_STRING(list, "network"),
+                .specialTips = [&]() -> std::string {
+                    auto iter = list.FindMember("specialTips");
+                    if (iter != list.MemberEnd())
+                        return JTO_STRING(list, "specialTips");
+                    return "";
+                }(),
                 .withdrawDescription = [&list]() -> std::string {
                     if (!list["withdrawEnable"].GetBool())
                         return JTO_STRING(list, "withdrawDesc");
                     else
                         return "";
                 }(),
+                .specialWithdrawTips = [&]() -> std::string {
+                    auto iter = list.FindMember("specialWithdrawTips");
+                    if (iter != list.MemberEnd())
+                        return JTO_STRING(list, "specialWithdrawTips");
+                    return "";
+                }(),
+                .addressRule             = JTO_STRING(list, "addressRule"),
                 .withdrawFee             = JTO_DOB(list, "withdrawFee"),
                 .withdrawIntegerMultiple = JTO_DOB(list, "withdrawIntegerMultiple"),
                 .withdrawMin             = JTO_DOB(list, "withdrawMin"),
@@ -205,7 +217,7 @@ auto binapi::BinanceAPISpot::getAllCoinsInformation() -> std::vector<SPOT::CoinI
             cif.networkList.emplace_back(ls);
         }
 
-        info.emplace_back(cif);
+        info[cif.coin] = cif;
     }
     return info;
 }
