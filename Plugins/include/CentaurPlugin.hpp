@@ -87,6 +87,13 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \brief Get the plugin UUID
         /// \return Beware that versions are check in order to run the plugin
         virtual uuid getPluginUUID() noexcept = 0;
+
+        /// \brief When a menu action is defined in the UI file.
+        /// \param action Action to be connected
+        /// \param menuId As specified by the UI file
+        /// \return true on success. false on fail and the menu will be grayed
+        /// \remarks Generally what you will do is: connect(action, &QAction::triggered, (pluginObjectPointer), plugin member function);
+        C_NODISCARD virtual bool addMenuAction(QAction *action, const uuid &menuId) noexcept = 0;
     };
 
     /// \brief Provides access to the status bar

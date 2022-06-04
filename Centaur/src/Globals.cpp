@@ -102,7 +102,7 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
 
 namespace
 {
-    // clang-format off
+// clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF(exit-time-destructors)
@@ -169,10 +169,14 @@ static bool operator==(const CENTAUR_NAMESPACE::XMLStr &p1, const CENTAUR_NAMESP
     return xercesc::XMLString::equals(p1, p2);
 }
 */
-static bool operator==(const XMLCh *p1, const CENTAUR_NAMESPACE::XMLStr &p2)
+namespace cen
 {
-    return xercesc::XMLString::equals(p1, p2);
-}
+    static bool operator==(const XMLCh *p1, const CENTAUR_NAMESPACE::XMLStr &p2)
+    {
+        return xercesc::XMLString::equals(p1, p2);
+    }
+
+} // namespace cen
 
 auto cen::Globals::VisualsUI::parseVisuals(xercesc::DOMDocument *doc, Ui::CentaurApp *ui) -> void
 {

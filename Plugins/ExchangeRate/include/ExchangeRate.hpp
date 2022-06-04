@@ -38,6 +38,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         QString getPluginVersionString() noexcept override;
         void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept override;
         uuid getPluginUUID() noexcept override;
+        bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
         //    QString menuSlotName(const QString &identifier) noexcept override;
 
     public:

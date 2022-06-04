@@ -7,9 +7,9 @@
 #include <QObject>
 
 #include "BinanceSPOT.hpp"
-#include <fmt/chrono.h>
+#include "protocol.hpp"
+#include <QMessageBox>
 #include <fmt/core.h>
-#include <fmt/format.h>
 
 namespace
 {
@@ -113,30 +113,58 @@ CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() no
     return m_globalPluginUuid;
 }
 
-/*
-CENTAUR_PLUGIN_NAMESPACE::FuncPointer CENTAUR_NAMESPACE::BinanceSpotPlugin::connectMenu(const QString &identifier) noexcept
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addMenuAction(QAction *action, const uuid &menuId) noexcept
 {
-    if (identifier == "{5445eaec-d22c-4204-b720-ab07a570ab2e}")
-        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onSpotStatus);
-    else if (identifier == "{394f3857-c797-49c0-9343-37e1e66e028a}")
-        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onCoinInformation);
-    else if (identifier == "{a42c4440-2615-4b1a-9438-a70d27d63c9c}")
-        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onSpotDepositHistory);
-    else if (identifier == "{5f04e9e5-1075-422e-880f-35ba33bb0f79}")
-        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onSpotWithdrawHistory);
-    else if (identifier == "{020af463-b249-4121-97a8-d5d5cfc0ddad}")
-        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onGetAllOrders);
-    else if (identifier == "{2bbb88f4-bb25-488d-94e3-d5f2e1d50480}")
-        return reinterpret_cast<CENTAUR_PLUGIN_NAMESPACE::FuncPointer>(&BinanceSpotPlugin::onAccountTradeList);
+    const uuid spotStatus { "{5445eaec-d22c-4204-b720-ab07a570ab2e}" };
+    if (menuId == spotStatus)
+    {
+        connect(action, &QAction::triggered, this, &BinanceSpotPlugin::onSpotStatus);
+        return true;
+    }
 
-    return nullptr;
+    return false;
 }
-                      */
+
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::initialization");
 
-    m_api = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
+    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
+    auto publicKeyFile = m_config->getPluginPublicKeyPath();
+
+    try
+    {
+        ec.loadPublicKey(publicKeyFile);
+    } catch (const std::exception &ex)
+    {
+        logError("BinanceSpotPlugin", QString("Could not load the plugin public key. %1").arg(ex.what()));
+        return false;
+    }
+
+    bool apiError, secError;
+    const auto apiKeyCip = m_config->getValue("apiKey", &apiError);
+    const auto secKeyCip = m_config->getValue("secretKey", &secError);
+
+    if (!apiError || !secError)
+    {
+        logError("BinanceSpotPlugin", "Either the API Key or the secret key are empty on the plugins configuration file.");
+        return false;
+    }
+
+    const auto apiKey = ec.decryptPublic(apiKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
+    const auto secKey = ec.decryptPublic(secKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
+
+    if (apiKey.empty() || secKey.empty())
+    {
+        logError("BinanceSpotPlugin", "Could not decrypt the binance keys");
+        return false;
+    }
+
+    // set the keys
+    m_keys.apiKey    = apiKey;
+    m_keys.secretKey = secKey;
+
+    m_api            = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
 
     try
     {
@@ -419,10 +447,9 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
     {
         if (quantity > 0.0)
         {
-            const double total  = price * quantity;
+            const double total = price * quantity;
 
-            bids[price] = {quantity, total};
-
+            bids[price]        = { quantity, total };
         }
     }
 
@@ -430,9 +457,9 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
     {
         if (quantity > 0.0)
         {
-            const double total  = price * quantity;
+            const double total = price * quantity;
 
-            asks[price] = {quantity, total};
+            asks[price]        = { quantity, total };
         }
     }
 
@@ -444,6 +471,19 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotStatus() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSpotStatus");
+    QString message;
+    try
+    {
+        if (m_api->getExchangeStatus())
+            message = "System status: Normal";
+        else
+            message = "System status: System maintenance";
+    } catch (C_UNUSED const std::exception &ex)
+    {
+        message = "System status: API Error";
+    }
+
+    QMessageBox::information(nullptr, "System status", message, QMessageBox::StandardButton::Ok);
 }
 
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onCoinInformation() noexcept

@@ -102,12 +102,17 @@ namespace CENTAUR_NAMESPACE
         };
         static constexpr std::array<char, 25> valid_chars = {
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'A', 'b', 'B', 'c', 'C', 'd', 'D', 'e', 'E', 'f', 'F', '-'
+
         };
         // clang-format on
 
     private:
         unsigned char uuid_bytes[17];
+
+        friend bool operator==(const uuid &id1, const uuid &id2) noexcept;
     };
+
+    bool operator==(const uuid &id1, const uuid &id2) noexcept;
 } // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_UUID_HPP

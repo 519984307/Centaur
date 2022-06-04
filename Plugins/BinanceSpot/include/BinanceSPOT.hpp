@@ -53,6 +53,7 @@ namespace CENTAUR_NAMESPACE
         QString getPluginName() noexcept override;
         QString getPluginVersionString() noexcept override;
         uuid getPluginUUID() noexcept override;
+        bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
         // CENTAUR_PLUGIN_NAMESPACE::FuncPointer connectMenu(const QString &identifier) noexcept override;
 
         // IExchange

@@ -35,6 +35,7 @@ add_library(BinanceSPOT SHARED
 target_include_directories(BinanceSPOT PRIVATE
         include
         ../../Library/Exchanges/BinanceAPI/include
+        ../../Library/Protocol/include
         ../include)
 
 
@@ -44,6 +45,7 @@ target_link_libraries(BinanceSPOT PRIVATE ${OPENSSL_LIBRARIES})
 target_link_libraries(BinanceSPOT PRIVATE cpr::cpr)
 target_link_libraries(BinanceSPOT PRIVATE websockets)
 target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
+target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
 target_compile_definitions(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)

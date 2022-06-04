@@ -95,3 +95,8 @@ auto cen::uuid::to_string(bool upper) const -> std::string
     str += "}";
     return str;
 }
+
+bool cen::operator==(const uuid &id1, const uuid &id2) noexcept
+{
+    return memcmp(id1.uuid_bytes, id2.uuid_bytes, sizeof(id1.uuid_bytes) / sizeof(id1.uuid_bytes[0])) == 0;
+}

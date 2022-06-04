@@ -159,10 +159,10 @@ TEST_CASE("Protocol: Private Encrypt/Public decrypt")
 {
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
 
-    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{f77ecf55-8162-5570-a9dc-3a79c6757c72}.pem"));
-    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{f77ecf55-8162-5570-a9dc-3a79c6757c72}.pem"));
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
 
-    std::string text = "KJX64L888HD5U5T9";
+    std::string text = "aaaaaaaaaa";
 
     std::string base64, base16, decBase64, decBase16;
 

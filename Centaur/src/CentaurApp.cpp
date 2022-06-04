@@ -998,7 +998,7 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
 
     m_bidsDepthFill->clear();
     m_bidsDepth->clear();
-    
+
     m_bidsDepthFill->append(bidsFill);
     m_bidsDepth->append(bidsPoints);
 

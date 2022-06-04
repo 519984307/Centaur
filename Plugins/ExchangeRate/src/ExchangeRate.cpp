@@ -179,6 +179,11 @@ void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::initialization(QStatusBar *ba
     updateExchangeRate();
 }
 
+bool CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::addMenuAction(QAction *action, const uuid &menuId) noexcept
+{
+    return false;
+}
+
 void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::updateExchangeRate() noexcept
 {
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::updateExchangeRate");

@@ -180,6 +180,7 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc
         auto nameStr = XMLStr { "name" };
         auto sepStr  = XMLStr { "sep" };
         auto subStr  = XMLStr { "sub" };
+        auto idStr   = XMLStr { "id" };
 
         while (dataNode)
         {
@@ -196,6 +197,7 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc
 
                 auto type     = dataElem->getAttributeNode(typeStr);
                 auto name     = dataElem->getAttributeNode(nameStr);
+                auto id       = dataElem->getAttributeNode(idStr);
 
                 if (type != nullptr)
                 {
@@ -225,17 +227,24 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc
                         dataNode = dataNode->getNextSibling();
                         continue;
                     }
+
+                    if (id == nullptr || xercesc::XMLString::stringLen(id->getNodeValue()) == 0)
+                    {
+                        logWarn("plugins", QString(LS("warning-plugin-id-expected")).arg(base->getPluginName()));
+                        dataNode = dataNode->getNextSibling();
+                        continue;
+                    }
+
                     else
                     {
-                        //   auto function = base->connectMenu(id);
-                        //   if (function != nullptr)
-                        //   {
+
+
                         auto menuAction = new QAction(QString { StrXML { name->getNodeValue() } });
                         parent->addAction(menuAction);
-                        //       connect(menuAction, &QAction::triggered, base->getPluginObject(), function);
-                        //   }
-                        //   else
-                        //       logWarn("plugins", QString(tr("%1 the plugin interface does not implement the menu name %2")).arg(id, name));
+                        const StrXML idValue { id->getNodeValue() };
+                        auto res = base->addMenuAction(menuAction, CENTAUR_NAMESPACE::uuid { std::string { idValue } });
+                        if (!res)
+                            menuAction->setDisabled(true);
                     }
                 }
             }
@@ -354,7 +363,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPluginLocalData(const CENTAUR_NAMESPACE:
                         auto localNodeChild = localNodeChildren->item(jdx);
                         if (localNodeChild->getNodeType() == xercesc::DOMNode::NodeType::TEXT_NODE)
                         {
-                            XMLCh *value = const_cast<XMLCh *>(localNodeChild->getNodeValue());
+                            auto value = const_cast<XMLCh *>(localNodeChild->getNodeValue());
                             xercesc::XMLString::trim(value);
                             config->addValue(std::string { localNodeName }, std::string { StrXML { value } });
                             break;
