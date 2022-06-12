@@ -35,7 +35,7 @@ ELSE ()
 ENDIF ()
 
 add_executable(Centaur ${CENTAUR_EXECUTABLE}
-        rcc/resource.qrc
+        qrc/resource.qrc
         src/main.cpp
         src/CentaurApp.cpp
         src/CenListCtrl.cpp
