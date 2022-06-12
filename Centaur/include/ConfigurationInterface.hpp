@@ -38,6 +38,9 @@ namespace CENTAUR_NAMESPACE
         auto getInt64(const std::string &key, bool *error) -> int64_t override;
         auto getBool(const std::string &key, bool *error) -> bool override;
 
+    public:
+        auto getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool override;
+
     private:
         QString m_path;
         std::unordered_map<std::string, std::string> m_data;

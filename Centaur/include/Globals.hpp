@@ -18,6 +18,8 @@
 #include "crc64.hpp"
 #include <QFont>
 #include <QIcon>
+#include <QPixmapCache>
+#include <QSqlQuery>
 #include <QString>
 #include <unordered_map>
 
@@ -46,6 +48,21 @@ namespace CENTAUR_NAMESPACE
             QIcon pluginIcon { ":/img/res/img/plugin.svg" };
             QIcon favoritesIcon { ":/svg/favorites/star" };
         } icons;
+
+        struct SymbolsIcons
+        {
+            SymbolsIcons();
+            ~SymbolsIcons() = default;
+            /// \brief Finds the image of the specified symbol, size and format (when supported).
+            ///        This class will automatically let QPixmapCache handle the memory. That is will delete items when full and insert them as needed
+            /// \param size Size (when format is SvG it will be ignored)
+            /// \param symbol Symbol name
+            /// \param px The image data structure
+            /// \param format 0: for PNG, 1: for SVG
+            /// \return true on success false on failure
+            bool find(int size, const QString &symbol, QPixmap *px, int format = 0);
+
+        } symIcons;
 
         struct Fonts
         {

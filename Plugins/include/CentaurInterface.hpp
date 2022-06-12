@@ -142,6 +142,17 @@ namespace CENTAUR_INTERFACE_NAMESPACE
         /// \param key Key name value
         /// \param error If the key does not exists error will be set to true
         virtual auto getBool(const std::string &key, bool *error) -> bool = 0;
+
+        /// Access to images of assets
+    public:
+        /// \brief Access the Asset images (if any). All images are stored in the global application object QPixmapCache.
+        ///        However, locating the files are needed, so this function is added to access the images files directly into a QPixmap.
+        /// \param size Supported size: 16, 32, 64, 128 (if any)
+        /// \param format Supported format: 0: PNG, 1: SVG (if supported)
+        /// \param asset The asset name
+        /// \param pm Pixmap to hold the data (do not pass a null pointer)
+        /// \return True if the image could be loaded, false otherwise
+        virtual auto getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool = 0;
     };
 
     /// \brief Long operation was created to allow the plugins to show a dialog showing that an operation might take some time

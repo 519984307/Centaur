@@ -9,6 +9,8 @@
 #include "Logger.hpp"
 #include <QDebug>
 #include <QFile>
+#include <QSqlError>
+#include <QSqlRecord>
 #include <QTextStream>
 #include <concepts>
 #include <xercesc/dom/DOMNodeFilter.hpp>
@@ -163,6 +165,62 @@ auto cen::Globals::VisualsUI::loadVisualsUI(Ui::CentaurApp *ui) noexcept -> cen:
 
     return cen::Globals::VisualsUI::ErrorDetail::noError;
 }
+
+cen::Globals::SymbolsIcons::SymbolsIcons()
+{
+    // Limit the cache to 1MB
+    QPixmapCache::setCacheLimit(1024);
+}
+
+bool cen::Globals::SymbolsIcons::find(int size, const QString &symbol, QPixmap *px, int format)
+{
+    const QString formatString = [&format]() -> QString {
+        switch (format)
+        {
+            case 0: return "PNG";
+            case 1: return "SVG";
+            default: return "";
+        }
+    }();
+
+    const QString key = QString("%1-%2-%3").arg(size).arg(symbol, formatString);
+
+    if (QPixmapCache::find(key, px))
+        return true;
+    else
+    {
+        QSqlQuery select;
+        select.prepare("SELECT file FROM information WHERE symbol = (SELECT id FROM symbols WHERE symbol=:sym) AND size = :size AND format= :format;");
+        select.bindValue(":sym", symbol);
+        select.bindValue(":size", size);
+        select.bindValue(":format", format);
+
+        if (!select.exec())
+        {
+            logError("app", QString(LS("error-symbols-image-db").arg(select.lastError().text())));
+            return false;
+        }
+        else
+        {
+            while (select.next()) // We only expect 1
+            {
+                const QSqlRecord currentRecord = select.record();
+                QString interPath;
+                if (format == 1)
+                    interPath = "svg";
+                else
+                    interPath = QString("%1").arg(size);
+
+                auto file = QString("%1/Local/crypto/%2/%3").arg(g_globals->paths.resPath, interPath, currentRecord.value(0).toString());
+
+                px->load(file);
+                return QPixmapCache::insert(key, *px);
+            }
+            return false;
+        }
+    }
+}
+
 /*
 static bool operator==(const CENTAUR_NAMESPACE::XMLStr &p1, const CENTAUR_NAMESPACE::XMLStr &p2)
 {
