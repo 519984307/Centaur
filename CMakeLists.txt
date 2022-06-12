@@ -28,9 +28,13 @@ add_subdirectory(Library/Exchanges/BinanceAPI)
 #Plugins
 add_subdirectory(Plugins/ExchangeRate)
 add_subdirectory(Plugins/BinanceSpot)
+add_subdirectory(Plugins/BinanceSpotStatus)
 
 #tests
 add_subdirectory(test)
+
+#Tools
+add_subdirectory(tools/imgSorter)
 
 # COnan commands:
 # conan install . -s build_type=Release  -if conan/release -of conan2/ --build missing
