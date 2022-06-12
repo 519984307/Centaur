@@ -147,7 +147,7 @@ CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::ExchangeRatePlugin(QObject *parent
 
 QObject *CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginObject() noexcept
 {
-    return reinterpret_cast<QObject *>(this);
+    return qobject_cast<QObject *>(this);
 }
 QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginName() noexcept
 {
@@ -179,7 +179,7 @@ void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::initialization(QStatusBar *ba
     updateExchangeRate();
 }
 
-bool CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::addMenuAction(QAction *action, const uuid &menuId) noexcept
+bool CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::addMenuAction(C_UNUSED QAction *action, C_UNUSED const uuid &menuId) noexcept
 {
     return false;
 }
@@ -223,8 +223,8 @@ void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::updateExchangeRate() noexcept
     cpr::Response exchange = cpr::Get(cpr::Url { "https://www.alphavantage.co/query" },
         cpr::Parameters { { "function", "CURRENCY_EXCHANGE_RATE" },
             { "apikey", decryptedKey },
-            { "from_currency", "USD" },
-            { "to_currency", "MXN" } });
+            { "from_currency", base },
+            { "to_currency", quote } });
 
     if (exchange.error.code != cpr::ErrorCode::OK)
     {
