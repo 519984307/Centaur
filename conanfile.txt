@@ -2,9 +2,8 @@
 openssl/1.1.1m
 yaml-cpp/0.7.0
 rapidjson/cci.20211112
-websocketpp/0.8.2
 libwebsockets/4.3.0
-sqlite3/3.38.1
+sqlite3/3.38.5
 cpr/1.7.2
 zlib/1.2.12
 xerces-c/3.2.3
