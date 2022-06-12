@@ -64,6 +64,9 @@ namespace BINAPI_NAMESPACE
 
     using eparams = std::vector<std::pair<std::string, std::string>>;
 
+    // Return types
+    using AllCoinsInformation = std::unordered_map<BINAPI_NAMESPACE::sym_t, BINAPI_NAMESPACE::SPOT::CoinInformation>;
+
     /// \brief Binance user keys
     struct BINAPI_EXPORT BinanceKeys
     {
@@ -308,7 +311,7 @@ namespace BINAPI_NAMESPACE
 
         /// \brief Get information of coins (available for deposit and withdraw) for user
         /// \return Data
-        T_NODISCARD auto getAllCoinsInformation() -> std::unordered_map<sym_t, SPOT::CoinInformation>;
+        T_NODISCARD auto getAllCoinsInformation() -> AllCoinsInformation;
 
         /// \brief Get account snapshot for the spot account
         /// \param limit Min: 7, Max 30

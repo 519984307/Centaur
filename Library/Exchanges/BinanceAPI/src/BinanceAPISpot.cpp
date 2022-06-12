@@ -52,7 +52,7 @@ namespace
             { 1, "/sapi/v1/capital/deposit/hisrec", HTTPRequest::GET, false, loadSchema(schemas::SPOT::deposit_history), loadSchema(schemas::sapi_error), true, false },
             { 1, "/sapi/v1/capital/withdraw/history", HTTPRequest::GET, false, loadSchema(schemas::SPOT::withdraw_history), loadSchema(schemas::sapi_error), true, false },
             { 10, "/sapi/v1/capital/deposit/address", HTTPRequest::GET, false, loadSchema(schemas::SPOT::deposit_address), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/account", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_status), loadSchema(schemas::sapi_error), true, false },
+            { 1, "/sapi/v1/account/status", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_status), loadSchema(schemas::sapi_error), true, false },
             { 1, "/sapi/v1/account/apiTradingStatus", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_api_trading_status), loadSchema(schemas::sapi_error), true, false },
             { 1, "/sapi/v1/asset/dribblet", HTTPRequest::GET, false, loadSchema(schemas::SPOT::dustlog), loadSchema(schemas::sapi_error), true, false },
             { 1, "/sapi/v1/asset/dust-btc", HTTPRequest::POST, false, loadSchema(schemas::SPOT::assets_convert_to_bnb), loadSchema(schemas::sapi_error), true, false },
@@ -143,7 +143,7 @@ auto binapi::BinanceAPISpot::getExchangeStatus() -> bool
 #define JTO_DOB(x, y) \
     std::stod(JTO_STRING(x, y))
 
-auto binapi::BinanceAPISpot::getAllCoinsInformation() -> std::unordered_map<sym_t, SPOT::CoinInformation>
+auto binapi::BinanceAPISpot::getAllCoinsInformation() -> binapi::AllCoinsInformation
 {
     auto doc = apiRequest(g_spotRequests[ALL_COINS_INFORMATION],
         { { "recvWindow", fmt::to_string(getRecvWindow()) },
@@ -156,7 +156,7 @@ auto binapi::BinanceAPISpot::getAllCoinsInformation() -> std::unordered_map<sym_
         SPOT::CoinInformation cif {
             .coin              = JTO_STRING(data, "coin"),
             .name              = JTO_STRING(data, "name"),
-            .free              = JTO_DOB(data, "freeze"),
+            .free              = JTO_DOB(data, "free"),
             .freeze            = JTO_DOB(data, "freeze"),
             .ipoable           = JTO_DOB(data, "ipoable"),
             .ipoing            = JTO_DOB(data, "ipoing"),
@@ -406,7 +406,7 @@ auto binapi::BinanceAPISpot::withdraw(binapi::v_asset_t coin, binapi::v_address_
         parameters.emplace_back("name", "name_");
     }
 
-    auto doc = apiRequest(g_spotRequests[WITHDRAW], true);
+    auto doc = apiRequest(g_spotRequests[WITHDRAW], parameters, true);
 
     return JTO_STRING(doc, "id");
 }
@@ -632,7 +632,7 @@ auto binapi::BinanceAPISpot::depositAddress(binapi::v_asset_t coin, std::string_
     if (!network.empty())
         parameters.emplace_back("network", network);
 
-    auto doc = apiRequest(g_spotRequests[DEPOSIT_ADDRESS], true);
+    auto doc = apiRequest(g_spotRequests[DEPOSIT_ADDRESS], parameters, true);
 
     return binapi::SPOT::DepositAddress {
         .address = JTO_STRING(doc, "address"),
@@ -649,9 +649,9 @@ auto binapi::BinanceAPISpot::accountStatus() -> std::string
         { "timestamp", fmt::to_string(getTime()) },
     };
 
-    auto doc = apiRequest(g_spotRequests[ACCOUNT_STATUS], true);
+    auto doc = apiRequest(g_spotRequests[ACCOUNT_STATUS], parameters, true);
 
-    return JTO_STRING(doc, "id");
+    return JTO_STRING(doc, "data");
 }
 
 auto binapi::BinanceAPISpot::accountAPITradingStatus() -> binapi::SPOT::AccountAPITradingStatus
@@ -661,7 +661,7 @@ auto binapi::BinanceAPISpot::accountAPITradingStatus() -> binapi::SPOT::AccountA
         { "timestamp", fmt::to_string(getTime()) },
     };
 
-    auto doc = apiRequest(g_spotRequests[ACCOUNT_API_TRADING_STATUS], true);
+    auto doc = apiRequest(g_spotRequests[ACCOUNT_API_TRADING_STATUS], parameters, true);
 
     return binapi::SPOT::AccountAPITradingStatus {
         .updateTime  = doc["data"]["updateTime"].GetUint64(),
@@ -684,7 +684,7 @@ auto binapi::BinanceAPISpot::dustLog(uint64_t startTime, uint64_t endTime) -> SP
     if (endTime)
         parameters.emplace_back("endTime", fmt::to_string(endTime));
 
-    auto doc = apiRequest(g_spotRequests[DUSTLOG], true);
+    auto doc = apiRequest(g_spotRequests[DUSTLOG], parameters, true);
 
     SPOT::DustLog dl { .totalCounts = doc["total"].GetInt64() };
 
@@ -724,7 +724,7 @@ auto binapi::BinanceAPISpot::getAssetsConvertedToBNB() -> SPOT::AssetsToBNB
         { "timestamp", fmt::to_string(getTime()) },
     };
 
-    auto doc = apiRequest(g_spotRequests[ASSETS_CAN_BE_CONVERTED], true);
+    auto doc = apiRequest(g_spotRequests[ASSETS_CAN_BE_CONVERTED], parameters, true);
 
     SPOT::AssetsToBNB atb {
         .totalTransferBTC   = JTO_DOB(doc, "totalTransferBtc"),
@@ -760,7 +760,7 @@ auto binapi::BinanceAPISpot::dustTransfer(const std::vector<asset_t> &assets) ->
     for (const auto &asset : assets)
         parameters.emplace_back("asset", asset);
 
-    auto doc = apiRequest(g_spotRequests[DUST_TRANSFER], true);
+    auto doc = apiRequest(g_spotRequests[DUST_TRANSFER], parameters, true);
 
     SPOT::DustTransfer dtf {
         .totalServiceCharge = JTO_DOB(doc, "totalServiceCharge"),
@@ -799,7 +799,7 @@ auto binapi::BinanceAPISpot::assetDividendRecord(binapi::v_asset_t asset, uint64
     if (!asset.empty())
         parameters.emplace_back("asset", asset);
 
-    auto doc = apiRequest(g_spotRequests[ASSET_DIVIDEND_RECORD], true);
+    auto doc = apiRequest(g_spotRequests[ASSET_DIVIDEND_RECORD], parameters, true);
 
     std::pair<int64_t, std::vector<SPOT::AssetDividend>> piva;
     piva.first = doc["total"].GetInt64();
@@ -821,14 +821,13 @@ auto binapi::BinanceAPISpot::assetDividendRecord(binapi::v_asset_t asset, uint64
 }
 auto binapi::BinanceAPISpot::assetDetail(binapi::v_asset_t asset) -> binapi::SPOT::AssetDetail
 {
-    eparams parameters {
+    const eparams parameters {
         { "recvWindow", fmt::to_string(getRecvWindow()) },
         { "timestamp", fmt::to_string(getTime()) },
+        { "asset", VIEW_INIT(asset) },
     };
 
-    parameters.emplace_back("asset", asset);
-
-    auto doc = apiRequest(g_spotRequests[ASSET_DETAIL], true);
+    auto doc = apiRequest(g_spotRequests[ASSET_DETAIL], parameters, true);
 
     SPOT::AssetDetail adl;
 
@@ -851,14 +850,13 @@ auto binapi::BinanceAPISpot::assetDetail(binapi::v_asset_t asset) -> binapi::SPO
 
 auto binapi::BinanceAPISpot::tradeFee(binapi::v_sym_t symbol) -> std::map<sym_t, SPOT::TradeFee>
 {
-    eparams parameters {
+    const eparams parameters {
         { "recvWindow", fmt::to_string(getRecvWindow()) },
         { "timestamp", fmt::to_string(getTime()) },
+        { "symbol", VIEW_INIT(symbol) }
     };
 
-    parameters.emplace_back("symbol", symbol);
-
-    auto doc = apiRequest(g_spotRequests[TRADE_FEE], true);
+    auto doc = apiRequest(g_spotRequests[TRADE_FEE], parameters, true);
 
     std::map<sym_t, SPOT::TradeFee> mstf;
 
@@ -975,7 +973,7 @@ auto binapi::BinanceAPISpot::queryUserUniversalTransferHistory(binapi::SPOT::Uni
 
     std::pair<int64_t, std::vector<SPOT::UniversalTransferQuery>> pisutq;
 
-    auto doc     = apiRequest(g_spotRequests[QUERY_USER_UNIVERSAL_TRANSFER], true);
+    auto doc     = apiRequest(g_spotRequests[QUERY_USER_UNIVERSAL_TRANSFER], parameters, true);
 
     pisutq.first = doc["total"].GetInt64();
 
@@ -1040,14 +1038,14 @@ auto binapi::BinanceAPISpot::queryUserUniversalTransferHistory(binapi::SPOT::Uni
 
 auto binapi::BinanceAPISpot::fundingWallet(binapi::v_asset_t asset, bool needBtcValuation) -> std::vector<SPOT::FundingWallet>
 {
-    eparams parameters {
+    const eparams parameters {
         { "asset", std::string(asset) },
         { "needBtcValuation", needBtcValuation ? "true" : "false" },
         { "recvWindow", fmt::to_string(getRecvWindow()) },
         { "timestamp", fmt::to_string(getTime()) },
     };
 
-    auto doc = apiRequest(g_spotRequests[FUNDING_WALLET], true);
+    auto doc = apiRequest(g_spotRequests[FUNDING_WALLET], parameters, true);
 
     std::vector<SPOT::FundingWallet> fwlt;
     for (const auto &fund : doc.GetArray())
@@ -1069,13 +1067,13 @@ auto binapi::BinanceAPISpot::fundingWallet(binapi::v_asset_t asset, bool needBtc
 
 auto binapi::BinanceAPISpot::fundingWallet(bool needBtcValuation) -> std::vector<SPOT::FundingWallet>
 {
-    eparams parameters {
+    const eparams parameters {
         { "needBtcValuation", needBtcValuation ? "true" : "false" },
         { "recvWindow", fmt::to_string(getRecvWindow()) },
         { "timestamp", fmt::to_string(getTime()) },
     };
 
-    auto doc = apiRequest(g_spotRequests[FUNDING_WALLET], true);
+    auto doc = apiRequest(g_spotRequests[FUNDING_WALLET], parameters, true);
 
     std::vector<SPOT::FundingWallet> fwlt;
     for (const auto &fund : doc.GetArray())
@@ -1097,25 +1095,29 @@ auto binapi::BinanceAPISpot::fundingWallet(bool needBtcValuation) -> std::vector
 
 auto binapi::BinanceAPISpot::getAPIKeyPermission() -> binapi::SPOT::APIKeyPermissions
 {
-    eparams parameters {
+    const eparams parameters {
         { "recvWindow", fmt::to_string(getRecvWindow()) },
         { "timestamp", fmt::to_string(getTime()) },
     };
 
-    auto doc = apiRequest(g_spotRequests[API_KEY_PERMISSION], true);
+    auto doc = apiRequest(g_spotRequests[API_KEY_PERMISSION], parameters, true);
 
     SPOT::APIKeyPermissions akp {
-        .tradingAuthorityExpirationTime = doc["tradingAuthorityExpirationTime"].GetUint64(),
-        .createTime                     = doc["createTime"].GetUint64(),
-        .ipRestrict                     = doc["ipRestrict"].GetBool(),
-        .enableWithdrawals              = doc["enableWithdrawals"].GetBool(),
-        .enableInternalTransfer         = doc["enableInternalTransfer"].GetBool(),
-        .permitsUniversalTransfer       = doc["permitsUniversalTransfer"].GetBool(),
-        .enableVanillaOptions           = doc["enableVanillaOptions"].GetBool(),
-        .enableReading                  = doc["enableReading"].GetBool(),
-        .enableFutures                  = doc["enableFutures"].GetBool(),
-        .enableMargin                   = doc["enableMargin"].GetBool(),
-        .enableSpotAndMarginTrading     = doc["enableSpotAndMarginTrading"].GetBool(),
+        .tradingAuthorityExpirationTime = [&]() -> uint64_t {
+            if (doc.FindMember("tradingAuthorityExpirationTime") == doc.MemberEnd())
+                return 0ull;
+            return doc["tradingAuthorityExpirationTime"].GetUint64();
+        }(),
+        .createTime                 = doc["createTime"].GetUint64(),
+        .ipRestrict                 = doc["ipRestrict"].GetBool(),
+        .enableWithdrawals          = doc["enableWithdrawals"].GetBool(),
+        .enableInternalTransfer     = doc["enableInternalTransfer"].GetBool(),
+        .permitsUniversalTransfer   = doc["permitsUniversalTransfer"].GetBool(),
+        .enableVanillaOptions       = doc["enableVanillaOptions"].GetBool(),
+        .enableReading              = doc["enableReading"].GetBool(),
+        .enableFutures              = doc["enableFutures"].GetBool(),
+        .enableMargin               = doc["enableMargin"].GetBool(),
+        .enableSpotAndMarginTrading = doc["enableSpotAndMarginTrading"].GetBool(),
     };
 
     return akp;
