@@ -27,16 +27,28 @@ find_package(Qt6 COMPONENTS
 
 
 add_library(BinanceSPOT SHARED
-        res/resource.qrc
+        qrc/resource.qrc
         src/BinanceSPOT.cpp
-        include/BinanceSPOT.hpp src/SpotMarketWS.cpp)
+        include/BinanceSPOT.hpp
+        src/SpotMarketWS.cpp
+        # Includes for the necessary table widget
+        ../../Library/Helpers/include/OptionsWidget.hpp
+        ../../Library/Helpers/src/OptionsWidget.cpp
+        ../../Library/Helpers/include/OptionsTableWidget.hpp
+        ../../Library/Helpers/src/OptionsTableWidget.cpp
+        ../../Library/Helpers/qrc/options.qrc
+        include/CoinInfoDialog.hpp
+        src/CoinInfoDialog.cpp
+        include/NetworkAddressDialog.hpp
+        src/NetworkAddressDialog.cpp)
 
 
 target_include_directories(BinanceSPOT PRIVATE
         include
         ../../Library/Exchanges/BinanceAPI/include
         ../../Library/Protocol/include
-        ../include)
+        ../include
+        ../../Library/Helpers/include)
 
 
 target_link_libraries(BinanceSPOT PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
@@ -49,12 +61,6 @@ target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dy
 target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
 target_compile_definitions(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)
-
-if (COMMAND qt_create_translation)
-    #    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-else ()
-    #    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-endif ()
 
 
 target_compile_options(BinanceSPOT PRIVATE
