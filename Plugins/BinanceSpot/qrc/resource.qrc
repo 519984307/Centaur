@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/img">
+        <file alias="plugin">../res/BinancePlugin.png</file>
+        <file alias="crypto">../res/crypto.svg</file>
+        <file>../res/money-locked.svg</file>
+        <file alias="glass">../res/search_gray_48dp.svg</file>
+        <file alias="copy">../res/content_copy_FILL0_wght400_GRAD0_opsz48.svg</file>
+    </qresource>
+</RCC>

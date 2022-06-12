@@ -54,7 +54,6 @@ namespace CENTAUR_NAMESPACE
         QString getPluginVersionString() noexcept override;
         uuid getPluginUUID() noexcept override;
         bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
-        // CENTAUR_PLUGIN_NAMESPACE::FuncPointer connectMenu(const QString &identifier) noexcept override;
 
         // IExchange
     public:
@@ -65,6 +64,10 @@ namespace CENTAUR_NAMESPACE
         void removeSymbol(const QString &name) noexcept override;
         void updateOrderbook(const QString &symbol) noexcept override;
         void stopOrderbook(const QString &symbol) noexcept override;
+        QString getQuoteFromSymbol(const QString &symbol) noexcept override;
+        QString getBaseFromSymbol(const QString &symbol) noexcept override;
+        QList<QPair<QString, uuid>> dynamicWatchListMenuItems() noexcept override;
+        bool setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const uuid &id) noexcept override;
 
     public slots:
         void onTickerUpdate(const QString &symbol, const quint64 &receivedTime, const double &price) noexcept;
@@ -76,6 +79,10 @@ namespace CENTAUR_NAMESPACE
         void onSpotWithdrawHistory() noexcept;
         void onGetAllOrders() noexcept;
         void onAccountTradeList() noexcept;
+        void onTradeFees() noexcept;
+        void onDisplayBaseAssetInfo(const QString &asset) noexcept;
+        void onDisplayCoinAssetDepositAddress(const QString &asset) noexcept;
+        void onDisplayAssetDetail(const QString &asset) noexcept;
 
     signals:
         void snTickerUpdate(const QString &symbol, const int &symbolId, const quint64 &receivedTime, const double &price);
@@ -83,8 +90,8 @@ namespace CENTAUR_NAMESPACE
 
         // Resources
     protected:
-        mutable QIcon m_exchIcon { ":/img/BinancePlugin.png" };
-        QIcon m_cryptoIcon { ":/img/crypto.svg" };
+        mutable QIcon m_exchIcon { ":/img/plugin" };
+        QIcon m_cryptoIcon { ":/img/crypto" };
 
     private:
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
@@ -107,6 +114,9 @@ namespace CENTAUR_NAMESPACE
         std::map<QString, int> m_symbolId;
         std::map<int, QString> m_wsIds;
         std::unordered_map<QString, std::pair<bool, uint64_t>> m_symbolOrderbookSnapshot;
+
+    protected:
+        std::unordered_map<BINAPI_NAMESPACE::sym_t, BINAPI_NAMESPACE::SPOT::CoinInformation> m_coinInformation;
     };
 
     class SpotMarketWS : public BINAPI_NAMESPACE::ws::WSSpotBinanceAPI
@@ -133,6 +143,7 @@ namespace CENTAUR_NAMESPACE
         BinanceSpotPlugin *m_obj { nullptr };
         std::promise<void> m_connected;
     };
+
 } // namespace CENTAUR_NAMESPACE
 
 Q_DECLARE_METATYPE(BINAPI_NAMESPACE::StreamDepthUpdate)
