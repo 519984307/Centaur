@@ -84,3 +84,8 @@ bool cen::PluginConfiguration::getBool(const std::string &key, bool *error)
         return false;
     }
 }
+
+auto cen::PluginConfiguration::getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool
+{
+    return g_globals->symIcons.find(size, asset, pm, format);
+}

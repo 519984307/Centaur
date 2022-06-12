@@ -146,6 +146,27 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \param symbol Symbol data to stop
         virtual void stopOrderbook(const QString &symbol) noexcept = 0;
 
+        /// \brief On forex and crypto markets this is the quote name. On Stock this should return the symbol
+        /// \param symbol The symbol name
+        /// \return Quote from symbol
+        C_NODISCARD virtual QString getQuoteFromSymbol(const QString &symbol) noexcept = 0;
+
+        /// \brief On forex and crypto markets this is the base name. On Stock this should return the symbol.
+        /// \param symbol The symbol name
+        /// \return Base from symbol.
+        C_NODISCARD virtual QString getBaseFromSymbol(const QString &symbol) noexcept = 0;
+
+        /// \brief When the user makes a right click on the watchlist. This list is used to populate the popup menu
+        /// \return A list with the name and an associated uuid. This uuid will be used to call setDynamicWatchListMenuAction to assign the menu an action
+        C_NODISCARD virtual QList<QPair<QString, uuid>> dynamicWatchListMenuItems() noexcept = 0;
+
+        /// \brief Assign a menu action to the popup menu in the dynamic watchlist
+        /// \param action The menu action. This is created by the UI and passed to the plugin to connect with a slot
+        /// \param symbolName The name of the symbol that the user clicked on
+        /// \param id This uuid is the id retrieved from dynamicWatchListMenuItems and repassed to this function
+        /// \return return true if the menu was implemented and the
+        C_NODISCARD virtual bool setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const uuid &id) noexcept = 0;
+
         /**
          *
     signals:

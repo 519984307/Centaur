@@ -5,6 +5,7 @@
 //
 
 #include "CenListCtrl.hpp"
+#include "CentaurApp.hpp"
 #include <QMenu>
 #include <QMouseEvent>
 
@@ -39,41 +40,51 @@ void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
                 ? QString(tr("Add '%1' to the watchlist")).arg(itemData)
                 : QString(tr("Remove '%1' from the watchlist")).arg(itemData),
             this);
+        contextMenu.addAction(&action);
+        QList<QAction *> dynActions;
 
+        CENTAUR_PLUGIN_NAMESPACE::IExchange *exch;
         if (!m_remove)
         {
             connect(&action, &QAction::triggered, this,
                 [&]() { emit snAddToWatchList(itemData, objectName(), true); });
+
+            exch = g_app->exchangeFromWatchlistRow(objectName());
         }
         else
         {
             connect(&action, &QAction::triggered, this,
                 [&]() { emit snRemoveWatchList(index.row()); });
+            exch = g_app->exchangeFromWatchlistRow(index.row());
         }
 
-        contextMenu.addAction(&action);
+
+        if (exch != nullptr)
+        {
+            contextMenu.addSeparator();
+            auto list = exch->dynamicWatchListMenuItems();
+            for (const auto &ls : list)
+            {
+                if (ls.second == uuid { "{00000000-0000-0000-0000-000000000000}" })
+                    contextMenu.addSeparator();
+                else
+                {
+                    dynActions.push_back(new QAction(ls.first));
+                    auto r = exch->setDynamicWatchListMenuAction(dynActions.last(), itemData, ls.second);
+                    if (!r)
+                        dynActions.last()->setDisabled(true);
+                    contextMenu.addAction(dynActions.last());
+                }
+            }
+        }
+
         contextMenu.exec(mapToGlobal(pos));
-        /*if (!m_remove)
-{
-    QAction action(QString(tr("Add '%1' to the watchlist")).arg(itemData), this);
-    connect(&action, &QAction::triggered, this,
-        [&]() { emit sgAddToWatchList(itemData, objectName()); });
-    contextMenu.addAction(&action);
-}
-else
-{
-    QAction action0(QString(tr("Add '%1' to the watchlist")).arg(itemData), this);
-    connect(&action0, &QAction::triggered, this,
-        [&]() { emit sgRemoveWatchList(index.row()); });
 
-QAction action1(QString(tr("Add '%1' to favorites")).arg(itemData), this);
-connect(&action1, &QAction::triggered, this,
-    [&]() { emit sgRemoveWatchList(index.row()); });
-
-contextMenu.addAction(&action0);
-contextMenu.addSeparator();
-contextMenu.addAction(&action1);
-}*/
+        // Release memory
+        for (const auto &actions : dynActions)
+        {
+            delete actions;
+        }
     }
 }
 

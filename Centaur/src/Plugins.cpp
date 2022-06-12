@@ -459,7 +459,13 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
         int curRow = itemModel->rowCount();
         item->setFont(g_globals->fonts.symbolsDock.tableFont);
         item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        item->setIcon(*icon);
+
+        const QString base   = exchange->getBaseFromSymbol(sym);
+        QPixmap img;
+        if (g_globals->symIcons.find(16, base, &img, 0))
+            item->setIcon({ img });
+        else
+            item->setIcon(*icon);
 
         itemModel->insertRow(curRow, item);
     }

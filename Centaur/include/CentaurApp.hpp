@@ -95,6 +95,10 @@ namespace CENTAUR_NAMESPACE
         /// \param sender Plugin UUID
         void removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept;
 
+    public:
+        plugin::IExchange *exchangeFromWatchlistRow(const int &row) noexcept;
+        plugin::IExchange *exchangeFromWatchlistRow(const QString &sender) noexcept;
+
     protected:
         bool initExchangePlugin(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange) noexcept;
         CenListCtrl *populateExchangeSymbolList(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange, const QString &uuidString) noexcept;

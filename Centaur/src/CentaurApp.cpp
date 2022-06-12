@@ -1040,12 +1040,31 @@ void CENTAUR_NAMESPACE::CentaurApp::onPlugins() noexcept
     dlg.exec();
 }
 
-void cen::CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
 {
     m_sqlFavorites->add(symbol, sender);
 }
 
-void cen::CentaurApp::removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
 {
     m_sqlFavorites->del(symbol, sender);
+}
+
+CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFromWatchlistRow(const int &row) noexcept
+{
+    const QString itemSource = m_watchlistItemModel->item(row, 4)->text();
+    return exchangeFromWatchlistRow(itemSource);
+}
+
+CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFromWatchlistRow(const QString &sender) noexcept
+{
+    auto interface = m_exchangeList.find(sender);
+
+    if (interface == m_exchangeList.end())
+    {
+        logError("watchlist", QString(tr("The sender '%1' is not registered.")).arg(sender));
+        return nullptr;
+    }
+
+    return interface->second.exchange;
 }
