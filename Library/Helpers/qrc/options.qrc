@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="list-items">
+        <file alias="delete">../res/delete_48dp.svg</file>
+        <file alias="edit">../res/mode_edit_black_48dp.svg</file>
+        <file alias="view">../res/visibility_opts.svg</file>
+    </qresource>
+</RCC>
