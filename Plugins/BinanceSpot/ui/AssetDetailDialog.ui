@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CENTAUR_NAMESPACE::AssetDetailDialog</class>
+ <widget class="QDialog" name="CENTAUR_NAMESPACE::AssetDetailDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>415</width>
+    <height>395</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Roboto</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Asset detail</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QLineEdit {
+    border: 0px;
+    background-color: rgb(25, 25, 25);
+    border-radius: 5px;
+    min-height: 25px;
+    padding: 0 0 0 10;
+}
+
+
+
+QLineEdit:hover {
+    background-color: rgb(35, 35, 35);
+}
+
+QLineEdit:focus {
+    background-color: rgb(45, 45, 45);
+}
+
+
+QDialog{
+background-color: rgb(22,22,22);
+border-radius: 2px;
+border-left: 0px;
+border-right: 0px;
+border-top: 0px;
+border-bottom: 0px;
+}
+
+QLabel{
+border:0px;
+}
+
+/*border-left: 20px solid */
+</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalInfoLayout">
+     <property name="spacing">
+      <number>10</number>
+     </property>
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMinimumSize</enum>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="image">
+       <property name="minimumSize">
+        <size>
+         <width>64</width>
+         <height>64</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>64</width>
+         <height>64</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="coinName">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>64</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>64</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>30</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>TextLabel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="styleSheet">
+      <string notr="true">QFrame{
+background-color: rgb(30,30,30);
+border-radius: 5px;
+border-left: 0px;
+border-right: 0px;
+border-top: 0px;
+border-bottom: 0px;
+}
+
+QLabel{
+border:0px;
+}
+
+/*border-left: 20px solid */
+</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="3" column="1">
+         <widget class="QLabel" name="labelWithdrawStatus">
+          <property name="text">
+           <string>Withdraw Status</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="labelWithdraw">
+          <property name="text">
+           <string>Withdraw Fee</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLabel" name="labelTip">
+          <property name="text">
+           <string>Deposit tip</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="labelMinimum">
+          <property name="text">
+           <string>Minimum Withdraw amount</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="labelDepositStatus">
+          <property name="text">
+           <string>Deposit Status</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QCheckBox" name="checkBoxDeposit">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QCheckBox" name="checkBoxWithdraw">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="2">
+         <widget class="QTextEdit" name="textEditTip">
+          <property name="styleSheet">
+           <string notr="true">QTextEdit {
+    border: 0px;
+    background-color: rgb(25, 25, 25);
+    border-radius: 5px;
+    min-height: 25px;
+    padding: 0 0 0 10;
+}
+
+QTextEdit:hover {
+    background-color: rgb(35, 35, 35);
+}
+
+QTextEdit:focus {
+    background-color: rgb(45, 45, 45);
+}
+</string>
+          </property>
+          <property name="documentTitle">
+           <string/>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QLineEdit" name="lineEditMinimum"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLineEdit" name="lineEditFee"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnClose">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

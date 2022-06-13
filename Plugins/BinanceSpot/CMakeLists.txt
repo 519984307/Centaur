@@ -40,7 +40,7 @@ add_library(BinanceSPOT SHARED
         include/CoinInfoDialog.hpp
         src/CoinInfoDialog.cpp
         include/NetworkAddressDialog.hpp
-        src/NetworkAddressDialog.cpp)
+        src/NetworkAddressDialog.cpp include/AssetDetailDialog.hpp src/AssetDetailDialog.cpp include/FeesDialog.hpp src/FeesDialog.cpp)
 
 
 target_include_directories(BinanceSPOT PRIVATE

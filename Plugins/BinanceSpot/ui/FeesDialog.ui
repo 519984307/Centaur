@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FeesDialog</class>
- <widget class="QDialog" name="FeesDialog">
+ <class>CENTAUR_NAMESPACE::FeesDialog</class>
+ <widget class="QDialog" name="CENTAUR_NAMESPACE::FeesDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -79,8 +79,14 @@
      </item>
      <item>
       <widget class="QPushButton" name="closeButton">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
-        <string>PushButton</string>
+        <string>Close</string>
        </property>
       </widget>
      </item>
