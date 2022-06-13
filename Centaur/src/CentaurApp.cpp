@@ -155,6 +155,17 @@ CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
     delete g_globals;
 }
 
+void cen::CentaurApp::closeEvent(QCloseEvent *event)
+{
+    for (const auto &plugins : m_pluginInstances)
+    {
+        if (plugins->isLoaded())
+            plugins->unload();
+    }
+
+    QWidget::closeEvent(event);
+}
+
 bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
 {
     if (obj == this && event->type() == QEvent::Close)

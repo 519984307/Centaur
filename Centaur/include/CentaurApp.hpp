@@ -24,6 +24,7 @@
 #include "Logger.hpp"
 #include "LongOperation.hpp"
 #include "XMLHelper.hpp"
+#include <QPluginLoader>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QSplineSeries>
 #include <chrono>
@@ -56,6 +57,8 @@ namespace CENTAUR_NAMESPACE
 
     protected:
         bool eventFilter(QObject *obj, QEvent *event) override;
+
+        void closeEvent(QCloseEvent *event) override;
 
     private:
         /// \brief initializeInterface Set interface status
@@ -135,6 +138,7 @@ namespace CENTAUR_NAMESPACE
 
         // Plugins
     private:
+        QList<QPluginLoader *> m_pluginInstances;
         std::unordered_map<QString, PluginConfiguration *> m_configurationInterface;
         std::map<QString, ExchangeInformation> m_exchangeList;
         std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item

@@ -97,8 +97,8 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                 realFile = info.symLinkTarget();
             }
 
-            QPluginLoader loader(realFile);
-            QObject *plugin = loader.instance();
+            auto loader     = new QPluginLoader(realFile);
+            QObject *plugin = loader->instance();
 
             if (plugin)
             {
@@ -128,7 +128,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                         logInfo("plugin", QString(LS("info-plugin-iexchange")).arg(plFile));
                         if (!initExchangePlugin(exInterface))
                         {
-                            loader.unload();
+                            loader->unload();
                             logWarn("plugin", QString(LS("warning-iexchange-plugin-unloaded")).arg(plFile));
                         }
                         else
@@ -141,10 +141,13 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                         stInterface->initialization(m_ui->m_statusBar);
                         updatePluginsMenus(stInterface->getPluginUUID(), doc, baseInterface);
                     }
+
+                    if (loader->isLoaded())
+                        m_pluginInstances.emplace_back(loader);
                 }
             }
             else
-                loader.unload();
+                loader->unload();
         }
     }
 
@@ -237,7 +240,6 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc
 
                     else
                     {
-
 
                         auto menuAction = new QAction(QString { StrXML { name->getNodeValue() } });
                         parent->addAction(menuAction);
@@ -460,7 +462,7 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
         item->setFont(g_globals->fonts.symbolsDock.tableFont);
         item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-        const QString base   = exchange->getBaseFromSymbol(sym);
+        const QString base = exchange->getBaseFromSymbol(sym);
         QPixmap img;
         if (g_globals->symIcons.find(16, base, &img, 0))
             item->setIcon({ img });
