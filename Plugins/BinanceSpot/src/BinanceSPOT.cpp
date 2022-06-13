@@ -6,8 +6,10 @@
 
 #include <QObject>
 
+#include "AssetDetailDialog.hpp"
 #include "BinanceSPOT.hpp"
 #include "CoinInfoDialog.hpp"
+#include "FeesDialog.hpp"
 #include "NetworkAddressDialog.hpp"
 #include "protocol.hpp"
 #include <QApplication>
@@ -130,7 +132,7 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addMenuAction(QAction *action, const 
     }
     else if (menuId == uuid { "{3cd3662b-a52f-4c3d-ab15-bde1c1962cb9}" })
     {
-        connect(action, &QAction::triggered, this, &BinanceSpotPlugin::onTradeFees);
+        connect(action, &QAction::triggered, this, [&]() { onShowFees(); });
         return true;
     }
 
@@ -226,12 +228,12 @@ CENTAUR_PLUGIN_NAMESPACE::StringIconVector CENTAUR_NAMESPACE::BinanceSpotPlugin:
     return m_symbols;
 }
 
-QString cen::BinanceSpotPlugin::getQuoteFromSymbol(const QString &symbol) noexcept
+QString CENTAUR_NAMESPACE::BinanceSpotPlugin::getQuoteFromSymbol(const QString &symbol) noexcept
 {
     return m_exchInfo.symbols[symbol.toStdString()].quoteAsset.c_str();
 }
 
-QString cen::BinanceSpotPlugin::getBaseFromSymbol(const QString &symbol) noexcept
+QString CENTAUR_NAMESPACE::BinanceSpotPlugin::getBaseFromSymbol(const QString &symbol) noexcept
 {
     return m_exchInfo.symbols[symbol.toStdString()].baseAsset.c_str();
 }
@@ -552,7 +554,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onAccountTradeList() noexcept
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onAccountTradeList");
 }
 
-QList<QPair<QString, cen::uuid>> cen::BinanceSpotPlugin::dynamicWatchListMenuItems() noexcept
+QList<QPair<QString, CENTAUR_NAMESPACE::uuid>> CENTAUR_NAMESPACE::BinanceSpotPlugin::dynamicWatchListMenuItems() noexcept
 {
     return {
         { "Get Base Asset Coin information", uuid { "{97123f13-4cc9-4236-956e-777f7f42caed}" } },
@@ -563,10 +565,12 @@ QList<QPair<QString, cen::uuid>> cen::BinanceSpotPlugin::dynamicWatchListMenuIte
         { "", uuid { "{00000000-0000-0000-0000-000000000000}" } }, // Separator
         { "Get Base Asset Details", uuid { "{1bb51cdb-0c6a-4d7b-b1c5-8473ae21c0fe}" } },
         { "Get Quote Asset Details", uuid { "{249d0800-e806-45f5-802d-27832f734a7f}" } },
+        { "", uuid { "{00000000-0000-0000-0000-000000000000}" } }, // Separator
+        { "Get Symbol Fees", uuid { "{030ab818-cfb3-4c20-94c1-97a53204b840}" } }
     };
 }
 
-bool cen::BinanceSpotPlugin::setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const cen::uuid &id) noexcept
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const CENTAUR_NAMESPACE::uuid &id) noexcept
 {
     const auto baseAsset  = QString::fromStdString(m_exchInfo.symbols[symbolName.toStdString()].baseAsset);
     const auto quoteAsset = QString::fromStdString(m_exchInfo.symbols[symbolName.toStdString()].quoteAsset);
@@ -613,13 +617,19 @@ bool cen::BinanceSpotPlugin::setDynamicWatchListMenuAction(QAction *action, cons
         });
         return true;
     }
+    else if (id == uuid { "{030ab818-cfb3-4c20-94c1-97a53204b840}" })
+    {
+        connect(action, &QAction::triggered, this, [&](C_UNUSED bool checked = false) { onShowFees(symbolName); });
+        return true;
+    }
+
     return false;
 }
 
-void cen::BinanceSpotPlugin::onDisplayBaseAssetInfo(const QString &asset) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayBaseAssetInfo(const QString &asset) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onDisplayBaseAssetInfo");
-    QApplication::setOverrideCursor(QCursor(Qt::BusyCursor));
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if (m_coinInformation.empty())
     {
         try
@@ -640,10 +650,10 @@ void cen::BinanceSpotPlugin::onDisplayBaseAssetInfo(const QString &asset) noexce
     }
 }
 
-void cen::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(const QString &asset) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(const QString &asset) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onDisplayCoinAssetDepositAddress");
-    QApplication::setOverrideCursor(QCursor(Qt::BusyCursor));
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if (m_coinInformation.empty())
     {
         try
@@ -660,21 +670,41 @@ void cen::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(const QString &ass
     dlg.setModal(true);
     dlg.exec();
 }
-void cen::BinanceSpotPlugin::onTradeFees() noexcept
-{
-    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onTradeFees");
-}
 
-void cen::BinanceSpotPlugin::onDisplayAssetDetail(const QString &asset) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayAssetDetail(const QString &asset) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onDisplayAssetDetail");
 
     try
     {
-        auto assetDetail = m_api->assetDetail(asset.toStdString());
-        int i            = 0;
+        const auto assetDetail = m_api->assetDetail(asset.toStdString());
+        AssetDetailDialog dlg(assetDetail, asset, m_config, nullptr);
+        dlg.setModal(true);
+        dlg.exec();
     } catch (const BINAPI_NAMESPACE::APIException &ex)
     {
         CATCH_API_EXCEPTION()
     }
+}
+
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onShowFees(const QString &symbol) noexcept
+{
+    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onShowFees");
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    if (m_fees.empty())
+    {
+        try
+        {
+            m_fees = m_api->tradeFee("" /*Retrieve all*/);
+        } catch (const BINAPI_NAMESPACE::APIException &ex)
+        {
+            CATCH_API_EXCEPTION()
+        }
+    }
+
+    QApplication::restoreOverrideCursor();
+
+    TradeFeesDialog dlg(m_fees, symbol, nullptr);
+    dlg.setModal(true);
+    dlg.exec();
 }

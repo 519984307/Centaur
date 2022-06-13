@@ -28,6 +28,10 @@ namespace CENTAUR_NAMESPACE
         NetworkAddressDialog(BINAPI_NAMESPACE::BinanceAPISpot *api, BINAPI_NAMESPACE::AllCoinsInformation *data, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, QString coin, QWidget *parent = nullptr);
         ~NetworkAddressDialog() override;
 
+    protected:
+        void saveInterfaceState() noexcept;
+        void restoreInterfaceState() noexcept;
+
     protected slots:
         void onNetworkChanged(int index) noexcept;
 

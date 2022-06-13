@@ -7,6 +7,7 @@
 #include "NetworkAddressDialog.hpp"
 #include "BinanceSPOT.hpp"
 #include <QClipboard>
+#include <QSettings>
 #include <QToolTip>
 #include <fmt/core.h>
 
@@ -19,13 +20,15 @@ cen::NetworkAddressDialog::NetworkAddressDialog(BINAPI_NAMESPACE::BinanceAPISpot
 {
     m_ui->setupUi(this);
 
+    restoreInterfaceState();
+
     auto copyClipboard = [](QLineEdit *edit) {
         QClipboard *clipboard = QGuiApplication::clipboard();
         clipboard->setText(edit->text());
         QToolTip::showText(QCursor::pos(), "Copied to the clipboard");
     };
 
-    connect(m_ui->btnClose, &QPushButton::released, this, [&]() { accept(); });
+    connect(m_ui->btnClose, &QPushButton::released, this, [&](){saveInterfaceState(); accept(); });
     connect(m_ui->networks, &QComboBox::currentIndexChanged, this, &NetworkAddressDialog::onNetworkChanged);
     connect(m_ui->btnCopyAddress, &QPushButton::released, this, [&]() { copyClipboard(m_ui->lineEditAddress); });
     connect(m_ui->btnCopyTag, &QPushButton::released, this, [&]() { copyClipboard(m_ui->lineEditTag); });
@@ -106,4 +109,22 @@ void cen::NetworkAddressDialog::onNetworkChanged(int index) noexcept
                 break;
         }
     }
+}
+
+void cen::NetworkAddressDialog::saveInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOT");
+
+    settings.beginGroup("NetworkAddressDialog");
+    settings.setValue("geometry", saveGeometry());
+    settings.endGroup();
+}
+
+void cen::NetworkAddressDialog::restoreInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOT");
+
+    settings.beginGroup("NetworkAddressDialog");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    settings.endGroup();
 }

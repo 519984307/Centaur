@@ -29,6 +29,10 @@ namespace CENTAUR_NAMESPACE
         CoinInfoDialog(BINAPI_NAMESPACE::AllCoinsInformation *data, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, const QString &filter = "", QWidget *parent = nullptr);
         ~CoinInfoDialog() override = default;
 
+    protected:
+        void saveInterfaceState() noexcept;
+        void restoreInterfaceState() noexcept;
+
     protected slots:
         void onViewItem(QStandardItem *item) noexcept;
 
@@ -45,6 +49,10 @@ namespace CENTAUR_NAMESPACE
     public:
         NetworkListDialog(const QString &name, const QString &coin, std::vector<BINAPI_NAMESPACE::SPOT::CoinInformation::NetworkList> *data, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, QWidget *parent = nullptr);
         ~NetworkListDialog() override = default;
+
+    protected:
+        void saveInterfaceState() noexcept;
+        void restoreInterfaceState() noexcept;
 
     protected slots:
         void onCurrentItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous) noexcept;

@@ -79,10 +79,10 @@ namespace CENTAUR_NAMESPACE
         void onSpotWithdrawHistory() noexcept;
         void onGetAllOrders() noexcept;
         void onAccountTradeList() noexcept;
-        void onTradeFees() noexcept;
         void onDisplayBaseAssetInfo(const QString &asset) noexcept;
         void onDisplayCoinAssetDepositAddress(const QString &asset) noexcept;
         void onDisplayAssetDetail(const QString &asset) noexcept;
+        void onShowFees(const QString &symbol = "") noexcept;
 
     signals:
         void snTickerUpdate(const QString &symbol, const int &symbolId, const quint64 &receivedTime, const double &price);
@@ -116,7 +116,8 @@ namespace CENTAUR_NAMESPACE
         std::unordered_map<QString, std::pair<bool, uint64_t>> m_symbolOrderbookSnapshot;
 
     protected:
-        std::unordered_map<BINAPI_NAMESPACE::sym_t, BINAPI_NAMESPACE::SPOT::CoinInformation> m_coinInformation;
+        BINAPI_NAMESPACE::AllCoinsInformation m_coinInformation;
+        BINAPI_NAMESPACE::SpotTradingFees m_fees;
     };
 
     class SpotMarketWS : public BINAPI_NAMESPACE::ws::WSSpotBinanceAPI

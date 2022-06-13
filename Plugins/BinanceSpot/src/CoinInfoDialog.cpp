@@ -6,6 +6,7 @@
 
 #include "CoinInfoDialog.hpp"
 #include <QMessageBox>
+#include <QSettings>
 
 namespace
 {
@@ -28,6 +29,8 @@ CENTAUR_NAMESPACE::CoinInfoDialog::CoinInfoDialog(BINAPI_NAMESPACE::AllCoinsInfo
 
     m_ui->tableView->initialize(m_ui->searchEdit, 14, -1, 13, 0);
     connect(m_ui->tableView, &OptionsTableWidget::viewItem, this, &CoinInfoDialog::onViewItem);
+
+    restoreInterfaceState();
 
     m_ui->tableView->getModel()->setHorizontalHeaderLabels({ "Coin",
         "Name",
@@ -59,7 +62,7 @@ CENTAUR_NAMESPACE::CoinInfoDialog::CoinInfoDialog(BINAPI_NAMESPACE::AllCoinsInfo
 
     m_ui->closeButton->setText("Close");
 
-    connect(m_ui->closeButton, &QPushButton::released, this, [&]() { accept(); });
+    connect(m_ui->closeButton, &QPushButton::released, this, [&]() {saveInterfaceState(); accept(); });
 
     int curRow = 0;
     for (const auto &[coin, data] : *m_info)
@@ -113,6 +116,28 @@ void CENTAUR_NAMESPACE::CoinInfoDialog::onViewItem(QStandardItem *item) noexcept
     dlg.exec();
 }
 
+void CENTAUR_NAMESPACE::CoinInfoDialog::saveInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOT");
+
+    settings.beginGroup("CoinInfoDialog");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("tableColumns_geometry", m_ui->tableView->horizontalHeader()->saveGeometry());
+    settings.setValue("tableColumns_state", m_ui->tableView->horizontalHeader()->saveState());
+    settings.endGroup();
+}
+
+void CENTAUR_NAMESPACE::CoinInfoDialog::restoreInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOT");
+
+    settings.beginGroup("CoinInfoDialog");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->tableView->horizontalHeader()->restoreGeometry(settings.value("tableColumns_geometry").toByteArray());
+    m_ui->tableView->horizontalHeader()->restoreState(settings.value("tableColumns_state").toByteArray());
+    settings.endGroup();
+}
+
 CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, const QString &coin, std::vector<BINAPI_NAMESPACE::SPOT::CoinInformation::NetworkList> *data, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, QWidget *parent) :
     QDialog(parent),
     m_ui { new Ui::NetworkListDialog },
@@ -120,6 +145,8 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
     m_config { config }
 {
     m_ui->setupUi(this);
+
+
     m_ui->coinName->setText(QString("%1 (%2)").arg(name, coin));
     m_ui->closeButton->setText("Close");
 
@@ -128,7 +155,7 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
     m_ui->specialTips->hide();
     m_ui->specialWithdrawTips->hide();
 
-    connect(m_ui->closeButton, &QPushButton::released, this, [&]() { accept(); });
+    connect(m_ui->closeButton, &QPushButton::released, this, [&]() {saveInterfaceState(); accept(); });
     connect(m_ui->tableWidget, &QTableWidget::currentItemChanged, this, &NetworkListDialog::onCurrentItemChanged);
 
     QPixmap img;
@@ -153,11 +180,15 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
         insertItem(QString("%1").arg(QLocale(QLocale::English).toString(val)), row, col);
     };
 
+    auto insertItemUint = [&table = m_ui->tableWidget, &insertItem](uint64_t val, int row, int col) {
+        insertItem(QString("%1 min").arg(QLocale(QLocale::English).toString(val)), row, col);
+    };
+
     auto insertItemBool = [&table = m_ui->tableWidget, &insertItem](bool val, int row, int col) {
         insertItem(val ? "Yes" : "No", row, col);
     };
 
-    m_ui->tableWidget->setColumnCount(16);
+    m_ui->tableWidget->setColumnCount(17);
     m_ui->tableWidget->setHorizontalHeaderLabels({ "Name",
         "Network",
         "Address RegEX",
@@ -167,6 +198,7 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
         "Withdraw Multiple",
         "Withdraw minimum",
         "Withdraw maximum",
+        "Estimated arrival time",
         "Confirmations",
         "Unlock Confirmations",
         "Deposit enable",
@@ -174,6 +206,8 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
         "Default",
         "Reset address status",
         "Same Address?" });
+
+    restoreInterfaceState();
 
     int rows = 0;
     m_ui->tableWidget->setRowCount(static_cast<int>(data->size()));
@@ -188,13 +222,14 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
         insertItemCurrency(item.withdrawIntegerMultiple, rows, 6);
         insertItemCurrency(item.withdrawMin, rows, 7);
         insertItemCurrency(item.withdrawMax, rows, 8);
-        insertItemInt(item.minConfirmation, rows, 9);
-        insertItemInt(item.unLockConfirm, rows, 10);
-        insertItemBool(item.depositEnable, rows, 11);
-        insertItemBool(item.withdrawEnable, rows, 12);
-        insertItemBool(item.isDefault, rows, 13);
-        insertItemBool(item.resetAddressStatus, rows, 14);
-        insertItemBool(item.sameAddress, rows, 15);
+        insertItemUint(item.estimatedArrivalTime, rows, 9);
+        insertItemInt(item.minConfirmation, rows, 10);
+        insertItemInt(item.unLockConfirm, rows, 11);
+        insertItemBool(item.depositEnable, rows, 12);
+        insertItemBool(item.withdrawEnable, rows, 13);
+        insertItemBool(item.isDefault, rows, 14);
+        insertItemBool(item.resetAddressStatus, rows, 15);
+        insertItemBool(item.sameAddress, rows, 16);
 
         insertItemRole(rolesItem, item.withdrawDescription.c_str(), withdrawDescRole);
         insertItemRole(rolesItem, item.depositDescription.c_str(), depositDescRole);
@@ -204,7 +239,7 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
         ++rows;
     }
 }
-void cen::NetworkListDialog::onCurrentItemChanged(QTableWidgetItem *current, C_UNUSED QTableWidgetItem *previous) noexcept
+void CENTAUR_NAMESPACE::NetworkListDialog::onCurrentItemChanged(QTableWidgetItem *current, C_UNUSED QTableWidgetItem *previous) noexcept
 {
     const char format[]           = R"(<html><head/><body><p><span style=" font-weight:800; text-decoration: underline;">%1</span><span style=" font-size:14pt; font-weight:700;"/>%2</p></body></html>)";
     QTableWidgetItem *zeroColItem = nullptr;
@@ -254,4 +289,26 @@ void cen::NetworkListDialog::onCurrentItemChanged(QTableWidgetItem *current, C_U
     }
     else
         m_ui->specialWithdrawTips->hide();
+}
+
+void CENTAUR_NAMESPACE::NetworkListDialog::saveInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOT");
+
+    settings.beginGroup("NetworkListDialog");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("tableColumns_geometry", m_ui->tableWidget->horizontalHeader()->saveGeometry());
+    settings.setValue("tableColumns_state", m_ui->tableWidget->horizontalHeader()->saveState());
+    settings.endGroup();
+}
+
+void CENTAUR_NAMESPACE::NetworkListDialog::restoreInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOT");
+
+    settings.beginGroup("NetworkListDialog");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->tableWidget->horizontalHeader()->restoreGeometry(settings.value("tableColumns_geometry").toByteArray());
+    m_ui->tableWidget->horizontalHeader()->restoreState(settings.value("tableColumns_state").toByteArray());
+    settings.endGroup();
 }
