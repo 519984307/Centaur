@@ -57,22 +57,22 @@ qproperty-alignment: AlignCenter;
         case BINAPI_NAMESPACE::APIException::Type::request:                                                                                                                \
             {                                                                                                                                                              \
                 auto request = ex.request();                                                                                                                               \
-                logError("BinanceSPOTPlugin", fmt::format("REQUEST.\nCode: {}. URL: {}\n{}\n", std::get<0>(request), std::get<1>(request), std::get<2>(request)).c_str()); \
+                logError("BinanceSPOTStatus", fmt::format("REQUEST.\nCode: {}. URL: {}\n{}\n", std::get<0>(request), std::get<1>(request), std::get<2>(request)).c_str()); \
             }                                                                                                                                                              \
             break;                                                                                                                                                         \
         case BINAPI_NAMESPACE::APIException::Type::limits:                                                                                                                 \
-            logError("BinanceSPOTPlugin", fmt::format("LIMITS.\n{}\n", std::get<0>(ex.limits())).c_str());                                                                 \
+            logError("BinanceSPOTStatus", fmt::format("LIMITS.\n{}\n", std::get<0>(ex.limits())).c_str());                                                                 \
             break;                                                                                                                                                         \
         case BINAPI_NAMESPACE::APIException::Type::http1:                                                                                                                  \
             {                                                                                                                                                              \
                 auto http1 = ex.http1();                                                                                                                                   \
-                logError("BinanceSPOTPlugin", fmt::format("HTTPa.\nCode: {}\nURL: {}\n{}\n", std::get<0>(http1), std::get<1>(http1), std::get<2>(http1)).c_str());         \
+                logError("BinanceSPOTStatus", fmt::format("HTTPa.\nCode: {}\nURL: {}\n{}\n", std::get<0>(http1), std::get<1>(http1), std::get<2>(http1)).c_str());         \
             }                                                                                                                                                              \
             break;                                                                                                                                                         \
         case BINAPI_NAMESPACE::APIException::Type::http2:                                                                                                                  \
             {                                                                                                                                                              \
                 auto http2 = ex.http2();                                                                                                                                   \
-                logError("BinanceSPOTPlugin", fmt::format("HTTPb.\nStatus: {}. Code: {}\nURL: {}.\n{}\n",                                                                  \
+                logError("BinanceSPOTStatus", fmt::format("HTTPb.\nStatus: {}. Code: {}\nURL: {}.\n{}\n",                                                                  \
                                                   std::get<0>(http2),                                                                                                      \
                                                   std::get<1>(http2),                                                                                                      \
                                                   std::get<2>(http2),                                                                                                      \
@@ -83,19 +83,19 @@ qproperty-alignment: AlignCenter;
         case BINAPI_NAMESPACE::APIException::Type::json:                                                                                                                   \
             {                                                                                                                                                              \
                 auto json = ex.json();                                                                                                                                     \
-                logError("BinanceSPOTPlugin", fmt::format("JSON.\nURL: {}\n{}\n", std::get<0>(json), std::get<1>(json)).c_str());                                          \
+                logError("BinanceSPOTStatus", fmt::format("JSON.\nURL: {}\n{}\n", std::get<0>(json), std::get<1>(json)).c_str());                                          \
             }                                                                                                                                                              \
             break;                                                                                                                                                         \
         case BINAPI_NAMESPACE::APIException::Type::api:                                                                                                                    \
             {                                                                                                                                                              \
                 auto api1 = ex.api();                                                                                                                                      \
-                logError("BinanceSPOTPlugin", fmt::format("API.\nCode: {}\nURL: {}\n{}", std::get<0>(api1), std::get<1>(api1), std::get<2>(api1)).c_str());                \
+                logError("BinanceSPOTStatus", fmt::format("API.\nCode: {}\nURL: {}\n{}", std::get<0>(api1), std::get<1>(api1), std::get<2>(api1)).c_str());                \
             }                                                                                                                                                              \
             break;                                                                                                                                                         \
         case BINAPI_NAMESPACE::APIException::Type::schema:                                                                                                                 \
             {                                                                                                                                                              \
                 auto schema = ex.schema();                                                                                                                                 \
-                logError("BinanceSPOTPlugin", fmt::format("SCHEMA.\nURL: {}\n{}\n", std::get<0>(schema), std::get<1>(schema)).c_str());                                    \
+                logError("BinanceSPOTStatus", fmt::format("SCHEMA.\nURL: {}\n{}\n", std::get<0>(schema), std::get<1>(schema)).c_str());                                    \
             }                                                                                                                                                              \
             break;                                                                                                                                                         \
     }
@@ -187,7 +187,7 @@ void cen::plugin::BinanceSPOTStatus::initialization(QStatusBar *bar) noexcept
 
     if (apiKey.empty() || secKey.empty())
     {
-        logError("BinanceSpotPlugin", "Could not decrypt the binance keys");
+        logError("BinanceSPOTStatus", "Could not decrypt the binance keys");
         return;
     }
 

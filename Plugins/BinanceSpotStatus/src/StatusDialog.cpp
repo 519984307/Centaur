@@ -6,6 +6,7 @@
 
 #include "StatusDialog.hpp"
 #include <QDateTime>
+#include <QSettings>
 
 cen::StatusDialog::StatusDialog(binapi::SPOT::APIKeyPermissions *apiKeyPermissions, binapi::SPOT::AccountAPITradingStatus *apiTradingStatus, const QString &status, QWidget *parent) :
     QDialog(parent),
@@ -13,12 +14,14 @@ cen::StatusDialog::StatusDialog(binapi::SPOT::APIKeyPermissions *apiKeyPermissio
 {
     m_ui->setupUi(this);
 
+    restoreInterfaceState();
+
     auto setReadOnly = [&](QCheckBox *checkBox) -> void {
         checkBox->setAttribute(Qt::WA_TransparentForMouseEvents, true);
         checkBox->setFocusPolicy(Qt::NoFocus);
     };
 
-    connect(m_ui->btnClose, &QPushButton::released, this, [&]() { accept(); });
+    connect(m_ui->btnClose, &QPushButton::released, this, [&]() {saveInterfaceState(); accept(); });
 
     setReadOnly(m_ui->checkBoxLocked);
     setReadOnly(m_ui->checkBoxIPRestrict);
@@ -39,7 +42,7 @@ cen::StatusDialog::StatusDialog(binapi::SPOT::APIKeyPermissions *apiKeyPermissio
     m_ui->lineEditStatus->setPalette(pal);
     m_ui->lineEditStatus->setText(status);
 
-    if( apiTradingStatus->updateTime > 0)
+    if (apiTradingStatus->updateTime > 0)
     {
         QDateTime updateTime;
         updateTime.setMSecsSinceEpoch(static_cast<qint64>(apiTradingStatus->updateTime));
@@ -85,3 +88,21 @@ cen::StatusDialog::StatusDialog(binapi::SPOT::APIKeyPermissions *apiKeyPermissio
 }
 
 cen::StatusDialog::~StatusDialog() = default;
+
+void cen::StatusDialog::saveInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOTStatus");
+
+    settings.beginGroup("StatusDialog");
+    settings.setValue("geometry", saveGeometry());
+    settings.endGroup();
+}
+
+void cen::StatusDialog::restoreInterfaceState() noexcept
+{
+    QSettings settings("CentaurProject", "BinanceSPOTStatus");
+
+    settings.beginGroup("StatusDialog");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    settings.endGroup();
+}

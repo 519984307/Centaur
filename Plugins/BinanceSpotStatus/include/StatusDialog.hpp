@@ -26,6 +26,10 @@ namespace CENTAUR_NAMESPACE
         StatusDialog( BINAPI_NAMESPACE::SPOT::APIKeyPermissions *apiKeyPermissions, BINAPI_NAMESPACE::SPOT::AccountAPITradingStatus *apiTradingStatus, const QString &status, QWidget *parent);
         ~StatusDialog() override;
 
+    protected:
+        void saveInterfaceState() noexcept;
+        void restoreInterfaceState() noexcept;
+
     private:
         std::unique_ptr<Ui::StatusDialog> m_ui;
     };
