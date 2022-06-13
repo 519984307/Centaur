@@ -52,7 +52,7 @@ namespace BINAPI_NAMESPACE::local::schemas
 {"type":"boolean"},"depositEnable":{"type":"boolean"},"withdrawEnable":{"type":"boolean"},"depositDesc":{"type":"string"},"withdrawDesc":{"type":"string"},"specialTips":{"type":"string"},
 "specialWithdrawTips":{"type":"string"},"name":{"type":"string"},"resetAddressStatus":{"type":"boolean"},"addressRegex":{"type":"string"},"addressRule":{"type":"string"},"memoRegex":{
 "type":"string"},"withdrawFee":{"type":"string"},"withdrawMin":{"type":"string"},"withdrawMax":{"type":"string"},"minConfirm":{"type":"integer"},"unLockConfirm":{"type":"integer"},
-"sameAddress":{"type":"boolean"},"depositDust":{"type":"string"}},"additionalProperties":false,"required":["network","coin","withdrawIntegerMultiple","isDefault","depositEnable",
+"sameAddress":{"type":"boolean"},"depositDust":{"type":"string"},"estimatedArrivalTime":{"type":"integer"}},"additionalProperties":false,"required":["network","coin","withdrawIntegerMultiple","isDefault","depositEnable",
 "withdrawEnable","name","resetAddressStatus","addressRegex","addressRule","memoRegex","withdrawFee","withdrawMin","withdrawMax","minConfirm","unLockConfirm",
 "sameAddress"]},"additionalItems":false}},"additionalProperties":false,"required":["coin","depositAllEnable","withdrawAllEnable","name","free","locked","freeze","withdrawing","ipoing",
 "ipoable","storage","isLegalMoney","trading","networkList"]},"additionalItems":false})" };

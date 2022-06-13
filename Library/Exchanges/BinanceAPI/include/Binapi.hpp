@@ -66,6 +66,7 @@ namespace BINAPI_NAMESPACE
 
     // Return types
     using AllCoinsInformation = std::unordered_map<BINAPI_NAMESPACE::sym_t, BINAPI_NAMESPACE::SPOT::CoinInformation>;
+    using SpotTradingFees     = std::unordered_map<BINAPI_NAMESPACE::sym_t, BINAPI_NAMESPACE::SPOT::TradeFee>;
 
     /// \brief Binance user keys
     struct BINAPI_EXPORT BinanceKeys
@@ -451,7 +452,7 @@ namespace BINAPI_NAMESPACE
         /// \brief Fetch trade fee
         /// \param symbol Symbol Name (can be empty)
         /// \return The corresponding fees
-        T_NODISCARD auto tradeFee(v_sym_t symbol) -> std::map<sym_t, SPOT::TradeFee>;
+        T_NODISCARD auto tradeFee(v_sym_t symbol) -> SpotTradingFees;
 
         /// \brief User Universal Transfer. Make user your API Key has enabled the Permits Universal Transfer
         /// \param type Transfer type

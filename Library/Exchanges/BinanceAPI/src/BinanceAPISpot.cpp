@@ -206,6 +206,7 @@ auto binapi::BinanceAPISpot::getAllCoinsInformation() -> binapi::AllCoinsInforma
                 .withdrawIntegerMultiple = JTO_DOB(list, "withdrawIntegerMultiple"),
                 .withdrawMin             = JTO_DOB(list, "withdrawMin"),
                 .withdrawMax             = JTO_DOB(list, "withdrawMax"),
+                .estimatedArrivalTime    = list["estimatedArrivalTime"].GetUint64(),
                 .minConfirmation         = list["minConfirm"].GetInt64(),
                 .unLockConfirm           = list["unLockConfirm"].GetInt64(),
                 .depositEnable           = list["depositEnable"].GetBool(),
@@ -875,17 +876,19 @@ auto binapi::BinanceAPISpot::assetDetail(binapi::v_asset_t asset) -> binapi::SPO
     return {};
 }
 
-auto binapi::BinanceAPISpot::tradeFee(binapi::v_sym_t symbol) -> std::map<sym_t, SPOT::TradeFee>
+auto binapi::BinanceAPISpot::tradeFee(binapi::v_sym_t symbol) -> binapi::SpotTradingFees
 {
-    const eparams parameters {
+    eparams parameters {
         { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "symbol", VIEW_INIT(symbol) }
+        { "timestamp", fmt::to_string(getTime()) }
     };
+
+    if (!symbol.empty())
+        parameters.emplace_back("symbol", S_VIEW_INIT(symbol));
 
     auto doc = apiRequest(g_spotRequests[TRADE_FEE], parameters, true);
 
-    std::map<sym_t, SPOT::TradeFee> mstf;
+    binapi::SpotTradingFees mstf;
 
     for (const auto &fee : doc.GetArray())
     {

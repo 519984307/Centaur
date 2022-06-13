@@ -198,6 +198,7 @@ namespace BINAPI_NAMESPACE
                 currency_t withdrawIntegerMultiple;
                 currency_t withdrawMin;
                 currency_t withdrawMax;
+                uint64_t estimatedArrivalTime;
                 int64_t minConfirmation;
                 int64_t unLockConfirm;
                 bool depositEnable;
