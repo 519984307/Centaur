@@ -4,7 +4,8 @@
 #Clion paths
 /.idea
 
-/tools/imgSorter/cryptocurrency-icons-master/
+#internal tool
+/tools/imgSorter
 
 
 # Application testing
