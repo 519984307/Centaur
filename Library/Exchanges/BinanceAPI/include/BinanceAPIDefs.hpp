@@ -380,25 +380,11 @@ namespace BINAPI_NAMESPACE
 
         struct AssetDetail
         {
-            struct CTRDetail
-            {
-                std::string depositTip;
-                currency_t withdrawFee;
-                currency_t minWithdrawAmount;
-                bool depositStatus;
-                bool withdrawStatus;
-            };
-
-            struct SKYDetail
-            {
-                currency_t minWithdrawAmount;
-                currency_t withdrawFee;
-                bool depositStatus;
-                bool withdrawStatus;
-            };
-
-            CTRDetail ctrDetail;
-            SKYDetail skyDetail;
+            std::string depositTip;
+            currency_t withdrawFee;
+            currency_t minWithdrawAmount;
+            bool depositStatus;
+            bool withdrawStatus;
         };
 
         struct TradeFee

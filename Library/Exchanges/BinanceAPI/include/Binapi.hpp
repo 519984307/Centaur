@@ -443,7 +443,7 @@ namespace BINAPI_NAMESPACE
         /// \return A pair in the first value the number of rows and the second is a vector with the row data
         T_NODISCARD auto assetDividendRecord(v_asset_t asset, uint64_t limit = 20, uint64_t startTime = 0, uint64_t endTime = 0) -> std::pair<int64_t, std::vector<SPOT::AssetDividend>>;
 
-        /// \brief Fetch deatails of asset supported on Binance
+        /// \brief Fetch deatails of asset supported on Binance. Currently only one asset detail is supported
         /// \param asset Asset Name (can be empty)
         /// \return The corresponding information
         T_NODISCARD auto assetDetail(v_asset_t asset) -> SPOT::AssetDetail;

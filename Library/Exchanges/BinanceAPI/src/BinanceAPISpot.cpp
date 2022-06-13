@@ -827,25 +827,52 @@ auto binapi::BinanceAPISpot::assetDetail(binapi::v_asset_t asset) -> binapi::SPO
         { "asset", VIEW_INIT(asset) },
     };
 
-    auto doc = apiRequest(g_spotRequests[ASSET_DETAIL], parameters, true);
+    auto doc                = apiRequest(g_spotRequests[ASSET_DETAIL], parameters, true);
 
-    SPOT::AssetDetail adl;
+    const auto &assetMember = doc.FindMember(asset.data());
+    if (assetMember != doc.MemberEnd())
+    {
+        const auto &assetObject = assetMember->value.GetObject();
 
-    auto ctr                        = doc["CTR"].GetObject();
-    auto sky                        = doc["SKY"].GetObject();
+        SPOT::AssetDetail adl {
+            .depositTip = [&]() -> std::string {
+                if (assetObject.FindMember("depositTip") != assetObject.MemberEnd())
+                    return JTO_STRING(assetObject, "depositTip");
+                return "";
+            }(),
+            .withdrawFee = [&]() -> currency_t {
+                if (assetObject.FindMember("withdrawFee") != assetObject.MemberEnd())
+                {
+                    if (assetObject["withdrawFee"].IsInt())
+                        return static_cast<currency_t>(assetObject["withdrawFee"].GetInt64());
+                    else if (assetObject["withdrawFee"].IsNumber())
+                        return assetObject["withdrawFee"].GetDouble();
+                    else if (assetObject["withdrawFee"].IsString())
+                        return JTO_DOB(assetObject, "withdrawFee");
+                    return 0.0;
+                }
+                return 0.0;
+            }(),
+            .minWithdrawAmount = [&]() -> currency_t {
+                if (assetObject.FindMember("minWithdrawAmount") != assetObject.MemberEnd())
+                    return JTO_DOB(assetObject, "minWithdrawAmount");
+                return 0.0;
+            }(),
+            .depositStatus = [&]() -> bool {
+                if (assetObject.FindMember("depositStatus") != assetObject.MemberEnd())
+                    return assetObject["depositStatus"].GetBool();
+                return false;
+            }(),
+            .withdrawStatus = [&]() -> bool {
+                if (assetObject.FindMember("withdrawStatus") != assetObject.MemberEnd())
+                    return assetObject["withdrawStatus"].GetBool();
+                return false;
+            }()
+        };
 
-    adl.ctrDetail.depositTip        = JTO_STRING(ctr, "depositTip");
-    adl.ctrDetail.withdrawFee       = ctr["withdrawFee"].GetDouble();
-    adl.ctrDetail.minWithdrawAmount = JTO_DOB(ctr, "minWithdrawAmount");
-    adl.ctrDetail.depositStatus     = ctr["depositStatus"].GetBool();
-    adl.ctrDetail.withdrawStatus    = ctr["withdrawStatus"].GetBool();
-
-    adl.skyDetail.minWithdrawAmount = JTO_DOB(sky, "minWithdrawAmount");
-    adl.skyDetail.withdrawFee       = sky["withdrawFee"].GetDouble();
-    adl.skyDetail.depositStatus     = sky["depositStatus"].GetBool();
-    adl.skyDetail.withdrawStatus    = sky["withdrawStatus"].GetBool();
-
-    return adl;
+        return adl;
+    }
+    return {};
 }
 
 auto binapi::BinanceAPISpot::tradeFee(binapi::v_sym_t symbol) -> std::map<sym_t, SPOT::TradeFee>

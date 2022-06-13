@@ -111,11 +111,7 @@ namespace BINAPI_NAMESPACE::local::schemas
         char asset_dividend_record[]         = { R"({"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"rows":{"type":"array","items":{"type":"object","properties":{"id":
 {"type":"integer"},"amount":{"type":"string"},"asset":{"type":"string"},"divTime":{"type":"integer"},"enInfo":{"type":"string"},"tranId":{"type":"integer"}},"additionalProperties":false,
 "required":["id","amount","asset","divTime","enInfo","tranId"]},"additionalItems":false},"total":{"type":"integer"}},"additionalProperties":false,"required":["rows","total"]})" };
-        char asset_detail[]                  = { R"({"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"CTR":{"type":"object","properties":
-{"minWithdrawAmount":{"type":"string"},"depositStatus":{"type":"boolean"},"withdrawFee":{"type":"integer"},"withdrawStatus":{"type":"boolean"},"depositTip":{"type":"string"}},
-"additionalProperties":false,"required":["minWithdrawAmount","depositStatus","withdrawFee","withdrawStatus","depositTip"]},"SKY":{"type":"object","properties":{"minWithdrawAmount":
-{"type":"string"},"depositStatus":{"type":"boolean"},"withdrawFee":{"type":"number"},"withdrawStatus":{"type":"boolean"}},"additionalProperties":false,"required":["minWithdrawAmount",
-"depositStatus","withdrawFee","withdrawStatus"]}},"additionalProperties":false,"required":["CTR","SKY"]})" };
+        char asset_detail[]                  = { R"({"$schema": "http://json-schema.org/draft-07/schema","type": "object","required": [],"additionalProperties": true})" };
         char trade_fee[]                     = { R"({"$schema":"http://json-schema.org/draft-04/schema#","type":"array","items":{"type":"object","properties":{"symbol":{"type":"string"},
 "makerCommission":{"type":"string"},"takerCommission":{"type":"string"}},"additionalProperties":false,"required":["symbol","makerCommission","takerCommission"]},"additionalItems":false})" };
         char user_universal_transfer[]       = { R"({"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"tranId":{"type":"integer"}},
@@ -129,7 +125,7 @@ false,"required":["asset","free","locked","freeze","withdrawing","btcValuation"]
 "createTime":{"type":"integer"},"enableWithdrawals":{"type":"boolean"},"enableInternalTransfer":{"type":"boolean"},"permitsUniversalTransfer":{"type":"boolean"},"enableVanillaOptions":
 {"type":"boolean"},"enableReading":{"type":"boolean"},"enableFutures":{"type":"boolean"},"enableMargin":{"type":"boolean"},"enableSpotAndMarginTrading":{"type":"boolean"},
 "tradingAuthorityExpirationTime":{"type":"integer"}},"additionalProperties":false,"required":["ipRestrict","createTime","enableWithdrawals","enableInternalTransfer",
-"permitsUniversalTransfer","enableVanillaOptions","enableReading","enableFutures","enableMargin","enableSpotAndMarginTrading","tradingAuthorityExpirationTime"]})" };
+"permitsUniversalTransfer","enableVanillaOptions","enableReading","enableFutures","enableMargin","enableSpotAndMarginTrading"]})" };
         char *test_connectivity              = empty_schema;
         char check_server_time[]             = { R"({"$schema": "http://json-schema.org/draft-04/schema#","type": "object","properties": { "serverTime": { "type": "integer" }},"required": ["serverTime"]})" };
         char exchange_info[]                 = { R"({"$schema": "http://json-schema.org/draft-04/schema#","type": "object","properties": {  "timezone": {"type": "string"  }, "serverTime":
