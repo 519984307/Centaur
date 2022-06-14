@@ -19,15 +19,21 @@ ELSEIF (WIN32)
 ELSEIF (APPLE)
     add_compile_definitions(P_APPLE)
     message("Apple Platforms detected")
-    set(PLATFORM_INDEPENDENT_FILES src/AppleDirectory.mm include/AppleDirectory.h src/KeysLoader.cpp)
+    set(PLATFORM_INDEPENDENT_FILES
+            src/AppleDirectory.mm
+            include/AppleDirectory.h
+            )
 ELSE ()
     message(FATAL_ERROR "Unknown target platform")
 ENDIF ()
 
 add_executable(bspot
         src/main.cpp
-        include/Application.hpp src/Application.cpp
+        src/KeysLoader.cpp
+        src/Application.cpp
+        include/Application.hpp
         ../common/ToolsThread.hpp
+        ../common/Tools.hpp
         ${PLATFORM_INDEPENDENT_FILES})
 
 target_include_directories(bspot PRIVATE
