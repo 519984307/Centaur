@@ -48,7 +48,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="m_menuBar">
+  <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -57,29 +57,29 @@
      <height>24</height>
     </rect>
    </property>
-   <widget class="QMenu" name="m_menuView">
+   <widget class="QMenu" name="menuView">
     <property name="title">
      <string>View</string>
     </property>
-    <widget class="QMenu" name="m_menuOrderbook">
+    <widget class="QMenu" name="menuOrderbook">
      <property name="title">
       <string>Orderbook</string>
      </property>
-     <addaction name="m_actionAsks"/>
-     <addaction name="m_actionBids"/>
-     <addaction name="m_actionDepth"/>
+     <addaction name="actionAsks"/>
+     <addaction name="actionBids"/>
+     <addaction name="actionDepth"/>
     </widget>
-    <addaction name="m_actionLogging"/>
-    <addaction name="m_actionSymbols"/>
-    <addaction name="m_actionBalances"/>
-    <addaction name="m_menuOrderbook"/>
+    <addaction name="actionLogging"/>
+    <addaction name="actionSymbols"/>
+    <addaction name="actionBalances"/>
+    <addaction name="menuOrderbook"/>
    </widget>
-   <widget class="QMenu" name="m_menuWindow">
+   <widget class="QMenu" name="menuWindow">
     <property name="title">
      <string>Window</string>
     </property>
-    <addaction name="m_actionTileWindows"/>
-    <addaction name="m_actionCascadeWindows"/>
+    <addaction name="actionTileWindows"/>
+    <addaction name="actionCascadeWindows"/>
    </widget>
    <widget class="QMenu" name="menuSymbols">
     <property name="title">
@@ -88,10 +88,10 @@
     <addaction name="actionWatchlistFavorites"/>
    </widget>
    <addaction name="menuSymbols"/>
-   <addaction name="m_menuView"/>
-   <addaction name="m_menuWindow"/>
+   <addaction name="menuView"/>
+   <addaction name="menuWindow"/>
   </widget>
-  <widget class="QStatusBar" name="m_statusBar"/>
+  <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="dockSymbols">
    <property name="windowTitle">
     <string notr="true">__symbols__</string>
@@ -240,14 +240,14 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="m_dockLogging">
+  <widget class="QDockWidget" name="dockLogging">
    <property name="windowTitle">
     <string>Logging</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="m_dockWidgetContents">
+   <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="m_logsLayout">
      <property name="spacing">
       <number>0</number>
@@ -265,7 +265,7 @@
       <number>0</number>
      </property>
      <item>
-      <widget class="QTableWidget" name="m_logs">
+      <widget class="QTableWidget" name="logsTable">
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
        </property>
@@ -298,14 +298,14 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="m_dockBalances">
+  <widget class="QDockWidget" name="dockBalances">
    <property name="windowTitle">
     <string>Balances</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="m_dockBalancesContents">
+   <widget class="QWidget" name="dockBalancesContents">
     <layout class="QVBoxLayout" name="m_balancesLayout">
      <property name="spacing">
       <number>2</number>
@@ -323,7 +323,7 @@
       <number>2</number>
      </property>
      <item>
-      <widget class="QTreeWidget" name="m_ctrlBalances">
+      <widget class="QTreeWidget" name="ctrlBalances">
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
        </property>
@@ -576,7 +576,7 @@
     </layout>
    </widget>
   </widget>
-  <action name="m_actionSymbols">
+  <action name="actionSymbols">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -590,7 +590,7 @@
     <string>Ctrl+Alt+1</string>
    </property>
   </action>
-  <action name="m_actionLogging">
+  <action name="actionLogging">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -604,7 +604,7 @@
     <string>Ctrl+Alt+0</string>
    </property>
   </action>
-  <action name="m_actionBalances">
+  <action name="actionBalances">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -618,7 +618,7 @@
     <string>Ctrl+Alt+2</string>
    </property>
   </action>
-  <action name="m_actionAsks">
+  <action name="actionAsks">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -632,7 +632,7 @@
     <string>Ctrl+Alt+3</string>
    </property>
   </action>
-  <action name="m_actionBids">
+  <action name="actionBids">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -646,7 +646,7 @@
     <string>Ctrl+Alt+4</string>
    </property>
   </action>
-  <action name="m_actionTileWindows">
+  <action name="actionTileWindows">
    <property name="icon">
     <iconset theme="˙">
      <normaloff>../../../../../../../../Users/ricardo/.designer/backup</normaloff>../../../../../../../../Users/ricardo/.designer/backup</iconset>
@@ -658,7 +658,7 @@
     <string>Alt+W, Alt+T</string>
    </property>
   </action>
-  <action name="m_actionCascadeWindows">
+  <action name="actionCascadeWindows">
    <property name="text">
     <string>Cascade windows</string>
    </property>
@@ -666,7 +666,7 @@
     <string>Alt+W, Alt+C</string>
    </property>
   </action>
-  <action name="m_actionDepth">
+  <action name="actionDepth">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -706,7 +706,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../rcc/resource.qrc"/>
+  <include location="../qrc/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

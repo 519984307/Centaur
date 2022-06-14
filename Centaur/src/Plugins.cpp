@@ -138,7 +138,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                     {
                         logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
                         // Init the plugin
-                        stInterface->initialization(m_ui->m_statusBar);
+                        stInterface->initialization(m_ui->statusBar);
                         updatePluginsMenus(stInterface->getPluginUUID(), doc, baseInterface);
                     }
 
@@ -305,7 +305,7 @@ void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc
 
             insertToMenu(insertToMenu, mainMenu, menuItem->getFirstChild());
 
-            m_ui->m_menuBar->insertMenu(m_ui->m_menuView->menuAction(), mainMenu);
+            m_ui->menuBar->insertMenu(m_ui->menuView->menuAction(), mainMenu);
         }
     }
 }

@@ -10,7 +10,7 @@
 
 void CENTAUR_NAMESPACE::CentaurApp::onLog(const unsigned long long &date, const int &session, const int &level, const QString &usr, const QString &source, const QString &msg) noexcept
 {
-    QTableWidget *logger = m_ui->m_logs;
+    QTableWidget *logger = m_ui->logsTable;
     if (logger->rowCount() > 2000)
         logger->clearContents();
 
