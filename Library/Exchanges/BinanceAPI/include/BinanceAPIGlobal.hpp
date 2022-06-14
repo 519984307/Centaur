@@ -70,7 +70,7 @@
 #if defined(__clang__) || defined(__GNU__) || defined(MSVC)
 #define T_UNUSED [[maybe_unused]]
 #else
-#define UNUSED
+#define T_UNUSED
 #endif /* defined ...*/
 #endif /*T_UNUSED*/
 
