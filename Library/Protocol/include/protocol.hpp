@@ -60,12 +60,13 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     struct ProtocolHeader
     {
         char magic[4];        /// Magic number
-        uint32_t version;     /// Protocol version
-        uint32_t userVersion; /// The version of the user data
         uint64_t size;        /// Object data
         uint64_t timestamp;   /// Message timestamp in milliseconds
         uint64_t hash;        /// Message data hash
+        uint32_t version;     /// Protocol version
+        uint32_t userVersion; /// The version of the user data
         uint32_t flags;       /// ProtocolFlags
+        uint32_t type;        /// Message Protocol type.
     };
 
     struct Generator
@@ -75,7 +76,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         /// \param data JSON data
         /// \remarks This function does not change modify the timestamp field in ProtocolHeader,
         ///          this field is set when the message is sent using the MessageSender object
-        auto generate(uint32_t userVersion, const std::string &data) -> void;
+        auto generate(uint32_t userVersion, uint32_t type, const std::string &data) -> void;
 
     private:
         std::shared_ptr<uint8_t[]> m_data;
@@ -196,17 +197,200 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         ProtocolJSONGenerator generator;
     };
 
-    // Predefined protocols
-    struct Protocol_AcceptConnection : public ProtocolBase
+    namespace message
     {
-        Protocol_AcceptConnection();
+        /// Predefined protocols
 
-    public:
-        Field<std::string> uuid { "uuid" };                     // Connection UUID
-        Field<std::string> name { "name" };                     // Connection Name
-        Field<std::string> implementation { "implementation" }; // Connection Implementation
-    };
+        /// \brief Protocol to indicate the Main Interface to accept a connection
+        /// When a WS connection is accepted send this message to the main ui identify the client
+        /// DIRECTION: Client -> UI
+        struct Protocol_AcceptConnection : public ProtocolBase
+        {
+            Protocol_AcceptConnection();
 
+            static constexpr uint32_t protocolType = 0x20bb643b;
+
+        public:
+            static constexpr char version10[] = { "Centaur_Protocol_Version10" };
+
+            /// \brief uuid indicate
+        public:
+            /// \brief Connection identifier. All message from clients must use this uuid. If the main UI does not register this UUID the message will be ignored
+            Field<std::string> uuid { "uuid" }; // Connection UUID
+            /// Connection Name
+            Field<std::string> name { "name" }; // Connection Name
+            /// \brief Protocol Implementation version. For version 1.0 set this field to Protocol_AcceptConnection::version10
+            Field<std::string> implementation { "implementation" }; // Connection Implementation
+        };
+
+        /// \brief Sent to the client from the main UI to indicate the status of the connection
+        /// DIRECTION: UI -> Client
+        struct Protocol_AcceptedConnection : public ProtocolBase
+        {
+            Protocol_AcceptedConnection();
+
+            static constexpr uint32_t protocolType = 0xe1ea5df6;
+
+            /// \brief Status codes return from the main Ui
+            enum class Status : int
+            {
+                connectionOk,
+                uuidAlreadySet,
+                wrongImplementation,
+            };
+
+        public:
+            /// \brief This is the UUID sent to the UI in the Protocol_AcceptConnection::uuid
+            Field<std::string> uuid { "uuid" };
+            /// \brief Status code return from the main UI
+            Field<int> status { "status" };
+        };
+
+        /// \brief Access the plugin metadata.
+        /// When a client requires a plugin to be loaded. This is the way to check the data
+        /// DIRECTION: Client -> UI -> Plugin
+        struct Protocol_AccessPluginMetadata : public ProtocolBase
+        {
+            Protocol_AccessPluginMetadata();
+
+            static constexpr uint32_t protocolType = 0xbb837dbf;
+
+        public:
+            /// \brief Connection identifier Protocol_AcceptConnection::uuid
+            Field<std::string> uuid { "uuid" };
+            /// \brief Plugin to be accessed
+            Field<std::string> pluginUUID { "plugin" };
+            /// \brief If the plugin has the requested metadata and succeed the response will have this id
+            Field<std::string> responseId { "id" };
+            /// \brief If the plugin support multiple metadata this is the request
+            Field<std::string> request { "request" };
+        };
+
+        /// \brief Response of the data
+        /// DIRECTION: Plugin -> UI -> Client
+        struct Protocol_PluginMetadataResponse : public ProtocolBase
+        {
+            Protocol_PluginMetadataResponse();
+
+            static constexpr uint32_t protocolType = 0xc00047c2;
+
+        public:
+            /// The response id sent to required the data
+            Field<std::string> responseId { "id" };
+            /// The metadata requested
+            Field<std::string> metadata { "metadata" };
+        };
+
+        /// \brief This Struct Abstracts the uuid and responseId items. Which all messages should habe
+        struct Protocol_MessageBase : public ProtocolBase
+        {
+            Protocol_MessageBase();
+
+            static constexpr uint32_t protocolType = 0x2e138c8a;
+
+        public:
+            /// \brief Connection identifier Protocol_AcceptConnection::uuid
+            Field<std::string> uuid { "uuid" };
+            /// \brief All balances request will have this Id As response
+            Field<std::string> responseId { "id" };
+        };
+        /// \brief Access the Balances Table. This sets a new Asset in the balances list
+        /// DIRECTION: Client -> UI
+        struct Protocol_BalancesAsset : public Protocol_MessageBase
+        {
+        public:
+            Protocol_BalancesAsset();
+
+            static constexpr uint32_t protocolType = 0x20bb643b;
+
+        public:
+            /// \brief Source of the Asset
+            Field<std::string> source { "source" };
+            /// \brief Asset to be set
+            Field<std::string> asset { "asset" };
+            /// \brief This will be the handle to update the asset status
+            Field<std::string> assetId { "handle" };
+        };
+
+        /// \brief Adds a new element in the Balances Tree into an Asset.
+        struct Protocol_BalancesAssetItem : public Protocol_MessageBase
+        {
+            Protocol_BalancesAssetItem();
+
+            static constexpr uint32_t protocolType = 0x23007f07;
+
+        public:
+            /// \brief New item name
+            Field<std::string> name { "name" };
+            /// \brief SubHandle name. All subsequent access to the item must be done through this id
+            Field<std::string> subHandle { "subHandle" };
+        };
+
+        struct Protocol_BalanceAssetUpdate : public Protocol_MessageBase
+        {
+            Protocol_BalanceAssetUpdate();
+
+            static constexpr uint32_t protocolType = 0xf469e79e;
+
+            enum class Type : int
+            {
+                name,
+                source,
+            };
+
+        public:
+            /// \brief Asset ID to be updated
+            Field<std::string> assetId { "handle" };
+            /// \brief Type of the updated
+            Field<int> type { "type" };
+            /// \brief New value
+            Field<std::string> value { "new" };
+        };
+
+        struct Protocol_BalanceAssetItemUpdate : public Protocol_MessageBase
+        {
+            Protocol_BalanceAssetItemUpdate();
+
+            static constexpr uint32_t protocolType = 0xbbf781af;
+
+            enum class Type : int
+            {
+                name,
+                value,
+            };
+
+        public:
+            /// \brief SubHandle ID to be updated
+            Field<std::string> subHandle { "subHandle" };
+            /// \brief Type of the update
+            Field<int> type { "type" };
+            /// \brief New value
+            Field<std::string> value { "new" };
+        };
+
+        /// \brief All balances request have this message structure
+        struct Protocol_BalancesResponse : public ProtocolBase
+        {
+            Protocol_BalancesResponse();
+
+            static constexpr uint32_t protocolType = 0x77c2d52c;
+
+            enum class Status : int
+            {
+                allOk,            /// Everything is Ok
+                handle,           /// The Asset Handle does not exists (assetId)
+                repeatedHandle,   /// The Asset handle already exists (assetId)
+                subHandle,        /// The Asset SubHandle does not exists
+                repeatedSubHandle /// The asset SubHandle already exists
+            };
+
+        public:
+            /// The response id sent to required the data
+            Field<std::string> responseId { "id" };
+            /// The metadata requested
+            Field<int> status { "status" };
+        };
+    } // namespace message
 } // namespace CENTAUR_PROTOCOL_NAMESPACE
 
 #endif // CENTAUR_PROTOCOL_HPP

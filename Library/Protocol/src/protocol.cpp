@@ -129,13 +129,6 @@ auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolJSONGenerator::fromJSON(const char *jso
     }
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::Protocol_AcceptConnection::Protocol_AcceptConnection()
-{
-    generator.addField(std::addressof(uuid));
-    generator.addField(std::addressof(name));
-    generator.addField(std::addressof(implementation));
-}
-
 auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::json() -> std::string
 {
     return generator.getJSON();
@@ -143,4 +136,72 @@ auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::json() -> std::string
 auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::fromJson(const char *json) -> void
 {
     generator.fromJSON(json);
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection::Protocol_AcceptConnection()
+{
+    generator.addField(std::addressof(uuid));
+    generator.addField(std::addressof(name));
+    generator.addField(std::addressof(implementation));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptedConnection::Protocol_AcceptedConnection()
+{
+    generator.addField(std::addressof(uuid));
+    generator.addField(std::addressof(status));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AccessPluginMetadata::Protocol_AccessPluginMetadata()
+{
+    generator.addField(std::addressof(uuid));
+    generator.addField(std::addressof(pluginUUID));
+    generator.addField(std::addressof(responseId));
+    generator.addField(std::addressof(request));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_PluginMetadataResponse::Protocol_PluginMetadataResponse()
+{
+    generator.addField(std::addressof(responseId));
+    generator.addField(std::addressof(metadata));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_MessageBase::Protocol_MessageBase()
+{
+    generator.addField(std::addressof(uuid));
+    generator.addField(std::addressof(responseId));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesResponse::Protocol_BalancesResponse()
+{
+    generator.addField(std::addressof(responseId));
+    generator.addField(std::addressof(status));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAsset::Protocol_BalancesAsset() :
+    Protocol_MessageBase()
+{
+    generator.addField(std::addressof(source));
+    generator.addField(std::addressof(asset));
+    generator.addField(std::addressof(assetId));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAssetItem::Protocol_BalancesAssetItem() :
+    Protocol_MessageBase()
+{
+    generator.addField(std::addressof(name));
+    generator.addField(std::addressof(subHandle));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetUpdate::Protocol_BalanceAssetUpdate()
+{
+    generator.addField(std::addressof(assetId));
+    generator.addField(std::addressof(type));
+    generator.addField(std::addressof(value));
+}
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetItemUpdate::Protocol_BalanceAssetItemUpdate()
+{
+    generator.addField(std::addressof(subHandle));
+    generator.addField(std::addressof(type));
+    generator.addField(std::addressof(value));
 }
