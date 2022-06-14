@@ -12,26 +12,28 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-#set(QWT_PATH ${QWT_PATH} /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6)
-
-
 find_package(Qt6 COMPONENTS
         Core
         Gui
         Widgets
         Charts
         Sql
+        WebSockets
         REQUIRED)
 
-#find_library(QWT Qwt /Volumes/RicardoESSD/dev/qwt/release/lib)
 
-
-IF (WIN32)
+IF (UNIX AND NOT APPLE)
+    message("Centaur Linux Detected")
+ELSEIF (WIN32)
+    message("Centaur Windows Detected")
     set(CENTAUR_EXECUTABLE WIN32)
 ELSEIF (UNIX AND APPLE)
+    message("Centaur Apple Detected")
     set(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
+    set(CMAKE_MACOSX_RPATH 1)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
 ELSE ()
-    set(CENTAUR_EXECUTABLE)
+    message(FATAL_ERROR "Unknown target platform")
 ENDIF ()
 
 add_executable(Centaur ${CENTAUR_EXECUTABLE}
@@ -49,6 +51,7 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/LongOperation.cpp
         src/ConfigurationInterface.cpp
         src/CentaurLoadData.cpp
+        src/ComsServer.cpp
         include/CentaurApp.hpp
         include/CentaurGlobal.hpp
         include/CentaurUIState.hpp
@@ -62,30 +65,31 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         include/ConfigurationInterface.hpp
         include/XMLHelper.hpp
         include/crc64.hpp
+        include/ComsServer.hpp
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
         ui/LenghtyDialog.ui
-        ui/FavoritesDialog.ui
-        )
+        ui/FavoritesDialog.ui)
 
-set_target_properties(Centaur PROPERTIES
-        MACOSX_BUNDLE_GUI_IDENTIFIER centaur.project.com
-        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+# Create the Apple Bundle
+IF (APPLE)
+    set_target_properties(Centaur PROPERTIES
+            MACOSX_BUNDLE_BUNDLE_NAME Centaur
+            MACOSX_BUNDLE_GUI_IDENTIFIER com.centaurproject.Centaur
+            MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+ENDIF ()
 
 target_include_directories(Centaur PRIVATE
         include
         ../../Plugins/include
         ../../Library/Protocol/include
-        ../../Library/uuid/include
-        #${QWT}/Headers
-        )
+        ../../Library/uuid/include)
 
 target_link_libraries(Centaur PRIVATE fmt::fmt)
-target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql)
-#target_link_libraries(Centaur PRIVATE ${QWT})
+target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets)
 target_link_libraries(Centaur PRIVATE SQLite3)
 target_link_libraries(Centaur PRIVATE XercesC::XercesC)
 
