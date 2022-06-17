@@ -106,6 +106,8 @@ namespace cen::tools
                     m_messages.pop();
                 }
             }
+
+            onTerminate();
         }
         template <typename U>
         auto sendMessage(U &&type) -> void
@@ -157,6 +159,7 @@ namespace cen::tools
         }
 
         virtual auto acquire(const messages &s) noexcept -> void = 0;
+        virtual auto onTerminate() noexcept -> void              = 0;
 
         auto getStartedPromise() const -> std::promise<void> & { return m_started; }
 
