@@ -11,8 +11,7 @@
 # Application testing
 /local
 
-/conan/debug
-/conan/release
+/tools/local
 
 Library/Exchanges/BinanceAPI/binapi-old.cpp
 Library/Exchanges/BinanceAPI/binapi-old.hpp
