@@ -128,30 +128,31 @@ auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolJSONGenerator::fromJSON(const char *jso
             data);
     }
 }
+cen::protocol::ProtocolBase::ProtocolBase(uint32_t type) noexcept :
+    protocolType { type } { }
 
-auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::json() -> std::string
-{
-    return generator.getJSON();
-}
-auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::fromJson(const char *json) -> void
-{
-    generator.fromJSON(json);
-}
+auto cen::protocol::ProtocolBase::type() const -> uint32_t { return protocolType; }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection::Protocol_AcceptConnection()
+auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::json() -> std::string { return generator.getJSON(); }
+auto CENTAUR_PROTOCOL_NAMESPACE::ProtocolBase::fromJson(const char *json) -> void { generator.fromJSON(json); }
+
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection::Protocol_AcceptConnection() :
+    ProtocolBase { 0x20bb643b }
 {
     generator.addField(std::addressof(uuid));
     generator.addField(std::addressof(name));
     generator.addField(std::addressof(implementation));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptedConnection::Protocol_AcceptedConnection()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptedConnection::Protocol_AcceptedConnection() :
+    ProtocolBase { 0xe1ea5df6 }
 {
     generator.addField(std::addressof(uuid));
     generator.addField(std::addressof(status));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AccessPluginMetadata::Protocol_AccessPluginMetadata()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AccessPluginMetadata::Protocol_AccessPluginMetadata() :
+    ProtocolBase { 0xbb837dbf }
 {
     generator.addField(std::addressof(uuid));
     generator.addField(std::addressof(pluginUUID));
@@ -159,26 +160,29 @@ CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AccessPluginMetadata::Protocol_Acc
     generator.addField(std::addressof(request));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_PluginMetadataResponse::Protocol_PluginMetadataResponse()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_PluginMetadataResponse::Protocol_PluginMetadataResponse() :
+    ProtocolBase { 0xc00047c2 }
 {
     generator.addField(std::addressof(responseId));
     generator.addField(std::addressof(metadata));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_MessageBase::Protocol_MessageBase()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_MessageBase::Protocol_MessageBase(uint32_t type) :
+    ProtocolBase { type }
 {
     generator.addField(std::addressof(uuid));
     generator.addField(std::addressof(responseId));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesResponse::Protocol_BalancesResponse()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesResponse::Protocol_BalancesResponse() :
+    ProtocolBase { 0x23007f07 }
 {
     generator.addField(std::addressof(responseId));
     generator.addField(std::addressof(status));
 }
 
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAsset::Protocol_BalancesAsset() :
-    Protocol_MessageBase()
+    Protocol_MessageBase(0xbbf781af)
 {
     generator.addField(std::addressof(source));
     generator.addField(std::addressof(asset));
@@ -186,20 +190,22 @@ CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAsset::Protocol_BalancesAs
 }
 
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAssetItem::Protocol_BalancesAssetItem() :
-    Protocol_MessageBase()
+    Protocol_MessageBase(0x32efc011)
 {
     generator.addField(std::addressof(name));
     generator.addField(std::addressof(subHandle));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetUpdate::Protocol_BalanceAssetUpdate()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetUpdate::Protocol_BalanceAssetUpdate() :
+    Protocol_MessageBase(0xe0894501)
 {
     generator.addField(std::addressof(assetId));
     generator.addField(std::addressof(type));
     generator.addField(std::addressof(value));
 }
 
-CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetItemUpdate::Protocol_BalanceAssetItemUpdate()
+CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetItemUpdate::Protocol_BalanceAssetItemUpdate() :
+    Protocol_MessageBase(0x9d102247)
 {
     generator.addField(std::addressof(subHandle));
     generator.addField(std::addressof(type));

@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 find_package(fmt REQUIRED)
 find_package(RapidJson REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
+
 
 add_library(protocol SHARED
         src/protocol.cpp
@@ -19,6 +21,8 @@ include_directories(include PRIVATE)
 
 target_link_libraries(protocol PRIVATE fmt::fmt)
 target_link_libraries(protocol PRIVATE ${OPENSSL_LIBRARIES})
+target_link_libraries(protocol PRIVATE ZLIB::ZLIB)
+
 
 target_compile_options(protocol PRIVATE
         -Weverything
@@ -29,4 +33,5 @@ target_compile_options(protocol PRIVATE
         -Wno-c++20-compat
         -Wno-padded
         -Wno-poison-system-directories
-        -fdiagnostics-color=always)
+        -fdiagnostics-color=always
+        )

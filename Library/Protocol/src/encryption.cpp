@@ -98,23 +98,6 @@ CENTAUR_WARN_POP()
         return ret;
     }
 
-    /*har *decode64(unsigned char *input, int length)
-{
-  BIO *b64, *bmem;
-
-    char *buffer = (char *)malloc(length);
-    memset(buffer, 0, length);
-
-    b64 = BIO_new(BIO_f_base64());
-    bmem = BIO_new_mem_buf(input, length);
-    bmem = BIO_push(b64, bmem);
-
-    BIO_read(bmem, buffer, length);
-
-    BIO_free_all(bmem);
-
-    return buffer;
-}*/
 public:
     inline auto loadPrivateKey(const std::string &file) -> void
     {

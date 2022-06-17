@@ -129,16 +129,125 @@ TEST_CASE("Field protocols from JSON")
     CHECK(fs() == "this is a string");
 }
 
-TEST_CASE("Communication JSON Protocols")
+TEST_CASE("Communication JSON Protocols. Accept Connection")
 {
     using namespace CENTAUR_NAMESPACE;
-    protocol::Protocol_AcceptConnection pac;
+    protocol::message::Protocol_AcceptConnection pac;
 
     pac.uuid()           = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
     pac.name()           = "Connection test";
     pac.implementation() = "exchange";
 
     CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test","implementation":"exchange"}})");
+
+    protocol::message::Protocol_AcceptConnection pacRes;
+    pacRes.fromJson(pac.json().c_str());
+
+    CHECK(pacRes.uuid() == "{afc31b50-481a-0dce-40b5-4bd59f1118ad}");
+    CHECK(pacRes.name() == "Connection test");
+    CHECK(pacRes.implementation() == "exchange");
+}
+
+TEST_CASE("Communication JSON Protocols. Accepted Connection")
+{
+    using namespace CENTAUR_NAMESPACE;
+
+    protocol::message::Protocol_AcceptedConnection padc;
+    padc.uuid()   = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
+    padc.status() = static_cast<int>(protocol::message::Protocol_AcceptedConnection::Status::uuidAlreadySet);
+
+    CHECK(padc.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","status":1}})");
+
+    protocol::message::Protocol_AcceptedConnection padcRes;
+    padcRes.fromJson(padc.json().c_str());
+    CHECK(padcRes.uuid() == "{afc31b50-481a-0dce-40b5-4bd59f1118ad}");
+    CHECK(padcRes.status() == 1);
+}
+
+TEST_CASE("Protocol: Packed ProtocolHedare")
+{
+    // JUST TO CHECK THAT THERE IS NO PADDING ON THE STRUCT
+    const std::size_t size = sizeof(cen::protocol::ProtocolHeader);
+    CHECK(size == 104);
+}
+
+TEST_CASE("Protocol: HASH Generation")
+{
+    // Text taken from https://en.wikipedia.org/wiki/SHA-2
+    const std::string text = "SHA-2 (Secure Hash Algorithm 2) is a set of cryptographic hash functions designed by the United States National Security Agency (NSA) and first published in 2001.[3][4] "
+                             "They are built using the Merkle–Damgård construction, from a one-way compression function itself built using the Davies–Meyer structure from a specialized block cipher.";
+
+    // Hash calculated in: https://emn178.github.io/online-tools/sha256.html
+    const int8_t hash[65] = { "b15875a8710ab7ac96fb5b5623041fa46a3acd015ddf05c71b6b98f847f944b8" };
+
+    cen::protocol::ProtocolHeader ph {};
+    cen::protocol::Generator::hash(&ph, text);
+
+    // Test basic
+    CHECK(memcmp(hash, ph.hash, sizeof(ph.hash) / sizeof(ph.hash[0])) == 0);
+
+    // Test the Generator::testHash
+    cen::protocol::ProtocolHeader test {};
+    memcpy(test.hash, hash, cen::protocol::g_hashSize);
+    CHECK(cen::protocol::Generator::testHash(&test, text));
+
+    const std::string textModify = "HA-2 (Secure Hash Algorithm 2) is a set of cryptographic hash functions designed by the United States National Security Agency (NSA) and first published in 2001.[3][4] "
+                                   "They are built using the Merkle–Damgård construction, from a one-way compression function itself built using the Davies–Meyer structure from a specialized block cipher.";
+
+    // Must return false
+    CHECK(!cen::protocol::Generator::testHash(&test, textModify));
+}
+
+TEST_CASE("Protocol: Compression/Decompression")
+{
+    // Text taken from https://en.wikipedia.org/wiki/SHA-2
+    const std::string text = "SHA-2 (Secure Hash Algorithm 2) is a set of cryptographic hash functions designed by the United States National Security Agency (NSA) and first published in 2001.[3][4] "
+                             "They are built using the Merkle–Damgård construction, from a one-way compression function itself built using the Davies–Meyer structure from a specialized block cipher.";
+
+    std::vector<uint8_t> compressed;
+
+    cen::protocol::ProtocolHeader test {};
+
+    test.size = text.size(); // Must be set for the decompression
+    cen::protocol::Generator::compress(&test, text, compressed, 9);
+
+    std::string decompressed = cen::protocol::Generator::decompress(&test, static_cast<const uint8_t *>(compressed.data()), compressed.size());
+
+    CHECK(decompressed == text);
+}
+
+TEST_CASE("Protocol: Send/Receive NO Compression")
+{
+
+    CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection pac;
+    pac.name()           = "name";
+    pac.uuid()           = "uuid";
+    pac.implementation() = "impl";
+
+    CENTAUR_PROTOCOL_NAMESPACE::Protocol send;
+    CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(&send, 10, &pac, false);
+
+    cen::protocol::ProtocolHeader header;
+    auto receive = CENTAUR_PROTOCOL_NAMESPACE::Generator::getData(&header, send.get(), send.getSize(), 100000);
+
+    CHECK(receive == pac.json());
+}
+
+TEST_CASE("Protocol: Send/Receive With Compression")
+{
+
+    CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection pac;
+    pac.name()           = "name";
+    pac.uuid()           = "uuid";
+    pac.implementation() = "impl";
+
+    CENTAUR_PROTOCOL_NAMESPACE::Protocol send;
+    CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(&send, 10, &pac, true);
+
+    cen::protocol::ProtocolHeader header {};
+    auto receive = CENTAUR_PROTOCOL_NAMESPACE::Generator::getData(&header, send.get(), send.getSize(), 100000);
+
+    CHECK(receive == pac.json());
 }
 
 TEST_CASE("Protocol: load private key")
@@ -159,12 +268,12 @@ TEST_CASE("Protocol: Private Encrypt/Public decrypt")
 {
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
 
-    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
-    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{c9c99ff8-c074-5697-b5ad-80bb6fe7337a}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{c9c99ff8-c074-5697-b5ad-80bb6fe7337a}.pem"));
 
-    std::string text = "aaaaaaaaaa";
+    std::string text = "text";
 
-    std::string base64, base16, decBase64, decBase16;
+    std::string base64, decBase64;
 
     CHECK_NOTHROW((base64 = ec.encryptPrivate(text, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
     CHECK_NOTHROW((decBase64 = ec.decryptPrivate(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
@@ -173,7 +282,6 @@ TEST_CASE("Protocol: Private Encrypt/Public decrypt")
 
     CHECK_NOTHROW((decBase64 = ec.decryptPublic(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
 
-    std::cout << base64;
     CHECK(decBase64 == text);
 }
 

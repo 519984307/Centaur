@@ -51,32 +51,114 @@
 namespace CENTAUR_PROTOCOL_NAMESPACE
 {
     constexpr char g_magic[4] = { 'C', 'E', 'N', 'T' };
+    constexpr char g_hashSize = 64;
 
     enum ProtocolFlags
     {
-        PFCompressed = 0x1, // Beware that only the JSON Data is compressed
+        PFCompressed = 1 << 0, // Beware that only the JSON Data is compressed
+        // Error Flags set when Generator::getData are called
+        PFWrongSize      = 1 << 1,   // The size of the data received is less than sizeof(ProtocolHeader)
+        PFWrongMagic     = 1 << 2,   // The size of the data received is consistent to the expected, however, the magic is wrong
+        PFWrongTimestamp = 1 << 3,   // The time difference is higher than the set in Generator::getData
+                                     // Make sure time zones are equal in the client and the server, otherwise, time inconsistencies may arise and this flag may or may not be set.
+                                     // If this flag is set, communication between server and client has too much latency
+        PFWrongMessageSize = 1 << 4, // The whole data size minus the header size is not what ProtocolHeader::size was expected
+        PFWrongHash        = 1 << 5, // The hash was not consistent, therefore, the data was corrupted
+        PFWrongVersion     = 1 << 6, // The version of the message is not supported by the current library version
     };
 
     struct ProtocolHeader
     {
-        char magic[4];        /// Magic number
-        uint64_t size;        /// Object data
-        uint64_t timestamp;   /// Message timestamp in milliseconds
-        uint64_t hash;        /// Message data hash
-        uint32_t version;     /// Protocol version
-        uint32_t userVersion; /// The version of the user data
-        uint32_t flags;       /// ProtocolFlags
-        uint32_t type;        /// Message Protocol type.
+        char magic[4];           /// Magic number
+        uint64_t size;           /// Object data. This is the size of the uncompressed data. This is used by decompress if compression was set
+        uint64_t timestamp;      /// Message timestamp in milliseconds
+        int8_t hash[g_hashSize]; /// Message data hash. IMPORTANT: This is not a null-terminated string
+        uint32_t version;        /// Protocol version
+        uint32_t userVersion;    /// The version of the user data
+        uint32_t flags;          /// ProtocolFlags
+        uint32_t type;           /// Message Protocol type.
     };
 
+    /// \brief This structs contains the whole message
+    /// \remarks Only call get(). The data is set by Generator::generate()
+    struct Protocol
+    {
+        ~Protocol();
+
+    public:
+        auto appendHeader(ProtocolHeader *header) -> void;
+        auto appendData(const uint8_t *message, std::size_t dataSize) -> void;
+        auto setSize(std::size_t total) -> void;
+
+    public:
+        /// Data will only be valid once all data is set in the buffer
+        C_NODISCARD inline auto isValid() const -> bool { return valid; }
+        C_NODISCARD inline auto getSize() const -> std::size_t { return size; }
+        C_NODISCARD inline auto get() const -> uint8_t * { return data; }
+
+    protected:
+        bool valid { false };
+        uint8_t *data { nullptr };
+        std::size_t size { 0 };
+    };
+
+    struct ProtocolBase;
     struct Generator
     {
-        /// \brief Generate a protocol message
+
+        /// \brief For consistency in timestamps use this function
+        /// \return timestamp
+        C_NODISCARD static auto timestamp() -> uint64_t; // TODO: MAKE THIS FUNCTION UTC-0
+
+        /// \brief Calculate the hash (SHA256) of the data to be sent
+        /// \param header This is the main basic header. This function will set the hash value onto de header
+        /// \param data Data to be hashed
+        static auto hash(ProtocolHeader *header, const std::string &data) -> void;
+
+        /// \brief Computes the SHA-256 of data and compares the value to the provided by the header->hash
+        /// \param header Header containing a valid hash
+        /// \param data Data to be compared
+        /// \return True if are equal, false otherwise
+        static auto testHash(ProtocolHeader *header, const std::string &data) -> bool;
+
+        /// \brief Compress the data to be sent
+        /// \param header This is the main basic header. This function will set flags |= ProtocolFlags::PFCompressed
+        /// \param data Data to be compressed
+        /// \param level Is the compression level is a number between -1 and 9. see zlib compression levels for more details
+        /// \return The compression size
+        /// \remarks Consider
+        static auto compress(ProtocolHeader *header, const std::string &data, std::vector<uint8_t> &outData, int level = 6) -> std::size_t;
+
+        /// \brief Decompress the data to be sent or sent
+        /// \param data Data to be decompressed
+        /// \return A string with the compressed data
+        C_NODISCARD static auto decompress(ProtocolHeader *header, const uint8_t *data, std::size_t dataSize) -> std::string;
+
+        /// \brief This function will set the basic data to the header
+        /// \param header This is the main basic header.
+        /// \param size Size of the data
+        /// \param userVersion user version
+        /// \param type Message Protocol type
+        static auto generateHeader(ProtocolHeader *header, uint64_t size, uint32_t userVersion, uint32_t type) -> void;
+
+        /// \brief Generate a protocol message.
+        /// \param pro A ready to send to data
         /// \param userVersion User version
-        /// \param data JSON data
-        /// \remarks This function does not change modify the timestamp field in ProtocolHeader,
-        ///          this field is set when the message is sent using the MessageSender object
-        auto generate(uint32_t userVersion, uint32_t type, const std::string &data) -> void;
+        /// \param data Message real payload
+        /// \param compressData Set  to true if you want data to be compressed. The level parameter becomes relevant if compressData is set to true
+        /// \param level Is the compression level is a number between -1 and 9. see zlib compression levels for more details
+        /// \remarks The timestamp will set to the time this function is called and just before return.
+        /// \remarks THIS IS THE FUNCTION YOU WILL NORMALLY CALL TO GENERATE A MESSAGE PROTOCOL
+        static auto generate(Protocol *pro, uint32_t userVersion, ProtocolBase *data, bool compressData, int level = 6) -> void;
+
+        /// \brief This function will separate the data
+        /// \param header General package information. Useful to see the error flags
+        /// \param received This is an IN parameter and it is the data received
+        /// \param receivedSize This is an IN parameter and it is the size of the data received
+        /// \param timeDifference Checks whether the timestamps difference is ok
+        /// \remarks All problems are set in the header->flags parameter. See ProtocolFlags for further details.
+        /// \remarks If the data is compressed. This function decompress it
+        C_NODISCARD static auto getData(ProtocolHeader *header, const uint8_t *received, std::size_t receivedSize, const uint64_t timeDifference) -> std::string;
 
     private:
         std::shared_ptr<uint8_t[]> m_data;
@@ -122,11 +204,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     private:
         struct Impl;
         std::unique_ptr<Impl> pimpl;
-    };
-
-    /// \brief Data compression
-    struct Compressor
-    {
     };
 
     template <typename T>
@@ -190,8 +267,14 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
 
     struct ProtocolBase
     {
+        explicit ProtocolBase(uint32_t type) noexcept;
+
         C_NODISCARD auto json() -> std::string;
         auto fromJson(const char *json) -> void;
+        auto type() const -> uint32_t;
+
+    protected:
+        uint32_t protocolType {};
 
     protected:
         ProtocolJSONGenerator generator;
@@ -208,10 +291,8 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_AcceptConnection();
 
-            static constexpr uint32_t protocolType = 0x20bb643b;
-
         public:
-            static constexpr char version10[] = { "Centaur_Protocol_Version10" };
+            static constexpr char version10[] = { "Centaur_Protocol_Version_1.0" };
 
             /// \brief uuid indicate
         public:
@@ -228,8 +309,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         struct Protocol_AcceptedConnection : public ProtocolBase
         {
             Protocol_AcceptedConnection();
-
-            static constexpr uint32_t protocolType = 0xe1ea5df6;
 
             /// \brief Status codes return from the main Ui
             enum class Status : int
@@ -253,8 +332,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_AccessPluginMetadata();
 
-            static constexpr uint32_t protocolType = 0xbb837dbf;
-
         public:
             /// \brief Connection identifier Protocol_AcceptConnection::uuid
             Field<std::string> uuid { "uuid" };
@@ -272,8 +349,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_PluginMetadataResponse();
 
-            static constexpr uint32_t protocolType = 0xc00047c2;
-
         public:
             /// The response id sent to required the data
             Field<std::string> responseId { "id" };
@@ -284,9 +359,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         /// \brief This Struct Abstracts the uuid and responseId items. Which all messages should habe
         struct Protocol_MessageBase : public ProtocolBase
         {
-            Protocol_MessageBase();
-
-            static constexpr uint32_t protocolType = 0x2e138c8a;
+            explicit Protocol_MessageBase(uint32_t type);
 
         public:
             /// \brief Connection identifier Protocol_AcceptConnection::uuid
@@ -300,8 +373,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
         public:
             Protocol_BalancesAsset();
-
-            static constexpr uint32_t protocolType = 0x20bb643b;
 
         public:
             /// \brief Source of the Asset
@@ -317,8 +388,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_BalancesAssetItem();
 
-            static constexpr uint32_t protocolType = 0x23007f07;
-
         public:
             /// \brief New item name
             Field<std::string> name { "name" };
@@ -329,8 +398,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         struct Protocol_BalanceAssetUpdate : public Protocol_MessageBase
         {
             Protocol_BalanceAssetUpdate();
-
-            static constexpr uint32_t protocolType = 0xf469e79e;
 
             enum class Type : int
             {
@@ -351,8 +418,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_BalanceAssetItemUpdate();
 
-            static constexpr uint32_t protocolType = 0xbbf781af;
-
             enum class Type : int
             {
                 name,
@@ -372,8 +437,6 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         struct Protocol_BalancesResponse : public ProtocolBase
         {
             Protocol_BalancesResponse();
-
-            static constexpr uint32_t protocolType = 0x77c2d52c;
 
             enum class Status : int
             {
