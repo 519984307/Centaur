@@ -6,7 +6,6 @@
 
 #include "AppleDirectory.h"
 #import <Foundation/Foundation.h>
-#include <string>
 
 const char *getApplicationSupportDirectory()
 {
