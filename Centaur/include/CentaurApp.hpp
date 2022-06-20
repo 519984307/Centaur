@@ -134,7 +134,6 @@ namespace CENTAUR_NAMESPACE
         // General application state
     private:
         std::unique_ptr<Ui::CentaurApp> m_ui;
-        UserInterfaceState m_uiState;
 
     private:
         std::unique_ptr<std::thread> m_loggerThread { nullptr };

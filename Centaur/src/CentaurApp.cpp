@@ -338,9 +338,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->listWatchList->setColumnHidden(4, true);
 
     // Balances Tree
-    m_ui->ctrlBalances->setHeaderLabels({ "Name", "Value" });
-    m_ui->ctrlBalances->setColumnWidth(0, m_uiState.blcols.name);
-    m_ui->ctrlBalances->setColumnWidth(1, m_uiState.blcols.value);
+    m_ui->ctrlBalances->setHeaderLabels({ LS("ui-docks-balances-name"), LS("ui-docks-balances-value") });
     m_ui->ctrlBalances->setIconSize(QSize(32, 32));
 
     // Init the logging window
@@ -479,8 +477,9 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("BalancesTreeState");
-    settings.setValue("c0", m_ui->ctrlBalances->columnWidth(0));
-    settings.setValue("c1", m_ui->ctrlBalances->columnWidth(1));
+    settings.setValue("geometry", m_ui->ctrlBalances->saveGeometry());
+    settings.setValue("h-geometry", m_ui->ctrlBalances->header()->saveGeometry());
+    settings.setValue("state", m_ui->ctrlBalances->header()->saveState());
     settings.endGroup();
 
     settings.beginGroup("OrderbookAsksState");
@@ -522,8 +521,9 @@ void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("BalancesTreeState");
-    m_uiState.blcols.name  = settings.value("c0", m_uiState.blcols.name).toInt();
-    m_uiState.blcols.value = settings.value("c1", m_uiState.blcols.value).toInt();
+    m_ui->ctrlBalances->restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->ctrlBalances->header()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    m_ui->ctrlBalances->header()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     settings.beginGroup("OrderbookAsksState");

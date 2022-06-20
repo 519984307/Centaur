@@ -15,14 +15,6 @@
 
 namespace CENTAUR_NAMESPACE
 {
-    struct UserInterfaceState
-    {
-        struct BalancesTreeCols
-        {
-            int name { 150 };
-            int value { 80 };
-        } blcols;
-    };
 
     struct PluginsDialogInterfaceState
     {
