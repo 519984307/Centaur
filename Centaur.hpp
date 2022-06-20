@@ -61,6 +61,14 @@
 #endif /* defined ...*/
 #endif /*C_NORETURN*/
 
+#ifndef C_FALLTHROUGH
+#if defined(__clang__) || defined(__GNU__) || defined(MSVC)
+#define C_FALLTHROUGH [[fallthrough]]
+#else
+#define C_FALLTHROUGH
+#endif /* defined ...*/
+#endif /*C_FALLTHROUGH*/
+
 namespace CENTAUR_NAMESPACE
 {
     constexpr char CentaurVersionString[]         = "0.3.0";
