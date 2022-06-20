@@ -337,11 +337,6 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_watchlistItemModel->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_ui->listWatchList->setColumnHidden(4, true);
 
-    m_ui->listWatchList->setColumnWidth(0, m_uiState.wlcols.symbol);
-    m_ui->listWatchList->setColumnWidth(1, m_uiState.wlcols.price);
-    m_ui->listWatchList->setColumnWidth(2, m_uiState.wlcols.sender);
-    m_ui->listWatchList->setColumnWidth(3, m_uiState.wlcols.latency);
-
     // Balances Tree
     m_ui->ctrlBalances->setHeaderLabels({ "Name", "Value" });
     m_ui->ctrlBalances->setColumnWidth(0, m_uiState.blcols.name);
@@ -363,12 +358,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     logger->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignCenter);
     logger->horizontalHeaderItem(5)->setFont(QFont("Arial", 10));
     logger->horizontalHeaderItem(5)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    logger->setColumnWidth(0, m_uiState.lgcols.date);
-    logger->setColumnWidth(1, m_uiState.lgcols.user);
-    logger->setColumnWidth(2, m_uiState.lgcols.session);
-    logger->setColumnWidth(3, m_uiState.lgcols.type);
-    logger->setColumnWidth(4, m_uiState.lgcols.source);
-    logger->setColumnWidth(5, m_uiState.lgcols.message);
+
     logger->setItemDelegateForColumn(5, new HTMLDelegate);
 
     // Orderbook asks
@@ -383,9 +373,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->asksTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
     m_ui->asksTable->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
     m_ui->asksTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
-    m_ui->asksTable->setColumnWidth(0, m_uiState.askscols.price);
-    m_ui->asksTable->setColumnWidth(1, m_uiState.askscols.amount);
-    m_ui->asksTable->setColumnWidth(2, m_uiState.askscols.total);
+
     //   m_ui->asksTable->verticalHeader()->setStyleSheet(styleSheet);
 
     // Orderbook bids
@@ -396,9 +384,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->bidsTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
     m_ui->bidsTable->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
     m_ui->bidsTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
-    m_ui->bidsTable->setColumnWidth(0, m_uiState.bidscols.price);
-    m_ui->bidsTable->setColumnWidth(1, m_uiState.bidscols.amount);
-    m_ui->bidsTable->setColumnWidth(2, m_uiState.bidscols.total);
+
     //  m_ui->bidsTable->verticalHeader()->setStyleSheet(styleSheet);
 
     m_ui->bidsChart->setRenderHint(QPainter::Antialiasing);
@@ -481,19 +467,15 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("watchlistListState");
-    settings.setValue("c0", m_ui->listWatchList->columnWidth(0));
-    settings.setValue("c1", m_ui->listWatchList->columnWidth(1));
-    settings.setValue("c2", m_ui->listWatchList->columnWidth(2));
-    settings.setValue("c3", m_ui->listWatchList->columnWidth(3));
+    settings.setValue("geometry", m_ui->listWatchList->saveGeometry());
+    settings.setValue("h-geometry", m_ui->listWatchList->horizontalHeader()->saveGeometry());
+    settings.setValue("state", m_ui->listWatchList->horizontalHeader()->saveState());
     settings.endGroup();
 
     settings.beginGroup("loggingListState");
-    settings.setValue("c0", m_ui->logsTable->columnWidth(0));
-    settings.setValue("c1", m_ui->logsTable->columnWidth(1));
-    settings.setValue("c2", m_ui->logsTable->columnWidth(2));
-    settings.setValue("c3", m_ui->logsTable->columnWidth(3));
-    settings.setValue("c4", m_ui->logsTable->columnWidth(4));
-    settings.setValue("c5", m_ui->logsTable->columnWidth(5));
+    settings.setValue("geometry", m_ui->logsTable->saveGeometry());
+    settings.setValue("h-geometry", m_ui->logsTable->horizontalHeader()->saveGeometry());
+    settings.setValue("state", m_ui->logsTable->horizontalHeader()->saveState());
     settings.endGroup();
 
     settings.beginGroup("BalancesTreeState");
@@ -502,15 +484,15 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("OrderbookAsksState");
-    settings.setValue("c0", m_ui->asksTable->columnWidth(0));
-    settings.setValue("c1", m_ui->asksTable->columnWidth(1));
-    settings.setValue("c2", m_ui->asksTable->columnWidth(2));
+    settings.setValue("geometry", m_ui->asksTable->saveGeometry());
+    settings.setValue("h-geometry", m_ui->asksTable->horizontalHeader()->saveGeometry());
+    settings.setValue("state", m_ui->asksTable->horizontalHeader()->saveState());
     settings.endGroup();
 
     settings.beginGroup("OrderbookBidsState");
-    settings.setValue("c0", m_ui->bidsTable->columnWidth(0));
-    settings.setValue("c1", m_ui->bidsTable->columnWidth(1));
-    settings.setValue("c2", m_ui->bidsTable->columnWidth(2));
+    settings.setValue("geometry", m_ui->bidsTable->saveGeometry());
+    settings.setValue("h-geometry", m_ui->bidsTable->horizontalHeader()->saveGeometry());
+    settings.setValue("state", m_ui->bidsTable->horizontalHeader()->saveState());
     settings.endGroup();
 
     logInfo("app", "UI state saved");
@@ -528,19 +510,15 @@ void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("watchlistListState");
-    m_uiState.wlcols.symbol  = settings.value("c0", m_uiState.wlcols.symbol).toInt();
-    m_uiState.wlcols.price   = settings.value("c1", m_uiState.wlcols.price).toInt();
-    m_uiState.wlcols.sender  = settings.value("c2", m_uiState.wlcols.sender).toInt();
-    m_uiState.wlcols.latency = settings.value("c3", m_uiState.wlcols.latency).toInt();
+    m_ui->listWatchList->restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->listWatchList->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    m_ui->listWatchList->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     settings.beginGroup("loggingListState");
-    m_uiState.lgcols.date    = settings.value("c0", m_uiState.lgcols.date).toInt();
-    m_uiState.lgcols.session = settings.value("c1", m_uiState.lgcols.session).toInt();
-    m_uiState.lgcols.user    = settings.value("c2", m_uiState.lgcols.user).toInt();
-    m_uiState.lgcols.type    = settings.value("c3", m_uiState.lgcols.type).toInt();
-    m_uiState.lgcols.source  = settings.value("c4", m_uiState.lgcols.source).toInt();
-    m_uiState.lgcols.message = settings.value("c5", m_uiState.lgcols.message).toInt();
+    m_ui->logsTable->restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->logsTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    m_ui->logsTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     settings.beginGroup("BalancesTreeState");
@@ -549,15 +527,15 @@ void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("OrderbookAsksState");
-    m_uiState.askscols.price  = settings.value("c0", m_uiState.askscols.price).toInt();
-    m_uiState.askscols.amount = settings.value("c1", m_uiState.askscols.amount).toInt();
-    m_uiState.askscols.total  = settings.value("c2", m_uiState.askscols.total).toInt();
+    m_ui->asksTable->restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->asksTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    m_ui->asksTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     settings.beginGroup("OrderbookBidsState");
-    m_uiState.bidscols.price  = settings.value("c0", m_uiState.bidscols.price).toInt();
-    m_uiState.bidscols.amount = settings.value("c1", m_uiState.bidscols.amount).toInt();
-    m_uiState.bidscols.total  = settings.value("c2", m_uiState.bidscols.total).toInt();
+    m_ui->bidsTable->restoreGeometry(settings.value("geometry").toByteArray());
+    m_ui->bidsTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    m_ui->bidsTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     logInfo("app", "UI state loaded");

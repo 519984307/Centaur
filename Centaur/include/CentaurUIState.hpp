@@ -17,36 +17,11 @@ namespace CENTAUR_NAMESPACE
 {
     struct UserInterfaceState
     {
-        struct WatchlistColumns
-        {
-            int symbol { 85 };
-            int price { 90 };
-            int sender { 90 };
-            int latency { 60 };
-        } wlcols;
-
-        struct LoggerlistCols
-        {
-            int date { 110 };
-            int user { 70 };
-            int session { 50 };
-            int type { 50 };
-            int source { 130 };
-            int message { 950 };
-        } lgcols;
-
         struct BalancesTreeCols
         {
             int name { 150 };
             int value { 80 };
         } blcols;
-
-        struct OrderbookCols
-        {
-            int price { 100 };
-            int amount { 80 };
-            int total { 100 };
-        } bidscols, askscols;
     };
 
     struct PluginsDialogInterfaceState
