@@ -1,9 +1,9 @@
 
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
+#include <Protocol.hpp>
 #include <catch2/catch.hpp>
 #include <chrono>
 #include <iostream>
-#include <protocol.hpp>
 #include <uuid.hpp>
 
 TEST_CASE("UUID Construction")

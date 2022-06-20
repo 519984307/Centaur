@@ -7,7 +7,7 @@
 #include "ExchangeRate.hpp"
 #include "CentaurInterface.hpp"
 #include "CentaurPlugin.hpp"
-#include "protocol.hpp"
+#include "Protocol.hpp"
 
 #include <QObject>
 
