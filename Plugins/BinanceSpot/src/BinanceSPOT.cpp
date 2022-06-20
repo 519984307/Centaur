@@ -11,7 +11,7 @@
 #include "CoinInfoDialog.hpp"
 #include "FeesDialog.hpp"
 #include "NetworkAddressDialog.hpp"
-#include "protocol.hpp"
+#include "Protocol.hpp"
 #include <QApplication>
 #include <QMessageBox>
 #include <fmt/core.h>

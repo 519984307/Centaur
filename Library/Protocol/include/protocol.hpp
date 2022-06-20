@@ -31,6 +31,8 @@
 #define CENTAUR_PROTOCOL_NAMESPACE CENTAUR_NAMESPACE::protocol
 #endif /*CENTAUR_PROTOCOL_NAMESPACE*/
 
+#include "ProtocolType.hpp"
+
 /** ------------------------------------------------------------------------------------------
  * \brief Main protocol definitions
  *
@@ -149,7 +151,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         /// \param level Is the compression level is a number between -1 and 9. see zlib compression levels for more details
         /// \remarks The timestamp will set to the time this function is called and just before return.
         /// \remarks THIS IS THE FUNCTION YOU WILL NORMALLY CALL TO GENERATE A MESSAGE PROTOCOL
-        static auto generate(Protocol *pro, uint32_t userVersion, ProtocolBase *data, bool compressData, int level = 6) -> void;
+        static auto generate(Protocol *pro, uint32_t userVersion, ProtocolBase *data, bool compressData = false, int level = 6) -> void;
 
         /// \brief This function will separate the data
         /// \param header General package information. Useful to see the error flags
@@ -222,7 +224,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
 
     public:
         constexpr explicit Field(std::string_view name) :
-            field_name { std::move(name) } { }
+            field_name { name } { }
 
         T &operator()()
         {
@@ -234,7 +236,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
             return data;
         }
 
-        auto name() const -> std::string_view { return field_name; }
+        C_NODISCARD auto name() const -> std::string_view { return field_name; }
 
     protected:
         std::string_view field_name;
@@ -271,7 +273,7 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
 
         C_NODISCARD auto json() -> std::string;
         auto fromJson(const char *json) -> void;
-        auto type() const -> uint32_t;
+        C_NODISCARD auto type() const -> uint32_t;
 
     protected:
         uint32_t protocolType {};
@@ -284,6 +286,20 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     {
         /// Predefined protocols
 
+        /// \brief This message is sent by the server, the moment, the connection is stablished
+        /// You must use this uuid when communication back to the server.
+        /// When the client receive this message, the client must respond with a Protocol_AcceptConnection
+        /// If the client send data with the wrong Id or with non Protocol_AcceptConnection message
+        /// The connection will be closed
+        /// DIRECTION: UI -> Client
+        struct Protocol_IncomingConnection : ProtocolBase
+        {
+            Protocol_IncomingConnection();
+
+        public:
+            Field<std::string> uuid { "uuid" };
+        };
+
         /// \brief Protocol to indicate the Main Interface to accept a connection
         /// When a WS connection is accepted send this message to the main ui identify the client
         /// DIRECTION: Client -> UI
@@ -291,17 +307,12 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_AcceptConnection();
 
-        public:
-            static constexpr char version10[] = { "Centaur_Protocol_Version_1.0" };
-
             /// \brief uuid indicate
         public:
             /// \brief Connection identifier. All message from clients must use this uuid. If the main UI does not register this UUID the message will be ignored
             Field<std::string> uuid { "uuid" }; // Connection UUID
             /// Connection Name
             Field<std::string> name { "name" }; // Connection Name
-            /// \brief Protocol Implementation version. For version 1.0 set this field to Protocol_AcceptConnection::version10
-            Field<std::string> implementation { "implementation" }; // Connection Implementation
         };
 
         /// \brief Sent to the client from the main UI to indicate the status of the connection
@@ -310,19 +321,9 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
         {
             Protocol_AcceptedConnection();
 
-            /// \brief Status codes return from the main Ui
-            enum class Status : int
-            {
-                connectionOk,
-                uuidAlreadySet,
-                wrongImplementation,
-            };
-
         public:
             /// \brief This is the UUID sent to the UI in the Protocol_AcceptConnection::uuid
             Field<std::string> uuid { "uuid" };
-            /// \brief Status code return from the main UI
-            Field<int> status { "status" };
         };
 
         /// \brief Access the plugin metadata.
