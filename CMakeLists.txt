@@ -35,7 +35,7 @@ add_subdirectory(test)
 
 #Tools
 add_subdirectory(tools/imgSorter)
-add_subdirectory(tools/bspot)
+add_subdirectory(tools/btrader)
 
 # COnan commands:
 # conan install . -s build_type=Release  -if conan/release -of conan2/ --build missing
