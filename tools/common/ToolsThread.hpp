@@ -32,7 +32,6 @@ namespace cen::tools
     public:
         auto terminate() -> void
         {
-            std::lock_guard<std::mutex> lock { m_dataProtect };
             m_terminateSignal = true;
             m_waitCondition.notify_one();
         }
