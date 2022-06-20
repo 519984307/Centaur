@@ -81,6 +81,30 @@ namespace CENTAUR_NAMESPACE
     };
 } // namespace CENTAUR_NAMESPACE
 
+namespace
+{
+    constexpr char g_statusRed[] {
+        R"(QLabel{
+color: rgb(255, 255, 255);
+background-color: rgb(172, 6, 0);
+border-radius: 3px;
+min-width: 85px;
+qproperty-alignment: AlignCenter;
+})"
+    };
+
+    constexpr char g_statusGreen[] {
+        R"(QLabel{
+color: rgb(255, 255, 255);
+background-color: rgb(0, 104, 18);
+border-radius: 3px;
+min-width: 85px;
+qproperty-alignment: AlignCenter;
+})"
+    };
+
+} // namespace
+
 CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
     m_ui { std::make_unique<Ui::CentaurApp>() }
@@ -126,6 +150,9 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     // Start the interface
     initializeInterface();
 
+    // Start the server
+    startCommunicationsServer();
+
     // Load plugins
     loadPlugins();
 
@@ -157,6 +184,13 @@ CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
 
 void cen::CentaurApp::closeEvent(QCloseEvent *event)
 {
+    if (m_server)
+    {
+        // Stop the server
+        m_server->close();
+        m_server.reset();
+    }
+
     for (const auto &plugins : m_pluginInstances)
     {
         if (plugins->isLoaded())
@@ -222,9 +256,9 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     aboutMenu->addAction(aboutAction);
     preferencesMenu->addAction(preferencesAction);
     pluginsMenu->addAction(pluginsAction);
-    m_ui->m_menuBar->addMenu(aboutMenu);
-    m_ui->m_menuBar->addMenu(preferencesMenu);
-    m_ui->m_menuBar->addMenu(pluginsMenu);
+    m_ui->menuBar->addMenu(aboutMenu);
+    m_ui->menuBar->addMenu(preferencesMenu);
+    m_ui->menuBar->addMenu(pluginsMenu);
 
     connect(pluginsAction, SIGNAL(triggered()), this, SLOT(onPlugins()));
 
@@ -238,30 +272,30 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
             dlg.exec();
         });
 
-    m_ui->m_statusBar->setStyleSheet("QStatusBar::item { border: 2px; }");
+    m_ui->statusBar->setStyleSheet("QStatusBar::item { border: 2px; }");
 
     m_ui->tabSymbols->setTabText(m_ui->tabSymbols->indexOf(m_ui->tabWatchList), LS("ui-docks-watchlist"));
     // Menu actions
-    connect(m_ui->m_actionTileWindows, SIGNAL(triggered()), this, SLOT(onActionTileWindowsTriggered()));
-    connect(m_ui->m_actionCascadeWindows, SIGNAL(triggered()), this, SLOT(onActionCascadeWindowsTriggered()));
-    connect(m_ui->m_actionAsks, SIGNAL(toggled(bool)), this, SLOT(onActionAsksToggled(bool)));
-    connect(m_ui->m_actionBalances, SIGNAL(toggled(bool)), this, SLOT(onActionBalancesToggled(bool)));
-    connect(m_ui->m_actionBids, SIGNAL(toggled(bool)), this, SLOT(onActionBidsToggled(bool)));
-    connect(m_ui->m_actionDepth, SIGNAL(toggled(bool)), this, SLOT(onActionDepthToggled(bool)));
-    connect(m_ui->m_actionLogging, SIGNAL(toggled(bool)), this, SLOT(onActionLoggingToggled(bool)));
-    connect(m_ui->m_actionSymbols, SIGNAL(toggled(bool)), this, SLOT(onActionSymbolsToggled(bool)));
+    connect(m_ui->actionTileWindows, &QAction::triggered, this, &CentaurApp::onActionTileWindowsTriggered);
+    connect(m_ui->actionCascadeWindows, &QAction::triggered, this, &CentaurApp::onActionCascadeWindowsTriggered);
+    connect(m_ui->actionAsks, &QAction::toggled, this, &CentaurApp::onActionAsksToggled);
+    connect(m_ui->actionBalances, &QAction::toggled, this, &CentaurApp::onActionBalancesToggled);
+    connect(m_ui->actionBids, &QAction::toggled, this, &CentaurApp::onActionBidsToggled);
+    connect(m_ui->actionDepth, &QAction::toggled, this, &CentaurApp::onActionDepthToggled);
+    connect(m_ui->actionLogging, &QAction::toggled, this, &CentaurApp::onActionLoggingToggled);
+    connect(m_ui->actionSymbols, &QAction::toggled, this, &CentaurApp::onActionSymbolsToggled);
 
     // Remove the first index
     m_ui->dockSymbols->setWindowTitle(LS("ui-docks-symbols"));
     m_ui->tabSymbols->removeTab(1);
 
     // Show or hide the docking windows according to the store status of the Gm_ui
-    m_ui->m_actionSymbols->setChecked(!m_ui->dockSymbols->isHidden());
-    m_ui->m_actionLogging->setChecked(!m_ui->m_dockLogging->isHidden());
-    m_ui->m_actionBalances->setChecked(!m_ui->m_dockBalances->isHidden());
-    m_ui->m_actionBids->setChecked(!m_ui->dockOrderbookBids->isHidden());
-    m_ui->m_actionAsks->setChecked(!m_ui->dockOrderbookAsks->isHidden());
-    m_ui->m_actionDepth->setChecked(!m_ui->dockDepth->isHidden());
+    m_ui->actionSymbols->setChecked(!m_ui->dockSymbols->isHidden());
+    m_ui->actionLogging->setChecked(!m_ui->dockLogging->isHidden());
+    m_ui->actionBalances->setChecked(!m_ui->dockBalances->isHidden());
+    m_ui->actionBids->setChecked(!m_ui->dockOrderbookBids->isHidden());
+    m_ui->actionAsks->setChecked(!m_ui->dockOrderbookAsks->isHidden());
+    m_ui->actionDepth->setChecked(!m_ui->dockDepth->isHidden());
 
     // Init the watchlist QLineEdit
     m_ui->editWatchListFilter->setPlaceholderText(LS("ui-docks-search"));
@@ -309,13 +343,13 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->listWatchList->setColumnWidth(3, m_uiState.wlcols.latency);
 
     // Balances Tree
-    m_ui->m_ctrlBalances->setHeaderLabels({ "Name", "Value" });
-    m_ui->m_ctrlBalances->setColumnWidth(0, m_uiState.blcols.name);
-    m_ui->m_ctrlBalances->setColumnWidth(1, m_uiState.blcols.value);
-    m_ui->m_ctrlBalances->setIconSize(QSize(32, 32));
+    m_ui->ctrlBalances->setHeaderLabels({ "Name", "Value" });
+    m_ui->ctrlBalances->setColumnWidth(0, m_uiState.blcols.name);
+    m_ui->ctrlBalances->setColumnWidth(1, m_uiState.blcols.value);
+    m_ui->ctrlBalances->setIconSize(QSize(32, 32));
 
     // Init the logging window
-    QTableWidget *logger = m_ui->m_logs;
+    QTableWidget *logger = m_ui->logsTable;
     logger->setHorizontalHeaderLabels({ "Date", "User", "Session", "Type", "Source", "Message" });
     logger->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
     logger->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
@@ -454,17 +488,17 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("loggingListState");
-    settings.setValue("c0", m_ui->m_logs->columnWidth(0));
-    settings.setValue("c1", m_ui->m_logs->columnWidth(1));
-    settings.setValue("c2", m_ui->m_logs->columnWidth(2));
-    settings.setValue("c3", m_ui->m_logs->columnWidth(3));
-    settings.setValue("c4", m_ui->m_logs->columnWidth(4));
-    settings.setValue("c5", m_ui->m_logs->columnWidth(5));
+    settings.setValue("c0", m_ui->logsTable->columnWidth(0));
+    settings.setValue("c1", m_ui->logsTable->columnWidth(1));
+    settings.setValue("c2", m_ui->logsTable->columnWidth(2));
+    settings.setValue("c3", m_ui->logsTable->columnWidth(3));
+    settings.setValue("c4", m_ui->logsTable->columnWidth(4));
+    settings.setValue("c5", m_ui->logsTable->columnWidth(5));
     settings.endGroup();
 
     settings.beginGroup("BalancesTreeState");
-    settings.setValue("c0", m_ui->m_ctrlBalances->columnWidth(0));
-    settings.setValue("c1", m_ui->m_ctrlBalances->columnWidth(1));
+    settings.setValue("c0", m_ui->ctrlBalances->columnWidth(0));
+    settings.setValue("c1", m_ui->ctrlBalances->columnWidth(1));
     settings.endGroup();
 
     settings.beginGroup("OrderbookAsksState");
@@ -578,6 +612,17 @@ void CENTAUR_NAMESPACE::CentaurApp::startLoggingService() noexcept
     }
 }
 
+void CENTAUR_NAMESPACE::CentaurApp::startCommunicationsServer() noexcept
+{
+    m_serverStatus = new QLabel("Server", m_ui->statusBar);
+    m_ui->statusBar->addPermanentWidget(m_serverStatus, 0);
+    m_server = std::make_unique<ProtocolServer>(this);
+    if (m_server->isListening())
+        m_serverStatus->setStyleSheet(g_statusGreen);
+    else
+        m_serverStatus->setStyleSheet(g_statusRed);
+}
+
 void CENTAUR_NAMESPACE::CentaurApp::onActionTileWindowsTriggered()
 {
     m_ui->m_mdiArea->tileSubWindows();
@@ -595,12 +640,12 @@ void CENTAUR_NAMESPACE::CentaurApp::onActionSymbolsToggled(bool status)
 
 void CENTAUR_NAMESPACE::CentaurApp::onActionLoggingToggled(bool status)
 {
-    status ? m_ui->m_dockLogging->show() : m_ui->m_dockLogging->hide();
+    status ? m_ui->dockLogging->show() : m_ui->dockLogging->hide();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onActionBalancesToggled(bool status)
 {
-    status ? m_ui->m_dockBalances->show() : m_ui->m_dockBalances->hide();
+    status ? m_ui->dockBalances->show() : m_ui->dockBalances->hide();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onActionAsksToggled(bool status)
@@ -1007,6 +1052,8 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
     xAxisBids->setRange(bidsMinX, bidsMaxX);
     xAxisBids->setTickInterval(bidsStepsX);
 
+    m_ui->asksChart->setUpdatesEnabled(false);
+    m_ui->bidsChart->setUpdatesEnabled(false);
     m_bidsDepthFill->clear();
     m_bidsDepth->clear();
 
@@ -1026,6 +1073,9 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
 
     m_asksDepthFill->append(asksFill);
     m_asksDepth->append(asksPoints);
+
+    m_ui->asksChart->setUpdatesEnabled(true);
+    m_ui->bidsChart->setUpdatesEnabled(true);
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::clearOrderbookListsAndDepth() noexcept

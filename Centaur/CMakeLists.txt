@@ -51,7 +51,7 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/LongOperation.cpp
         src/ConfigurationInterface.cpp
         src/CentaurLoadData.cpp
-        src/ComsServer.cpp
+        src/ProtocolServer.cpp
         include/CentaurApp.hpp
         include/CentaurGlobal.hpp
         include/CentaurUIState.hpp
@@ -65,13 +65,13 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         include/ConfigurationInterface.hpp
         include/XMLHelper.hpp
         include/crc64.hpp
-        include/ComsServer.hpp
+        include/ProtocolServer.hpp
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
         ui/LenghtyDialog.ui
-        ui/FavoritesDialog.ui)
+        ui/FavoritesDialog.ui src/ProtocolClient.cpp include/ProtocolClient.hpp)
 
 # Create the Apple Bundle
 IF (APPLE)
@@ -84,9 +84,9 @@ ENDIF ()
 
 target_include_directories(Centaur PRIVATE
         include
-        ../../Plugins/include
-        ../../Library/Protocol/include
-        ../../Library/uuid/include)
+        ../Library/Protocol/include
+        ../Plugins/include
+        ../Library/uuid/include)
 
 target_link_libraries(Centaur PRIVATE fmt::fmt)
 target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets)

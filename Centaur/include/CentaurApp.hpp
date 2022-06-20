@@ -23,6 +23,7 @@
 #include "Globals.hpp"
 #include "Logger.hpp"
 #include "LongOperation.hpp"
+#include "ProtocolServer.hpp"
 #include "XMLHelper.hpp"
 #include <QPluginLoader>
 #include <QtCharts/QLineSeries>
@@ -71,6 +72,8 @@ namespace CENTAUR_NAMESPACE
         void loadInterfaceState() noexcept;
         /// \brief Starts the Logging thread
         void startLoggingService() noexcept;
+        /// Start the server
+        void startCommunicationsServer() noexcept;
         /// \brief Load plugin information
         void loadPlugins() noexcept;
         /// \brief Initialize the XML Xerces C++ library and call load the functions that load external XML files
@@ -162,6 +165,11 @@ namespace CENTAUR_NAMESPACE
     private:
         // It will just be incremented
         int m_sessionIds { 0 };
+
+        // Communication Server
+    private:
+        QLabel *m_serverStatus { nullptr };
+        std::unique_ptr<ProtocolServer> m_server;
 
     private:
         FavoritesDBManager *m_sqlFavorites { nullptr };
