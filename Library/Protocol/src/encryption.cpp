@@ -4,15 +4,14 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 
-/*
-#include "cryptopp/aes.h"
+#include "Protocol.hpp"
+/*#include "cryptopp/aes.h"
 #include "cryptopp/base64.h"
 #include "cryptopp/files.h"
 #include "cryptopp/hex.h"
 #include "cryptopp/osrng.h"
 #include "cryptopp/rsa.h"
 #include "cryptopp/sha3.h"*/
-#include "protocol.hpp"
 #include <cassert>
 #include <fmt/core.h>
 #include <fmt/os.h>
