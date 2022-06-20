@@ -23,7 +23,8 @@ namespace bspot::logger
         warning,
         error,
         success,
-        failure
+        failure,
+        timeout
     };
 
     enum class CoinEvent : uint32_t
@@ -95,6 +96,12 @@ template <typename msg, typename... Args>
 static inline auto logFailure(const msg &format, Args &&...args)
 {
     logEvent(bspot::logger::LoggingEvent::failure, format, args...);
+}
+
+template <typename msg, typename... Args>
+static inline auto logTimeout(const msg &format, Args &&...args)
+{
+    logEvent(bspot::logger::LoggingEvent::timeout, format, args...);
 }
 
 template <typename msg, typename... Args>
