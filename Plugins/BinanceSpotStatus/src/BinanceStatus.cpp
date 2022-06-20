@@ -5,8 +5,8 @@
 //
 
 #include "BinanceStatus.hpp"
+#include "Protocol.hpp"
 #include "StatusDialog.hpp"
-#include "protocol.hpp"
 #include <QApplication>
 #include <QMessageBox>
 #include <QTimer>
@@ -42,7 +42,7 @@ qproperty-alignment: AlignCenter;
 
     constexpr char g_statusBlue[] {
         R"(QLabel{
-color: rgb(255, 255, 255);
+color: rgb(25, 25, 25);
 background-color: rgb(158, 231, 255);
 border-radius: 3px;
 min-width: 85px;
