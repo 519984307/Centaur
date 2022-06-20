@@ -4,8 +4,8 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 
+#include "Protocol.hpp"
 #include "openssl/sha.h"
-#include "protocol.hpp"
 #include <array>
 #include <string_view>
 #include <zlib.h>
@@ -169,19 +169,17 @@ auto CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(Protocol *pro, uint32_t use
     // Get the data pointer
     const uint8_t *dataPointer = compressData ? compressed.data() : reinterpret_cast<const uint8_t *>(json.data());
 
-    header.timestamp =  CENTAUR_PROTOCOL_NAMESPACE::Generator::timestamp();
+    header.timestamp           = CENTAUR_PROTOCOL_NAMESPACE::Generator::timestamp();
 
     pro->setSize(dataSize + sizeof(ProtocolHeader));
 
     pro->appendHeader(&header);
     pro->appendData(dataPointer, dataSize);
-
 }
 
 auto cen::protocol::Generator::getData(ProtocolHeader *header, const uint8_t *received, std::size_t receivedSize, const uint64_t timeDifference) -> std::string
 {
     std::string emptyString;
-
 
     if (receivedSize < sizeof(ProtocolHeader))
     {
