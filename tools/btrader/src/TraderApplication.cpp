@@ -4,12 +4,14 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 
-#include "TraderApplication.hpp"
-
 #include <filesystem>
 
+#include "Protocol.hpp"
+#include "TraderApplication.hpp"
+#include "ui/Icons.hpp"
+
 #ifdef P_APPLE
-#include "AppleDirectory.h"
+#include "apple/AppleDirectory.h"
 #endif /*P_APPLE*/
 
 #define CATCH_API_EXCEPTION()                                                                                                      \
@@ -70,17 +72,17 @@
 
 cen::tools::ToolLogger<20> *g_futuresLogger = nullptr;
 
-bspot::TraderApplication::TraderApplication()
+btrader::TraderApplication::TraderApplication()
 {
     /// Init logger basics
     g_futuresLogger = new cen::tools::ToolLogger<20>("/Volumes/RicardoESSD/Projects/Centaur/tools/local/log");
 
-    g_futuresLogger->addEventName(static_cast<uint32_t>(bspot::logger::LoggingEvent::warning), { "warning", fmt::color::yellow });
-    g_futuresLogger->addEventName(static_cast<uint32_t>(bspot::logger::LoggingEvent::info), { "info", fmt::color::dodger_blue });
-    g_futuresLogger->addEventName(static_cast<uint32_t>(bspot::logger::LoggingEvent::error), { "error", fmt::color::red });
-    g_futuresLogger->addEventName(static_cast<uint32_t>(bspot::logger::LoggingEvent::success), { "success", fmt::color::green_yellow });
-    g_futuresLogger->addEventName(static_cast<uint32_t>(bspot::logger::LoggingEvent::failure), { "failed", fmt::color::orange_red });
-    g_futuresLogger->addEventName(static_cast<uint32_t>(bspot::logger::LoggingEvent::timeout), { "timeout", fmt::color::medium_purple });
+    g_futuresLogger->addEventName(static_cast<uint32_t>(btrader::logger::LoggingEvent::warning), { "warning", fmt::color::yellow });
+    g_futuresLogger->addEventName(static_cast<uint32_t>(btrader::logger::LoggingEvent::info), { "info", fmt::color::dodger_blue });
+    g_futuresLogger->addEventName(static_cast<uint32_t>(btrader::logger::LoggingEvent::error), { "error", fmt::color::red });
+    g_futuresLogger->addEventName(static_cast<uint32_t>(btrader::logger::LoggingEvent::success), { "success", fmt::color::green_yellow });
+    g_futuresLogger->addEventName(static_cast<uint32_t>(btrader::logger::LoggingEvent::failure), { "failed", fmt::color::orange_red });
+    g_futuresLogger->addEventName(static_cast<uint32_t>(btrader::logger::LoggingEvent::timeout), { "timeout", fmt::color::medium_purple });
 
     m_loggerThread = std::thread([] { g_futuresLogger->run(); });
 
@@ -108,24 +110,19 @@ bspot::TraderApplication::TraderApplication()
         logFailure("Keys acquisition failed");
         throw std::runtime_error("Missing configuration data. Can not access account information.");
     }
+    m_spot = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_binanceKeys, &m_binanceLimits);
 
     logSuccess("Keys acquire successfully");
-
-    /*
-    fmt::print("Acquiring first instance balances... ");
-    if (onAcquireFirstBalances())
-        fmt::print(fmt::fg(fmt::color::green_yellow), "Ok\n");*/
-
     localSend<CentaurConnectionMessage>();
 }
 
-bspot::TraderApplication::~TraderApplication()
+btrader::TraderApplication::~TraderApplication()
 {
     // Release memory
     delete g_futuresLogger;
 }
 
-auto bspot::TraderApplication::acquire(const messages &msg) noexcept -> void
+auto btrader::TraderApplication::acquire(const messages &msg) noexcept -> void
 {
     if (getMessage<CentaurConnectionMessage>(msg) != std::nullopt)
     {
@@ -133,9 +130,9 @@ auto bspot::TraderApplication::acquire(const messages &msg) noexcept -> void
     }
     else if (getMessage<CentaurConnectedMessage>(msg) != std::nullopt)
     {
-        if (m_reconnection)
+        if (m_centaurServer.m_reconnection.isValid())
         {
-            m_reconnection->terminate();
+            m_centaurServer.m_reconnection.thisObject()->terminate();
             logInfo("The reconnection timer is stopped");
         }
     }
@@ -154,93 +151,36 @@ auto bspot::TraderApplication::acquire(const messages &msg) noexcept -> void
     {
         onTimeout();
     }
-}
-
-auto bspot::TraderApplication::onConnectCentaur() noexcept -> void
-{
-    //////////////////////////////////////////////////////////////////////////////////
-    // the timeout thread
-    if (m_timeout)
+    else if (getMessage<TickerUpdate>(msg) != std::nullopt)
     {
-        m_timeout->terminate();
-        if (m_timeoutThread.joinable())
-            m_timeoutThread.join();
-        m_timeout.reset();
-    }
-
-    // The User Websocket has higher priority over the Market threads
-    m_timeout = std::make_unique<ResponseTimeout>(this);
-    if (m_timeout)
-    {
-        m_timeoutThread = std::thread([&] {
-            m_timeout->run();
-        });
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////
-    if (m_centaurClient)
-    {
-        m_centaurClient->terminate();
-        if (m_centaurThread.joinable())
-            m_centaurThread.join();
-        m_centaurClient.reset();
-    }
-
-    // The User Websocket has higher priority over the Market threads
-    m_centaurClient = std::make_unique<CentaurClient>(this, "localhost", "", 80);
-    if (m_centaurClient)
-    {
-        m_centaurThread = std::thread([&] {
-            m_centaurClient->run();
-        });
+        updateTotalAsset(std::get<TickerUpdate>(msg).asset, std::get<TickerUpdate>(msg).value);
     }
 }
 
-auto bspot::TraderApplication::onReconnectCentaur() noexcept -> void
+auto btrader::TraderApplication::onConnectCentaur() noexcept -> void
 {
-    if (m_timeout)
-    {
-        m_timeout->terminate();
-        if (m_timeoutThread.joinable())
-            m_timeoutThread.join();
-        m_timeout.reset();
-    }
-
-    if (m_reconnection)
-    {
-        m_reconnection->terminate();
-        if (m_centaurReconnectThread.joinable())
-            m_centaurReconnectThread.join();
-        m_reconnection.reset();
-    }
-
-    m_reconnection = std::make_unique<Reconnection>(this);
-    if (m_reconnection)
-    {
-        std::future<void> started = m_reconnection->getStartedPromise().get_future();
-        m_centaurReconnectThread  = std::thread([&] {
-            m_reconnection->run();
-        });
-        started.wait();
-        logSuccess("The reconnection timer is set");
-    }
+    m_centaurServer.m_timeout.startAndRelease(this);
+    m_centaurServer.m_centaurClient.startAndRelease(this, "localhost", "", 80);
 }
 
-auto bspot::TraderApplication::onTerminate() noexcept -> void
+auto btrader::TraderApplication::onSetCentaurConnection() noexcept -> void
 {
-    if (m_reconnection)
-    {
-        m_reconnection->terminate();
-        if (m_centaurReconnectThread.joinable())
-            m_centaurReconnectThread.join();
-        m_reconnection.reset();
-    }
+    m_centaurServer.m_centaurConnected = true;
+}
 
-    // Terminate Centaur WebSocket Client
-    m_centaurClient->terminate();
-    if (m_centaurThread.joinable())
-        m_centaurThread.join();
-    m_centaurClient.reset();
+auto btrader::TraderApplication::onReconnectCentaur() noexcept -> void
+{
+    m_tickerStreams.release();
+    m_centaurServer.m_timeout.release();
+    m_centaurServer.m_reconnection.startAndReleaseWithPromise(this);
+    logSuccess("The reconnection timer is set");
+}
+
+auto btrader::TraderApplication::onTerminate() noexcept -> void
+{
+    m_tickerStreams.release();
+    m_centaurServer.m_reconnection.release();
+    m_centaurServer.m_centaurClient.release();
 
     // Terminate logger
     g_futuresLogger->terminate();
@@ -248,12 +188,60 @@ auto bspot::TraderApplication::onTerminate() noexcept -> void
         m_loggerThread.join();
 }
 
-auto bspot::TraderApplication::onAcquireFirstBalances() noexcept -> bool
+auto btrader::TraderApplication::onAcquireFirstBalances() noexcept -> bool
 {
     try
     {
-        m_spot    = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_binanceKeys, &m_binanceLimits);
         auto data = m_spot->getAllCoinsInformation();
+
+        // Send the icons
+        m_centaurServer.m_centaurClient.thisObject()->sendIcon(m_centaurServer.m_centaurIcons.ipoIconId, icons::ipoIcon, CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_Icon::IF_SVG);
+        m_centaurServer.m_centaurClient.thisObject()->sendIcon(m_centaurServer.m_centaurIcons.moneyId, icons::money, CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_Icon::IF_SVG);
+        m_centaurServer.m_centaurClient.thisObject()->sendIcon(m_centaurServer.m_centaurIcons.moneyOffId, icons::moneyOff, CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_Icon::IF_SVG);
+        m_centaurServer.m_centaurClient.thisObject()->sendIcon(m_centaurServer.m_centaurIcons.storageId, icons::storage, CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_Icon::IF_SVG);
+        m_centaurServer.m_centaurClient.thisObject()->sendIcon(m_centaurServer.m_centaurIcons.withdrawId, icons::withdraw, CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_Icon::IF_SVG);
+        m_centaurServer.m_centaurClient.thisObject()->sendIcon(m_centaurServer.m_centaurIcons.binanceId, icons::binance, CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_Icon::IF_PNG);
+
+        for (auto &[sym, info] : data)
+        {
+            if (info.free > 0 || info.freeze > 0 || info.locked > 0 || info.ipoable > 0 || info.ipoing > 0 || info.storage > 0 || info.withdrawing > 0)
+            {
+                std::string name        = fmt::format("{} ({})", info.name, sym);
+
+                std::string free        = fmt::format("$ {:.8f}", info.free);
+                std::string freeze      = fmt::format("$ {:.8f}", info.freeze);
+                std::string locked      = fmt::format("$ {:.8f}", info.locked);
+                std::string ipoable     = fmt::format("$ {:.8f}", info.ipoable);
+                std::string ipoing      = fmt::format("$ {:.8f}", info.ipoing);
+                std::string storage     = fmt::format("$ {:.8f}", info.storage);
+                std::string withdrawing = fmt::format("$ {:.8f}", info.withdrawing);
+
+                std::string symUpper { sym };
+                std::transform(symUpper.begin(), symUpper.end(), symUpper.begin(), ::toupper);
+
+                auto id = m_centaurServer.m_centaurClient.thisObject()->sendBalanceAsset(name, ".", symUpper);
+
+                if (!id.empty())
+                {
+                    auto subId = m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(id, "Binance SPOT", "", m_centaurServer.m_centaurIcons.binanceId);
+                    if (!subId.empty())
+                    {
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "Free", free, m_centaurServer.m_centaurIcons.moneyId);
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "Locked", locked, m_centaurServer.m_centaurIcons.moneyOffId);
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "Freeze", freeze, m_centaurServer.m_centaurIcons.moneyOffId);
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "IPOable", ipoable, m_centaurServer.m_centaurIcons.ipoIconId);
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "IPOing", ipoing, m_centaurServer.m_centaurIcons.ipoIconId);
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "Storage", storage, m_centaurServer.m_centaurIcons.storageId);
+                        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetItem(subId, "Withdrawing", withdrawing, m_centaurServer.m_centaurIcons.withdrawId);
+
+                        m_assetBalances[symUpper]            = info.free + info.freeze + info.locked + info.ipoable + info.ipoing + info.storage + info.withdrawing;
+                        m_centaurServer.m_assetIds[symUpper] = id;
+
+                        updateBalanceTicker(symUpper);
+                    }
+                }
+            }
+        }
 
     } catch (const BINAPI_NAMESPACE::APIException &ex)
     {
@@ -264,30 +252,62 @@ auto bspot::TraderApplication::onAcquireFirstBalances() noexcept -> bool
     return true;
 }
 
-auto bspot::TraderApplication::addResponse(bspot::TimeoutType type) noexcept -> void
+auto btrader::TraderApplication::addResponse(btrader::TimeoutType type) noexcept -> void
 {
-    m_responseQueue.push(type);
+    m_centaurServer.m_responseQueue.push(type);
 }
 
-auto bspot::TraderApplication::onTimeout() noexcept -> void
+auto btrader::TraderApplication::onTimeout() noexcept -> void
 {
-    if (m_responseQueue.empty())
+    if (m_centaurServer.m_responseQueue.empty())
         return;
 
     logInfo("A timeout message was received");
 
-    auto data = m_responseQueue.get();
+    auto data = m_centaurServer.m_responseQueue.get();
 
     switch (data)
     {
         case TimeoutType::acceptConnection:
             {
-                if (!m_centaurConnected)
+                if (!m_centaurServer.m_centaurConnected)
                 {
                     logTimeout("Clien was not connected to the Centaur server. The connection will be stopped and reattempted");
-                    m_centaurClient->terminate();
+                    m_centaurServer.m_centaurClient.thisObject()->terminate();
                 }
             }
             break;
     }
+}
+
+auto btrader::TraderApplication::updateBalanceTicker(const std::string &asset) noexcept -> void
+{
+    if (asset == "USDT")
+    {
+        // Send directly
+        m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetTotalUpdate(m_centaurServer.m_assetIds[asset], m_assetBalances[asset]);
+    }
+    else
+    {
+        if (!m_tickerStreams.isValid())
+        {
+            // Must start the thread. Create the asset as ...usdt; for example, for btc would be, btcusdt
+            m_tickerStreams.startAndReleaseWithPromise(this, asset, "usdt");
+            logInfo("SPOT Streams thread was created");
+        }
+        else
+        {
+            // Just push a new stream
+            m_tickerStreams.thisObject()->subscribeIndividualMiniTicker(asset + "usdt");
+        }
+    }
+}
+
+auto btrader::TraderApplication::updateTotalAsset(const std::string &asset, double value) noexcept -> void
+{
+    // Get the id
+    auto &id   = m_centaurServer.m_assetIds[asset];
+    auto total = m_assetBalances[asset] * value;
+
+    m_centaurServer.m_centaurClient.thisObject()->sendBalanceAssetTotalUpdate(id, total);
 }

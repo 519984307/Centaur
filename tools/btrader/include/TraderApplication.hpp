@@ -13,53 +13,27 @@
 #ifndef CENTAUR_APPLICATION_HPP
 #define CENTAUR_APPLICATION_HPP
 
-#include "BinanceAPI.hpp"
-#include "ClientSocket.hpp"
-#include "Globals.hpp"
 #include "Tools.hpp"
 #include "ToolsThread.hpp"
+#include "TraderGlobals.hpp"
+#include "uuid.hpp"
+
+#include "SpotStreams.hpp"
+
+#include "ApplicationMessages.hpp"
+#include "BinanceAPI.hpp"
+#include "ClientSocket.hpp"
+
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-namespace bspot
+namespace btrader
 {
-    enum class TimeoutType
-    {
-        acceptConnection = 0,
-    };
-
-    template <typename T>
-    struct CentaurConnectionMessageT
-    {
-        using message_type = T;
-    };
-    template <typename T>
-    struct FailedToConnectT
-    {
-        using message_type = T;
-    };
-    template <typename T>
-    struct ClosedConnectionT
-    {
-        using message_type = T;
-    };
-    template <typename T>
-    struct TimeoutMessageT
-    {
-        using message_type = T;
-    };
-
-    using CentaurConnectionMessage = CentaurConnectionMessageT<void>;
-    using CentaurConnectedMessage  = CentaurConnectionMessageT<bool>;
-    using FailedToConnect          = FailedToConnectT<void>;
-    using ClosedConnection         = ClosedConnectionT<void>;
-    using TimeoutMessage           = TimeoutMessageT<void>;
-
     /// \brief The main application Object
     /// This is a message driven application
-    class TraderApplication final : public cen::tools::Thread<CentaurConnectionMessage, CentaurConnectedMessage, FailedToConnect, ClosedConnection, TimeoutMessage>
+    class TraderApplication final : public cen::tools::Thread<APPLICATION_MESSAGES>
     {
-    protected:
+    private:
         // clang-format off
 #if defined(__clang__) || defined(__GNUC__)
 CENTAUR_TOOL_WARN_PUSH
@@ -127,7 +101,91 @@ CENTAUR_TOOL_WARN_OFF(weak-vtables)
             std::queue<TimeoutType> m_data;
         };
 
-        // clang-format off
+        // This generates the icons id
+        struct UIIconIdGenerator
+        {
+            inline UIIconIdGenerator() :
+                ipoIconId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
+                storageId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
+                withdrawId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
+                moneyId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
+                moneyOffId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
+                binanceId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() }
+            {
+            }
+            std::string ipoIconId;
+            std::string storageId;
+            std::string withdrawId;
+            std::string moneyId;
+            std::string moneyOffId;
+            std::string binanceId;
+        };
+
+        template <typename T>
+        struct ApplicationThread
+        {
+            using Tptr          = T *;
+            ApplicationThread() = default;
+            inline ~ApplicationThread() noexcept
+            {
+                release();
+            }
+            inline auto release()
+            {
+                if (object)
+                {
+                    object->terminate();
+                    if (thisThread.joinable())
+                        thisThread.join();
+                    object.reset();
+                }
+            }
+
+            // Start the thread releasing the memory and closing the thread if there was a prior thread running
+            template <typename... Args>
+            inline auto startAndRelease(Args &&...args)
+            {
+                release();
+                object = std::make_unique<T>(std::forward<Args>(args)...);
+                if (object)
+                {
+                    thisThread = std::thread([&] {
+                        object->run();
+                    });
+                }
+            }
+
+            template <typename... Args>
+            inline auto startAndReleaseWithPromise(Args &&...args)
+            {
+                release();
+                object = std::make_unique<T>(std::forward<Args>(args)...);
+                if (object)
+                {
+                    std::future<void> started = object->getStartedPromise().get_future();
+                    thisThread                = std::thread([&] {
+                        object->run();
+                    });
+                    started.wait();
+                }
+            }
+
+            inline auto isValid() const noexcept -> bool
+            {
+                return object.operator bool();
+            }
+
+            inline auto thisObject() noexcept -> Tptr
+            {
+                return object.get();
+            }
+
+        private:
+            std::thread thisThread;
+            std::unique_ptr<T> object;
+        };
+
+// clang-format off
 #if defined(__clang__) || defined(__GNUC__) \
 CENTAUR_TOOL_WARN_POP
 #endif /*__clang__*/
@@ -148,11 +206,18 @@ CENTAUR_TOOL_WARN_POP
         auto onReconnectCentaur() noexcept -> void;
         auto onTimeout() noexcept -> void;
 
-    protected:
+    public:
+        auto onSetCentaurConnection() noexcept -> void;
         auto onAcquireFirstBalances() noexcept -> bool;
 
     protected:
         auto acquireKeys(const std::string &file) noexcept -> bool;
+        /// \brief This functions starts and pushes into a Binance WebSocket stream the acquisition of the 24hr miniticker
+        /// in order, to have balances referenced against USDT.
+        /// If the asset passed is USDT and a connection to centaur server was made, this sends a Protocol_UpdateAssetTotal directly to update the total
+        /// \param asset Asset name
+        auto updateBalanceTicker(const std::string &asset) noexcept -> void;
+        auto updateTotalAsset(const std::string &asset, double value) noexcept -> void;
 
     private:
         std::unique_ptr<BINAPI_NAMESPACE::BinanceAPISpot> m_spot;
@@ -161,20 +226,23 @@ CENTAUR_TOOL_WARN_POP
 
     public:
         // True when a Protocol_AcceptedConnection is received
-        std::atomic_bool m_centaurConnected { false };
 
     private:
-        std::thread m_centaurThread;
-        std::thread m_centaurReconnectThread;
-        std::thread m_timeoutThread;
+        local::AssetBalances m_assetBalances;
         std::thread m_loggerThread;
-        std::unique_ptr<Reconnection> m_reconnection;
-        std::unique_ptr<CentaurClient> m_centaurClient;
-        std::unique_ptr<ResponseTimeout> m_timeout;
 
-    private:
-        ResponseQueue m_responseQueue;
+        ApplicationThread<btrader::stream::SpotStreams> m_tickerStreams;
+        struct CentaurServer
+        {
+            ApplicationThread<ResponseTimeout> m_timeout;
+            ApplicationThread<Reconnection> m_reconnection;
+            ApplicationThread<CentaurClient> m_centaurClient;
+            UIIconIdGenerator m_centaurIcons;
+            ResponseQueue m_responseQueue;
+            std::unordered_map<std::string, std::string> m_assetIds;
+            std::atomic_bool m_centaurConnected { false };
+        } m_centaurServer;
     };
-} // namespace bspot
+} // namespace btrader
 
 #endif // CENTAUR_APPLICATION_HPP

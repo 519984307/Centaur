@@ -13,13 +13,13 @@
 #ifndef CENTAUR_CLIENTSOCKET_HPP
 #define CENTAUR_CLIENTSOCKET_HPP
 
-#include "Globals.hpp"
 #include "Protocol.hpp"
 #include "Tools.hpp"
 #include "ToolsThread.hpp"
+#include "TraderGlobals.hpp"
 #include <libwebsockets.h>
 
-namespace bspot
+namespace btrader
 {
     class TraderApplication;
     class CentaurClient final
@@ -29,10 +29,36 @@ namespace bspot
         ~CentaurClient();
 
     protected:
-        auto sendData(CENTAUR_PROTOCOL_NAMESPACE::Protocol *protocol) noexcept -> bool;
+        auto sendProtocolData(CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_MessageBase *message, bool compress = false, bool log = true) noexcept -> bool;
+        auto sendData(CENTAUR_PROTOCOL_NAMESPACE::Protocol *protocol, bool log = true) noexcept -> bool;
 
     protected:
         auto handleProtocolMessage(uint32_t type, uint32_t version, const std::string &message) noexcept -> void;
+
+    public:
+        /// \brief Adds an item to the balances Centaur Server UI
+        /// \param name Name
+        /// \param source Source name
+        /// \param icon UI internal icon for the asset
+        /// \return Returns the item ID
+        auto sendBalanceAsset(const std::string &name, const std::string &source, const std::string &icon) -> std::string;
+
+        /// \brief Adds a subitem to the balances in the Centaur Server UI
+        /// \param id ID returned by sendBalanceAsset
+        /// \param name Name of the item
+        /// \param value Value of the item
+        /// \return The id of the new balance
+        auto sendBalanceAssetItem(const std::string &id, const std::string &name, const std::string &value, const std::string &icon) -> std::string;
+
+        /// \brief Send icon data to the Centaur Server
+        /// \param id Icon ID
+        /// \param data Base64 data
+        auto sendIcon(const std::string &id, const char *data, int format) noexcept -> void;
+
+        /// \brief Send the total asset balance for an asset
+        /// \param id Identifier of the asset. How the server identifies it
+        /// \param total Total
+        auto sendBalanceAssetTotalUpdate(const std::string &id, double total) noexcept -> void;
 
     public:
         auto run() -> void;
@@ -116,11 +142,11 @@ namespace bspot
             }
 
         protected:
-            uint8_t *data;
-            std::size_t size;
+            uint8_t *data { nullptr };
+            std::size_t size { 0 };
 
         } m_internalData;
     };
-} // namespace bspot
+} // namespace btrader
 
 #endif // CENTAUR_CLIENTSOCKET_HPP

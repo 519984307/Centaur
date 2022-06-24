@@ -13,16 +13,20 @@
 #ifndef CENTAUR_TOOLSTHREAD_HPP
 #define CENTAUR_TOOLSTHREAD_HPP
 
+#include <any>
 #include <chrono>
 #include <concepts>
 #include <future>
 #include <optional>
 #include <queue>
 #include <thread>
+#include <tuple>
 #include <type_traits>
+#include <unordered_map>
 
 namespace cen::tools
 {
+
     template <typename U, uint64_t Ts>
     struct TimerThread
     {
@@ -173,4 +177,5 @@ namespace cen::tools
 
 } // namespace cen::tools
 
+#define DELEGATE(r, p, ...) SA::delegate<r(__VA_ARGS__)>::create<thisClass, p>(this)
 #endif // CENTAUR_TOOLSTHREAD_HPP

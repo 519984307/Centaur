@@ -105,6 +105,7 @@ qproperty-alignment: AlignCenter;
 
 } // namespace
 
+#include <QImageReader>
 CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
     m_ui { std::make_unique<Ui::CentaurApp>() }
@@ -122,8 +123,7 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
 
 #ifdef Q_OS_MAC
     CFURLRef appUrlRef       = CFBundleCopyBundleURL(CFBundleGetMainBundle());
-    CFStringRef macPath      = CFURLCopyFileSystemPath(appUrlRef,
-             kCFURLPOSIXPathStyle);
+    CFStringRef macPath      = CFURLCopyFileSystemPath(appUrlRef, kCFURLPOSIXPathStyle);
     g_globals->paths.appPath = CFStringGetCStringPtr(macPath, CFStringGetSystemEncoding());
     CFRelease(appUrlRef);
     CFRelease(macPath);
@@ -339,7 +339,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 
     // Balances Tree
     m_ui->ctrlBalances->setHeaderLabels({ LS("ui-docks-balances-name"), LS("ui-docks-balances-value") });
-    m_ui->ctrlBalances->setIconSize(QSize(32, 32));
+    m_ui->ctrlBalances->setIconSize(QSize(28, 28));
 
     // Init the logging window
     QTableWidget *logger = m_ui->logsTable;
@@ -959,6 +959,9 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
 
 void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qreal>> &asks, const QMap<qreal, QPair<qreal, qreal>> &bids) noexcept
 {
+    m_ui->asksChart->setUpdatesEnabled(false);
+    m_ui->bidsChart->setUpdatesEnabled(false);
+
     auto generatePoints = [](const QMap<qreal, QPair<qreal, qreal>> &data, QList<QPointF> &prices, QList<QPointF> &fill) {
         double prevQuant = 0.0;
         for (auto iter = data.begin(); iter != data.end(); ++iter)
@@ -1030,8 +1033,6 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
     xAxisBids->setRange(bidsMinX, bidsMaxX);
     xAxisBids->setTickInterval(bidsStepsX);
 
-    m_ui->asksChart->setUpdatesEnabled(false);
-    m_ui->bidsChart->setUpdatesEnabled(false);
     m_bidsDepthFill->clear();
     m_bidsDepth->clear();
 

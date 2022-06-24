@@ -11,13 +11,17 @@
 #include <fmt/core.h>
 #include <uuid.hpp>
 
+#define SET_BASICS(msg)                \
+    msg.uuid()       = m_connectionId; \
+    msg.responseId() = cen::uuid::generate<std::mt19937_64>().to_string();
+
 namespace
 {
     /// User version: 1.0
     constexpr uint32_t g_userVersion = 10;
 } // namespace
 
-bspot::CentaurClient::CentaurClient(TraderApplication *app, std::string address, std::string endpoint, int port) :
+btrader::CentaurClient::CentaurClient(TraderApplication *app, std::string address, std::string endpoint, int port) :
     m_app { app },
     m_address { std::move(address) },
     m_endPoint { std::move(endpoint) },
@@ -30,19 +34,19 @@ bspot::CentaurClient::CentaurClient(TraderApplication *app, std::string address,
     lws_set_log_level(0, nullptr);
 }
 
-bspot::CentaurClient::~CentaurClient() = default;
+btrader::CentaurClient::~CentaurClient() = default;
 
-auto bspot::CentaurClient::isRunning() -> bool
+auto btrader::CentaurClient::isRunning() -> bool
 {
     return m_running.load();
 }
 
-auto bspot::CentaurClient::isTerminated() -> bool
+auto btrader::CentaurClient::isTerminated() -> bool
 {
     return m_terminate.load();
 }
 
-auto bspot::CentaurClient::run() -> void
+auto btrader::CentaurClient::run() -> void
 {
     if (m_running)
         throw(std::runtime_error("WebSocket already running"));
@@ -89,16 +93,16 @@ auto bspot::CentaurClient::run() -> void
     m_running = false;
 }
 
-auto bspot::CentaurClient::terminate() -> void
+auto btrader::CentaurClient::terminate() -> void
 {
     m_terminate = true;
     if (m_context)
         lws_cancel_service(m_context);
 }
 
-auto bspot::CentaurClient::eventManager(struct lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len) -> int
+auto btrader::CentaurClient::eventManager(struct lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len) -> int
 {
-    auto client = reinterpret_cast<bspot::CentaurClient *>(user);
+    auto client = reinterpret_cast<btrader::CentaurClient *>(user);
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -212,27 +216,27 @@ auto bspot::CentaurClient::eventManager(struct lws *wsi, lws_callback_reasons re
     return 0;
 }
 
-auto bspot::CentaurClient::connected() -> void
+auto btrader::CentaurClient::connected() -> void
 {
     logInfo("A connection to the Centaur server was made.");
     m_app->sendMessage<CentaurConnectedMessage>();
 }
 
-auto bspot::CentaurClient::close() -> void
+auto btrader::CentaurClient::close() -> void
 {
     logWarning("The server connection was lost");
     // Reconnection Message
     m_app->sendMessage<ClosedConnection>();
 }
 
-auto bspot::CentaurClient::connectionError() -> void
+auto btrader::CentaurClient::connectionError() -> void
 {
     logError("Failed to connect to the Centaur Server");
     // Reconnection Message
     m_app->sendMessage<FailedToConnect>();
 }
 
-auto bspot::CentaurClient::sendData(cen::protocol::Protocol *protocol) noexcept -> bool
+auto btrader::CentaurClient::sendData(cen::protocol::Protocol *protocol, bool log) noexcept -> bool
 {
     if (!protocol->isValid())
     {
@@ -241,7 +245,7 @@ auto bspot::CentaurClient::sendData(cen::protocol::Protocol *protocol) noexcept 
     }
 
     const auto size = protocol->getSize() + LWS_PRE /*Include the padding*/;
-    // Resize if the buffer its too small or if the buffer is twice as big as the data to be sent
+    // Resize if the buffer it's too small or if the buffer is twice as big as the data to be sent
     if (m_internalData.getSize() < size || m_internalData.getSize() > size * 2)
     {
         logInfo("Protocol internal buffer will be resized");
@@ -257,11 +261,25 @@ auto bspot::CentaurClient::sendData(cen::protocol::Protocol *protocol) noexcept 
         return false;
     }
 
-    logSuccess("Protocol data was sent");
+    if (log)
+        logSuccess("Protocol data was sent");
     return true;
 }
 
-auto bspot::CentaurClient::handleProtocolMessage(uint32_t type, uint32_t version, const std::string &message) noexcept -> void
+auto btrader::CentaurClient::sendProtocolData(cen::protocol::message::Protocol_MessageBase *message, bool compress, bool log) noexcept -> bool
+{
+    using namespace CENTAUR_PROTOCOL_NAMESPACE::message;
+    CENTAUR_PROTOCOL_NAMESPACE::Protocol pro;
+    CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(&pro, g_userVersion, message, compress);
+    if (!sendData(&pro, log))
+    {
+        logWarning("Protocol message was not send");
+        return false;
+    }
+    return true;
+}
+
+auto btrader::CentaurClient::handleProtocolMessage(uint32_t type, uint32_t version, const std::string &message) noexcept -> void
 {
     if (version < g_userVersion)
     {
@@ -316,8 +334,10 @@ auto bspot::CentaurClient::handleProtocolMessage(uint32_t type, uint32_t version
                     return;
                 }
 
-                m_app->m_centaurConnected = true;
+                m_app->onSetCentaurConnection();
                 logSuccess("Protocol Message. The server acknowledge the connection");
+
+                m_app->onAcquireFirstBalances();
             }
             break;
         case CENTAUR_PROTOCOL_NAMESPACE::type::Protocol_BalancesResponse:
@@ -327,4 +347,69 @@ auto bspot::CentaurClient::handleProtocolMessage(uint32_t type, uint32_t version
         default:
             logWarning("Unknown protocol message");
     }
+}
+auto btrader::CentaurClient::sendBalanceAsset(const std::string &name, const std::string &source, const std::string &icon) -> std::string
+{
+    logInfo("Send Balance Asset: {}", name);
+    using namespace CENTAUR_PROTOCOL_NAMESPACE::message;
+    Protocol_BalancesAsset asset;
+
+    SET_BASICS(asset)
+
+    asset.asset()     = name;
+    asset.total()     = source;
+    asset.assetIcon() = icon;
+    asset.assetId()   = cen::uuid::generate<std::mt19937_64>().to_string();
+
+    sendProtocolData(&asset, true);
+
+    return asset.assetId();
+}
+
+auto btrader::CentaurClient::sendBalanceAssetItem(const std::string &id, const std::string &name, const std::string &value, const std::string &icon) -> std::string
+{
+    logInfo("Send Balance Asset Item: {} ({})", name, value);
+    using namespace CENTAUR_PROTOCOL_NAMESPACE::message;
+    Protocol_BalancesAssetItem asset;
+
+    SET_BASICS(asset)
+
+    asset.handle()    = id;
+    asset.name()      = name;
+    asset.value()     = value;
+    asset.subHandle() = cen::uuid::generate<std::mt19937_64>().to_string();
+    asset.icon()      = icon;
+
+    sendProtocolData(&asset, true);
+
+    return asset.subHandle();
+}
+
+auto btrader::CentaurClient::sendIcon(const std::string &id, const char *data, int format) noexcept -> void
+{
+    logInfo("Send icon data: {}.", id);
+    using namespace CENTAUR_PROTOCOL_NAMESPACE::message;
+    Protocol_Icon icon;
+
+    SET_BASICS(icon)
+
+    icon.iconId() = id;
+    icon.data()   = data;
+    icon.format() = format;
+
+    sendProtocolData(&icon, true);
+}
+
+auto btrader::CentaurClient::sendBalanceAssetTotalUpdate(const std::string &id, double total) noexcept -> void
+{
+    using namespace CENTAUR_PROTOCOL_NAMESPACE::message;
+    Protocol_BalanceTotalUpdate update;
+
+    SET_BASICS(update)
+
+    update.assetId() = id;
+    update.display() = fmt::format("$ {:.5f}", total);
+    update.total()   = total;
+
+    sendProtocolData(&update, false /*no for need the extra overhead of the compression*/, false);
 }

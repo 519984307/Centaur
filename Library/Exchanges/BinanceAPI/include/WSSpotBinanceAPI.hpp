@@ -113,6 +113,29 @@ namespace BINAPI_NAMESPACE::ws
                 ret.clear();
             return ret;
         }
+
+        // Make endpoint is just the same as constructEndPoint but static; constructEndPoint might be removed
+        template <typename... Args>
+        static std::string makeEndPoint(Args &...args)
+        {
+            std::string ret;
+            int count = 0;
+            for (auto &set : { typename std::common_type<Args...>::type(args)... })
+            {
+                ret += std::string(set) + "/";
+                ++count;
+            }
+            if (!ret.empty())
+                ret.pop_back();
+            if (count == 1)
+                ret.insert(0, "/ws/");
+            else if (count > 1)
+                ret.insert(0, "/stream?streams=");
+            else
+                ret.clear();
+            return ret;
+        }
+
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif /*__clang__*/

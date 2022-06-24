@@ -13,7 +13,7 @@ int main(C_UNUSED int argc, C_UNUSED char *argv[])
     try
     {
         // Create the main application
-        auto app = std::make_unique<bspot::TraderApplication>();
+        auto app = std::make_unique<btrader::TraderApplication>();
 
         // Start running
         app->run();

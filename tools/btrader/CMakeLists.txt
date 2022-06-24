@@ -21,9 +21,9 @@ ELSEIF (APPLE)
     add_compile_definitions(P_APPLE)
     message("Apple Platforms detected")
     set(PLATFORM_INDEPENDENT_FILES
-            src/AppleDirectory.mm
-            include/AppleDirectory.h
-            )
+            src/apple/AppleDirectory.mm
+            include/apple/AppleDirectory.h
+            src/SpotStreams.cpp)
 ELSE ()
     message(FATAL_ERROR "Unknown target platform")
 ENDIF ()
@@ -36,11 +36,13 @@ add_executable(btrader
         src/ClientSocket.cpp
         include/TraderApplication.hpp
         include/ClientSocket.hpp
-        include/Globals.hpp
+        include/TraderGlobals.hpp
+        include/ApplicationMessages.hpp
+        include/ui/Icons.hpp
         ../common/ToolsThread.hpp
         ../common/ToolsLogger.hpp
         ../common/Tools.hpp
-        )
+        include/SpotStreams.hpp)
 
 target_include_directories(btrader PRIVATE
         include

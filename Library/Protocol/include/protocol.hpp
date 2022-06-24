@@ -368,6 +368,35 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
             /// \brief All balances request will have this Id As response
             Field<std::string> responseId { "id" };
         };
+
+        /// \brief This messages send an icon encoded on Base64
+        struct Protocol_Icon : public Protocol_MessageBase
+        {
+            Protocol_Icon();
+
+            enum IconFormat : int
+            {
+                IF_BMP, // Windows Bitmap
+                IF_GIF, // Graphic Interchange Format (optional)
+                IF_JPG, // Joint Photographic Experts Group
+                IF_PNG, // Portable Network Graphics
+                IF_PBM, // Portable Bitmap
+                IF_PGM, // Portable Graymap
+                IF_PPM, // Portable Pixmap
+                IF_XBM, // X11 Bitmap
+                IF_XPM, // X11 Bitmap
+                IF_SVG  // Scalable Vector Graphics
+            };
+
+        public:
+            /// \brief Icon identifier. This will be later be used to reference to this icon
+            Field<std::string> iconId { "icon" };
+            /// \brief Icon data. Be sure is Base64 encoded
+            Field<std::string> data { "data" };
+            /// \brief Format, based on IconFormat enum
+            Field<int> format { "format" };
+        };
+
         /// \brief Access the Balances Table. This sets a new Asset in the balances list
         /// DIRECTION: Client -> UI
         struct Protocol_BalancesAsset : public Protocol_MessageBase
@@ -376,43 +405,62 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
             Protocol_BalancesAsset();
 
         public:
-            /// \brief Source of the Asset
-            Field<std::string> source { "source" };
+            /// \brief A user can have multiple "instances" of the same asset with the different amount
+            /// So next to the asset name, in the tree, this is the total of an asset balance. Beware, that interface
+            /// assumes this value is in USD so, the interface can calculate the totals in a uniform manner.
+            /// If a client sends this value in a non-usd related value the values displayed in the total value will not be correct
+            Field<std::string> total { "total" };
             /// \brief Asset to be set
             Field<std::string> asset { "asset" };
             /// \brief This will be the handle to update the asset status
             Field<std::string> assetId { "handle" };
+            /// \brief Set this variable if you want the UI server automatically use the internal icons. Otherwise set this value to empty
+            /// The value must be an uppercase valid asset name
+            Field<std::string> assetIcon { "icon" };
         };
 
-        /// \brief Adds a new element in the Balances Tree into an Asset.
+        /// \brief Adds a new element in the Balances Tree into an Asset
+        /// DIRECTION: Client -> UI
         struct Protocol_BalancesAssetItem : public Protocol_MessageBase
         {
             Protocol_BalancesAssetItem();
 
         public:
-            /// \brief New item name
+            /// \brief This is the name of the value
             Field<std::string> name { "name" };
+            /// \brief This is the value of the field
+            Field<std::string> value { "value" };
+            /// \brief This is parent item handle
+            Field<std::string> handle { "handle" };
             /// \brief SubHandle name. All subsequent access to the item must be done through this id
             Field<std::string> subHandle { "subHandle" };
+            /// \brief Icon identifier. Send empty if no icon is to be used
+            Field<std::string> icon { "icon" };
         };
 
+        /// \brief Updates an asset item in the tree
         struct Protocol_BalanceAssetUpdate : public Protocol_MessageBase
         {
             Protocol_BalanceAssetUpdate();
 
-            enum class Type : int
-            {
-                name,
-                source,
-            };
+        public:
+            /// \brief Asset ID to be updated
+            Field<std::string> assetId { "handle" };
+            /// \brief New value
+            Field<std::string> value { "new" };
+        };
+
+        struct Protocol_BalanceTotalUpdate : public Protocol_MessageBase
+        {
+            Protocol_BalanceTotalUpdate();
 
         public:
             /// \brief Asset ID to be updated
             Field<std::string> assetId { "handle" };
-            /// \brief Type of the updated
-            Field<int> type { "type" };
-            /// \brief New value
-            Field<std::string> value { "new" };
+            /// \brief Field value to be displayed
+            Field<std::string> display { "display" };
+            /// \brief Total value in floating point format
+            Field<double> total { "total" };
         };
 
         struct Protocol_BalanceAssetItemUpdate : public Protocol_MessageBase

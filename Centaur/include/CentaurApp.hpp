@@ -131,6 +131,10 @@ namespace CENTAUR_NAMESPACE
         void onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept;
         void onPlugins() noexcept;
 
+    public:
+        inline QTreeWidget *getBalancesTree() noexcept { return m_ui->ctrlBalances; }
+        inline QLabel *getTotalLabel() noexcept { return m_ui->totalBalances; }
+
         // General application state
     private:
         std::unique_ptr<Ui::CentaurApp> m_ui;

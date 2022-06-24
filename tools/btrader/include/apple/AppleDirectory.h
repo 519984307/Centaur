@@ -6,6 +6,10 @@
 
 #pragma once
 
+#ifndef P_APPLE
+#error "Apple platform specifics file"
+#endif /*P_APPLE*/
+
 #ifndef CENTAUR_APPLEDIRECTORY_HPP
 #define CENTAUR_APPLEDIRECTORY_HPP
 

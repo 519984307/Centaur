@@ -25,10 +25,12 @@ namespace CENTAUR_PROTOCOL_NAMESPACE::type
     constexpr uint32_t Protocol_AcceptConnection       = 0x1898f0a6;
     constexpr uint32_t Protocol_AcceptedConnection     = 0x7cef3eec;
     constexpr uint32_t Protocol_AccessPluginMetadata   = 0x0691be71;
+    constexpr uint32_t Protocol_Icon                   = 0x105bef56;
     constexpr uint32_t Protocol_BalanceAssetItemUpdate = 0x780bce24;
     constexpr uint32_t Protocol_BalanceAssetUpdate     = 0x5c41657d;
     constexpr uint32_t Protocol_BalancesAsset          = 0x128a795a;
     constexpr uint32_t Protocol_BalancesAssetItem      = 0x44da76cf;
+    constexpr uint32_t Protocol_BalanceTotalUpdate     = 0x45891093;
     constexpr uint32_t Protocol_BalancesResponse       = 0x66976a79;
     constexpr uint32_t Protocol_PluginMetadataResponse = 0x9a6c444f;
 

@@ -791,6 +791,7 @@ auto binapi::BinanceAPISpot::assetDividendRecord(binapi::v_asset_t asset, uint64
     eparams parameters {
         { "recvWindow", fmt::to_string(getRecvWindow()) },
         { "timestamp", fmt::to_string(getTime()) },
+        { "limit", fmt::to_string(limit) }
     };
 
     if (startTime > 0)

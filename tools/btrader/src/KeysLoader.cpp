@@ -11,7 +11,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 
-auto bspot::TraderApplication::acquireKeys(const std::string &file) noexcept -> bool
+auto btrader::TraderApplication::acquireKeys(const std::string &file) noexcept -> bool
 {
     std::ifstream stream(file);
 

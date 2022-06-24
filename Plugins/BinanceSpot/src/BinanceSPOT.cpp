@@ -303,8 +303,8 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, const 
             m_wsIds[std::get<int>(subsVar)] = name;
     }
 
-    // According to the API, there is no way to see if the stream was succesfully retrieved in this part of the code
-    // since the stream receiving is asychronous
+    // According to the API, there is no way to see if the stream was successfully retrieved in this part of the code
+    // since the stream receiving is asynchronous
     // So we'll handle the symbol return true even if there is a slight chance that this will not happen
     m_symbolId[name] = item;
     return true;

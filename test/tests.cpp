@@ -136,7 +136,7 @@ TEST_CASE("Communication JSON Protocols. Accept Connection")
 
     pac.uuid()           = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
     pac.name()           = "Connection test";
-    pac.implementation() = "exchange";
+
 
     CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test","implementation":"exchange"}})");
 
@@ -145,7 +145,7 @@ TEST_CASE("Communication JSON Protocols. Accept Connection")
 
     CHECK(pacRes.uuid() == "{afc31b50-481a-0dce-40b5-4bd59f1118ad}");
     CHECK(pacRes.name() == "Connection test");
-    CHECK(pacRes.implementation() == "exchange");
+
 }
 
 TEST_CASE("Communication JSON Protocols. Accepted Connection")
@@ -154,14 +154,14 @@ TEST_CASE("Communication JSON Protocols. Accepted Connection")
 
     protocol::message::Protocol_AcceptedConnection padc;
     padc.uuid()   = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
-    padc.status() = static_cast<int>(protocol::message::Protocol_AcceptedConnection::Status::uuidAlreadySet);
+
 
     CHECK(padc.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","status":1}})");
 
     protocol::message::Protocol_AcceptedConnection padcRes;
     padcRes.fromJson(padc.json().c_str());
     CHECK(padcRes.uuid() == "{afc31b50-481a-0dce-40b5-4bd59f1118ad}");
-    CHECK(padcRes.status() == 1);
+
 }
 
 TEST_CASE("Protocol: Packed ProtocolHedare")
@@ -220,9 +220,8 @@ TEST_CASE("Protocol: Send/Receive NO Compression")
 {
 
     CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection pac;
-    pac.name()           = "name";
-    pac.uuid()           = "uuid";
-    pac.implementation() = "impl";
+    pac.name() = "name";
+    pac.uuid() = "uuid";
 
     CENTAUR_PROTOCOL_NAMESPACE::Protocol send;
     CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(&send, 10, &pac, false);
@@ -237,9 +236,8 @@ TEST_CASE("Protocol: Send/Receive With Compression")
 {
 
     CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_AcceptConnection pac;
-    pac.name()           = "name";
-    pac.uuid()           = "uuid";
-    pac.implementation() = "impl";
+    pac.name() = "name";
+    pac.uuid() = "uuid";
 
     CENTAUR_PROTOCOL_NAMESPACE::Protocol send;
     CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(&send, 10, &pac, true);

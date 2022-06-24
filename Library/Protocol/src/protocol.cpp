@@ -178,6 +178,14 @@ CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_MessageBase::Protocol_MessageBase(
     generator.addField(std::addressof(responseId));
 }
 
+cen::protocol::message::Protocol_Icon::Protocol_Icon() :
+    Protocol_MessageBase(type::Protocol_Icon)
+{
+    generator.addField(std::addressof(iconId));
+    generator.addField(std::addressof(data));
+    generator.addField(std::addressof(format));
+}
+
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesResponse::Protocol_BalancesResponse() :
     ProtocolBase { type::Protocol_BalancesResponse }
 {
@@ -188,24 +196,35 @@ CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesResponse::Protocol_Balance
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAsset::Protocol_BalancesAsset() :
     Protocol_MessageBase(type::Protocol_BalancesAsset)
 {
-    generator.addField(std::addressof(source));
+    generator.addField(std::addressof(total));
     generator.addField(std::addressof(asset));
     generator.addField(std::addressof(assetId));
+    generator.addField(std::addressof(assetIcon));
 }
 
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalancesAssetItem::Protocol_BalancesAssetItem() :
     Protocol_MessageBase(type::Protocol_BalancesAssetItem)
 {
     generator.addField(std::addressof(name));
+    generator.addField(std::addressof(value));
+    generator.addField(std::addressof(handle));
     generator.addField(std::addressof(subHandle));
+    generator.addField(std::addressof(icon));
 }
 
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetUpdate::Protocol_BalanceAssetUpdate() :
     Protocol_MessageBase(type::Protocol_BalanceAssetUpdate)
 {
     generator.addField(std::addressof(assetId));
-    generator.addField(std::addressof(type));
     generator.addField(std::addressof(value));
+}
+
+cen::protocol::message::Protocol_BalanceTotalUpdate::Protocol_BalanceTotalUpdate() :
+    Protocol_MessageBase(type::Protocol_BalanceTotalUpdate)
+{
+    generator.addField(std::addressof(assetId));
+    generator.addField(std::addressof(display));
+    generator.addField(std::addressof(total));
 }
 
 CENTAUR_PROTOCOL_NAMESPACE::message::Protocol_BalanceAssetItemUpdate::Protocol_BalanceAssetItemUpdate() :

@@ -4,7 +4,11 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 
-#include "AppleDirectory.h"
+#ifndef P_APPLE
+#error "Apple platform specifics"
+#endif /*P_APPLE*/
+
+#include "apple/AppleDirectory.h"
 #import <Foundation/Foundation.h>
 
 const char *getApplicationSupportDirectory()
