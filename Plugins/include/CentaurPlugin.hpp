@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QStatusBar>
 #include <QString>
+#include <QToolBar>
 #include <QtPlugin>
 #endif /*DONT_INCLUDE_QT*/
 
@@ -59,6 +60,13 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
     // Use this UUID to generate v5 UUID for the plugins as well as to identify the plugin compatibility with the UI
     constexpr char centaurUUID[] = "{a15c48b4-460b-4a79-a0a8-8ece90603f85}";
+
+    struct PluginInformation
+    {
+        uuid id;
+        QString name;
+        QString version;
+    };
 
     struct IBase
     {
@@ -180,10 +188,147 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     };
 
     /// \brief Handles the necessary data to access the candles chart view
+    /// Each ICandleView object is a candle object
     struct ICandleView : public IBase
     {
+        /// \brief All charts are to 4320 candles at all time. This means 72 minutes in candles of one seconds, 72-hours(3-days) in candles of 1 minute or 18-days on 1 hour candles
+        /// \remarks No more than candleLimit is going to be held in the UI. Is up to the Plugin to keep more information on memory if that is considered prudent.
+        /// Remember that calls to getCandlesByPeriod are not asynchronous so having some information
+        static constexpr uint64_t candleLimit = 4320;
+
+        /// \brief When an interface emits snRealTimeCandleUpdate without a previous request this is the limit before a disconnection will be set
+        /// \related See the documentation for snRealTimeCandleUpdate and acquire and disengage
+        static constexpr uint64_t unwantedSignalLimit = 1000;
+
+        /// \brief All timestamps must be in milliseconds
+        using Timestamp = uint64_t;
+
+        /// \brief SupportedTimeFrames indicates the timeframes supported by the UI. This not necessarily means that this is supported
+        /// by the exchange
+        enum class TimeFrame
+        {
+            Seconds_1,
+            Seconds_5,
+            Seconds_10,
+            Seconds_30,
+            Seconds_45,
+            Minutes_1,
+            Minutes_2,
+            Minutes_3,
+            Minutes_5,
+            Minutes_10,
+            Minutes_15,
+            Minutes_30,
+            Minutes_45,
+            Hours_1,
+            Hours_2,
+            Hours_4,
+            Hours_6,
+            Hours_8,
+            Hours_12,
+            Days_1,
+            Days_3,
+            Weeks_1,
+            Months_1
+        };
+
+        /// \brief Data for plotting the Candles
+        struct CandleData
+        {
+            double high;
+            double open;
+            double close;
+            double low;
+            double volume;
+        };
+
+        /// \brief When the realtime data is retrieved by WebSockets, this function will be called whenever the user request the information of a symbol
+        /// This will guarantee that the interface sends data that will ultimately be ignored
+        /// Effectively, when the user needs the data a new window will be created
+        /// \param pi Plugin information calling for the symbol
+        /// \param symbol Symbol
+        /// \param frame Timeframe of the request
+        /// \param id A unique identifier that the UI uses. Use this id in disengage and snReframe.
+        /// \remarks The id is used to keep track of multiple window with the same timeframe
+        virtual void acquire(const PluginInformation &pi, const QString &symbol, TimeFrame frame, const uuid &id) noexcept = 0;
+
+        /// \brief As opposed to acquire, when the user no longer needs the data by means of a window close this function will be called
+        /// Once again, if the interface emits snRealTimeCandleUpdate when this function is called the UI will disconnect the signal when unwantedSignalLimit is reached
+        /// \param id The id to be deleted
+        /// \param lastTimeframeEnd When the window is closed this is the last beginning of the view interval
+        /// \param lastTimeframeStart When the window is closed this is the last ending of the view interval
+        /// \remarks The UI keeps track the last window frame because if the user reopens the same symbol with the same timeframe
+        /// The UI will attempt to reopen the window with the same zooming level. So the UI informs of this situation in order to the interface to keep record
+        /// Of the data in case the user needs it once again. When a call to resetStoredZoom the interface can delete this information
+        virtual void disengage(const uuid &id, uint64_t lastTimeframeStart, uint64_t lastTimeframeEnd) noexcept = 0;
+
+        /// \brief See disengage remarks
+        /// When a certain period of time has elapsed and the user does not reopen a symbol stored with same data, the UI calls this function
+        /// To safely free the memory of the candle data when disengage is called IF the plugin indeed saved this information, otherwise is safe to ignore this function
+        virtual void resetStoredZoom() noexcept = 0;
+
+        /// \brief Must return a list of the timeframes supported by this interface
+        /// \return The list of time frames
+        C_NODISCARD virtual QList<TimeFrame> supportedTimeFrames() noexcept = 0;
+
+        /// \brief When zooming, this function will be called to asked the interface for the necessary to populate the CandleView Chart.
+        /// \param symbol Name of the symbol to update
+        /// \param start Start of the requested time
+        /// \param end End of the requester period of time
+        /// \param frame Time frame requested
+        /// \return Must return a list with the data requested. If the requested candle of an specific timestamp is not available, do not put it in the list
+        /// \remarks 0. Although, zooming is a user-based input, the start and end are calculated by the UI
+        /// \remarks 1. Calls to getCandlesByPeriod are meant to retrieve contiguous chunks of candle information based on the time frame.
+        /// If the information in the UI are fragmented expect multiple calls to getCandlesByPeriod to fill in the gaps
+        /// \remarks 2. All candles retrieved by this function will assume that the candles are closed, this means, the closing time is in the past
+        C_NODISCARD virtual QList<QPair<Timestamp, CandleData>> getCandlesByPeriod(const QString &symbol, Timestamp start, Timestamp end, TimeFrame frame) noexcept = 0;
+
+        /// \brief When the plugin is loaded, it will call this function.
+        /// IMPORTANT: If this function returns true the UI will attempt to make a connection with snRealTimeCandleUpdate and snDynamicCandleClose
+        /// This signals are meant to update the candle chart at real time
+        /// \return if dynamic plot is allow or not
+        virtual bool realtimePlotAllowed() noexcept = 0;
+
+        /// \brief If this function returns true, the signal snReframe is going to be connected
+        /// \return True to allow the plugin to change its time frame dynamically
+        virtual bool dynamicReframePlot() noexcept = 0;
+
+        /// \brief This function must create a set of toolbars to be display in each window with the candles chart
+        /// \return A list of toolbars that the plugin wish to be
+        /// \remarks All toolbars will be re-parent to a UI specific Widget. This means that the UI will take ownership of all toolbars returned
+        /// \remarks Floating will be disable from the toolbars
+        C_NODISCARD virtual QList<QToolBar *> getPluginBasedToolBar() noexcept = 0;
+        /**
+        signals:
+           /// \brief Emit this signal to notify the UI that a candle must be update
+           /// \param id The id sent by acquire
+           /// \param currentCandle This is the candle to be updated. however, internally, the UI will access the last element directly
+           /// \param candle New candle data
+           /// \param frame Time frame
+           /// \remarks 0. The UI will assume that the Timestamp is always the last one in the internal candle buffer and it will be stop to be updated once snRealTimeCandleClose is called
+           /// \remarks 1. If this signal is emitted without a previous acquire called the signal will be disconnected from the interface when unwantedSignalLimit is reached
+           /// nd the interface can't do anything to reconnect.
+           /// \remarks 2. The same case applies if a call to disengage is made and the interface keeps pushing the data
+           void snRealTimeCandleUpdate(const uuid &id, Timestamp currentCandle, const CandleData &candle);
+
+           /// \brief Emit this signal to notify that a candle has been closed
+           /// \param id The id sent by acquire
+           /// \param currentCandle Current timeframe. If currentCandle and the currentCandle in the time
+           /// \param candle New candle data
+           /// \param frame Time frame
+           /// \remarks IMPORTANT: KEEP IN MIND THAT THE CANDLE LIST IS LIMITED TO ICandleView::candleLimit
+           void snRealTimeCandleClose(const uuid &id, Timestamp currentCandle, const CandleData &candle, TimeFrame frame);
+
+           /// \brief Emit this signal if the plot has changed the time frame
+           /// \param id The id sent by acquire
+           /// \remarks Expect a call to getCandlesByPeriod to fill in the gaps
+           /// \remarks Due to latency issues some snRealTimeCandleUpdate event may be triggered after an snReframe, avoid sending this information because all internal buffers will be erased
+           /// And snRealTimeCandleUpdate may poison the internal data
+           void snReframe(const uuid &id);
+           */
     };
 
+    /// \brief Implements a ToolBar-like in the
     struct IDrawingGroup : public IBase
     {
     };
