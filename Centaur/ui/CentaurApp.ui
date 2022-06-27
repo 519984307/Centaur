@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="m_centrarWidgetLayout">
     <item>
-     <widget class="QMdiArea" name="m_mdiArea">
+     <widget class="QMdiArea" name="mdiArea">
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
@@ -35,14 +35,23 @@
         </color>
        </brush>
       </property>
+      <property name="viewMode">
+       <enum>QMdiArea::SubWindowView</enum>
+      </property>
       <property name="documentMode">
+       <bool>false</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>false</bool>
+      </property>
+      <property name="tabsMovable">
        <bool>false</bool>
       </property>
       <property name="tabShape">
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="tabPosition">
-       <enum>QTabWidget::South</enum>
+       <enum>QTabWidget::North</enum>
       </property>
      </widget>
     </item>
@@ -80,6 +89,11 @@
     </property>
     <addaction name="actionTileWindows"/>
     <addaction name="actionCascadeWindows"/>
+    <addaction name="actionCloseAllWindows"/>
+    <addaction name="actionNextWindow"/>
+    <addaction name="actionPreviousWindow"/>
+    <addaction name="separator"/>
+    <addaction name="actionTabView"/>
    </widget>
    <widget class="QMenu" name="menuSymbols">
     <property name="title">
@@ -406,7 +420,6 @@ border:0px;
            <widget class="QLabel" name="labelTotal">
             <property name="font">
              <font>
-              <family>Roboto</family>
               <pointsize>15</pointsize>
              </font>
             </property>
@@ -422,7 +435,6 @@ border:0px;
            <widget class="QLabel" name="totalBalances">
             <property name="font">
              <font>
-              <family>Roboto</family>
               <pointsize>15</pointsize>
              </font>
             </property>
@@ -776,6 +788,26 @@ qproperty-alignment: AlignCenter;
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+Ƒ</string>
+   </property>
+  </action>
+  <action name="actionCloseAllWindows">
+   <property name="text">
+    <string>Close all windows</string>
+   </property>
+  </action>
+  <action name="actionNextWindow">
+   <property name="text">
+    <string>Next window</string>
+   </property>
+  </action>
+  <action name="actionPreviousWindow">
+   <property name="text">
+    <string>Previous window</string>
+   </property>
+  </action>
+  <action name="actionTabView">
+   <property name="text">
+    <string>Tab view</string>
    </property>
   </action>
  </widget>

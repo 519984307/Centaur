@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -12,20 +10,22 @@ find_package(RapidJSON REQUIRED)
 find_package(libwebsockets REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-set(CMAKE_PREFIX_PATH "/Volumes/RicardoESSD/Qt/6.3.0/macos")
+set(CMAKE_PREFIX_PATH ${CENTAUR_QT_DIRECTORY})
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui LinguistTools Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui LinguistTools Widgets REQUIRED)
+find_package(QT NAMES Qt6 COMPONENTS Gui Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui Widgets REQUIRED)
 # Required libraries
 
 
 add_library(BinanceSpotStatus SHARED
         include/BinanceStatus.hpp
+        include/StatusDialog.hpp
         src/BinanceStatus.cpp
-        ui/StatusDialog.ui include/StatusDialog.hpp src/StatusDialog.cpp)
+        src/StatusDialog.cpp
+        ui/StatusDialog.ui)
 
 
 target_include_directories(BinanceSpotStatus PRIVATE

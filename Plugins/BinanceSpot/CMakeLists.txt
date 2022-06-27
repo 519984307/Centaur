@@ -11,7 +11,7 @@ find_package(libwebsockets REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 
-set(CMAKE_PREFIX_PATH /Volumes/RicardoESSD/Qt/6.3.0/macos)
+set(CMAKE_PREFIX_PATH ${CENTAUR_QT_DIRECTORY})
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
