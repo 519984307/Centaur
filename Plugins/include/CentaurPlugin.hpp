@@ -68,6 +68,16 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         QString version;
     };
 
+    inline bool operator==(const PluginInformation &pi1, const PluginInformation &pi2)
+    {
+        return (pi1.id == pi2.id && pi1.name == pi2.name && pi1.version == pi2.version);
+    }
+
+    inline bool operator!=(const PluginInformation &pi1, const PluginInformation &pi2)
+    {
+        return !(pi1 == pi2);
+    }
+
     struct IBase
     {
         virtual ~IBase() = default;
@@ -207,6 +217,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// by the exchange
         enum class TimeFrame
         {
+            nullTime, // When returning from supportedTimeFrames you can use this enumerator to insert a Menu separator
             Seconds_1,
             Seconds_5,
             Seconds_10,
@@ -242,6 +253,16 @@ namespace CENTAUR_PLUGIN_NAMESPACE
             double volume;
         };
 
+        /// \brief All exchange information comes from plugin. So this functions indicates the UI which plugins this ICandleView can receive information
+        /// \return A List of supported plugins
+        C_NODISCARD virtual QList<PluginInformation> supportedExchanges() noexcept = 0;
+
+
+        /// \brief Must return a list of the timeframes supported by this interface
+        /// \return The list of time frames
+        C_NODISCARD virtual QList<TimeFrame> supportedTimeFrames() noexcept = 0;
+
+
         /// \brief When the realtime data is retrieved by WebSockets, this function will be called whenever the user request the information of a symbol
         /// This will guarantee that the interface sends data that will ultimately be ignored
         /// Effectively, when the user needs the data a new window will be created
@@ -254,7 +275,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
         /// \brief As opposed to acquire, when the user no longer needs the data by means of a window close this function will be called
         /// Once again, if the interface emits snRealTimeCandleUpdate when this function is called the UI will disconnect the signal when unwantedSignalLimit is reached
-        /// \param id The id to be deleted
+        /// \param id The id to be deleted. In order for resetStoredZoom to work, keep this ID
         /// \param lastTimeframeEnd When the window is closed this is the last beginning of the view interval
         /// \param lastTimeframeStart When the window is closed this is the last ending of the view interval
         /// \remarks The UI keeps track the last window frame because if the user reopens the same symbol with the same timeframe
@@ -265,11 +286,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \brief See disengage remarks
         /// When a certain period of time has elapsed and the user does not reopen a symbol stored with same data, the UI calls this function
         /// To safely free the memory of the candle data when disengage is called IF the plugin indeed saved this information, otherwise is safe to ignore this function
-        virtual void resetStoredZoom() noexcept = 0;
-
-        /// \brief Must return a list of the timeframes supported by this interface
-        /// \return The list of time frames
-        C_NODISCARD virtual QList<TimeFrame> supportedTimeFrames() noexcept = 0;
+        virtual void resetStoredZoom(const uuid &id) noexcept = 0;
 
         /// \brief When zooming, this function will be called to asked the interface for the necessary to populate the CandleView Chart.
         /// \param symbol Name of the symbol to update
