@@ -120,7 +120,6 @@ bool cen::plugin::BinanceCS::dynamicReframePlot() noexcept
     return true;
 }
 
-QList<QToolBar *> cen::plugin::BinanceCS::getPluginBasedToolBar() noexcept
+void cen::plugin::BinanceCS::reframe(cen::plugin::ICandleView::TimeFrame frame) noexcept
 {
-    return QList<QToolBar *>();
 }

@@ -257,11 +257,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \return A List of supported plugins
         C_NODISCARD virtual QList<PluginInformation> supportedExchanges() noexcept = 0;
 
-
         /// \brief Must return a list of the timeframes supported by this interface
         /// \return The list of time frames
         C_NODISCARD virtual QList<TimeFrame> supportedTimeFrames() noexcept = 0;
-
 
         /// \brief When the realtime data is retrieved by WebSockets, this function will be called whenever the user request the information of a symbol
         /// This will guarantee that the interface sends data that will ultimately be ignored
@@ -269,7 +267,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \param pi Plugin information calling for the symbol
         /// \param symbol Symbol
         /// \param frame Timeframe of the request
-        /// \param id A unique identifier that the UI uses. Use this id in disengage and snReframe.
+        /// \param id A unique identifier that the UI uses. Use this id in disengage
         /// \remarks The id is used to keep track of multiple window with the same timeframe
         virtual void acquire(const PluginInformation &pi, const QString &symbol, TimeFrame frame, const uuid &id) noexcept = 0;
 
@@ -306,15 +304,14 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \return if dynamic plot is allow or not
         virtual bool realtimePlotAllowed() noexcept = 0;
 
-        /// \brief If this function returns true, the signal snReframe is going to be connected
+        /// \brief If this function returns true, the UI will create a ToolBar with the supported timeframes and wants to reframe the plot
         /// \return True to allow the plugin to change its time frame dynamically
         virtual bool dynamicReframePlot() noexcept = 0;
 
-        /// \brief This function must create a set of toolbars to be display in each window with the candles chart
-        /// \return A list of toolbars that the plugin wish to be
-        /// \remarks All toolbars will be re-parent to a UI specific Widget. This means that the UI will take ownership of all toolbars returned
-        /// \remarks Floating will be disable from the toolbars
-        C_NODISCARD virtual QList<QToolBar *> getPluginBasedToolBar() noexcept = 0;
+        /// \brief Called by the UI when the user reframe the plot
+        /// \param frame New timeframe
+        virtual void reframe(TimeFrame frame) noexcept = 0;
+
         /**
         signals:
            /// \brief Emit this signal to notify the UI that a candle must be update
@@ -335,14 +332,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
            /// \param frame Time frame
            /// \remarks IMPORTANT: KEEP IN MIND THAT THE CANDLE LIST IS LIMITED TO ICandleView::candleLimit
            void snRealTimeCandleClose(const uuid &id, Timestamp currentCandle, const CandleData &candle, TimeFrame frame);
-
-           /// \brief Emit this signal if the plot has changed the time frame
-           /// \param id The id sent by acquire
-           /// \remarks Expect a call to getCandlesByPeriod to fill in the gaps
-           /// \remarks Due to latency issues some snRealTimeCandleUpdate event may be triggered after an snReframe, avoid sending this information because all internal buffers will be erased
-           /// And snRealTimeCandleUpdate may poison the internal data
-           void snReframe(const uuid &id);
-           */
+        */
     };
 
     /// \brief Implements a ToolBar-like in the

@@ -5,10 +5,12 @@
 //
 
 #include "CentaurApp.hpp"
+#include "CandleViewWidget.hpp"
 #include "FavoritesDialog.hpp"
 #include "HTMLDelegate.hpp"
 #include "PluginsDialog.hpp"
 #include <QAreaSeries>
+#include <QMdiSubWindow>
 #include <QMessageBox>
 #include <QResizeEvent>
 #include <QSqlDatabase>
@@ -79,6 +81,34 @@ namespace CENTAUR_NAMESPACE
         QSqlQuery m_select;
         QSqlDatabase m_db;
     };
+
+    CentaurApp::CandleViewTimeFrameActions::CandleViewTimeFrameActions(QObject *parent) :
+        aSeconds_1 { new QAction(LS("ui-docs-symbols-candleview-1s"), parent) },
+        aSeconds_5 { new QAction(LS("ui-docs-symbols-candleview-5s"), parent) },
+        aSeconds_10 { new QAction(LS("ui-docs-symbols-candleview-10s"), parent) },
+        aSeconds_30 { new QAction(LS("ui-docs-symbols-candleview-30s"), parent) },
+        aSeconds_45 { new QAction(LS("ui-docs-symbols-candleview-45s"), parent) },
+        aMinutes_1 { new QAction(LS("ui-docs-symbols-candleview-1m"), parent) },
+        aMinutes_2 { new QAction(LS("ui-docs-symbols-candleview-2m"), parent) },
+        aMinutes_3 { new QAction(LS("ui-docs-symbols-candleview-3m"), parent) },
+        aMinutes_5 { new QAction(LS("ui-docs-symbols-candleview-5m"), parent) },
+        aMinutes_10 { new QAction(LS("ui-docs-symbols-candleview-10m"), parent) },
+        aMinutes_15 { new QAction(LS("ui-docs-symbols-candleview-15m"), parent) },
+        aMinutes_30 { new QAction(LS("ui-docs-symbols-candleview-30m"), parent) },
+        aMinutes_45 { new QAction(LS("ui-docs-symbols-candleview-45m"), parent) },
+        aHours_1 { new QAction(LS("ui-docs-symbols-candleview-1h"), parent) },
+        aHours_2 { new QAction(LS("ui-docs-symbols-candleview-2h"), parent) },
+        aHours_4 { new QAction(LS("ui-docs-symbols-candleview-4h"), parent) },
+        aHours_6 { new QAction(LS("ui-docs-symbols-candleview-6h"), parent) },
+        aHours_8 { new QAction(LS("ui-docs-symbols-candleview-8h"), parent) },
+        aHours_12 { new QAction(LS("ui-docs-symbols-candleview-12h"), parent) },
+        aDays_1 { new QAction(LS("ui-docs-symbols-candleview-1d"), parent) },
+        aDays_3 { new QAction(LS("ui-docs-symbols-candleview-3d"), parent) },
+        aWeeks_1 { new QAction(LS("ui-docs-symbols-candleview-1w"), parent) },
+        aMonths_1 { new QAction(LS("ui-docs-symbols-candleview-1M"), parent) }
+    {
+    }
+
 } // namespace CENTAUR_NAMESPACE
 
 namespace
@@ -260,7 +290,7 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
     m_ui->menuBar->addMenu(preferencesMenu);
     m_ui->menuBar->addMenu(pluginsMenu);
 
-    connect(pluginsAction, SIGNAL(triggered()), this, SLOT(onPlugins()));
+    connect(pluginsAction, &QAction::triggered, this, &CentaurApp::onPlugins);
 
     // Connect favorites action
     connect(m_ui->actionWatchlistFavorites,
@@ -276,14 +306,41 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 
     m_ui->tabSymbols->setTabText(m_ui->tabSymbols->indexOf(m_ui->tabWatchList), LS("ui-docks-watchlist"));
     // Menu actions
-    connect(m_ui->actionTileWindows, &QAction::triggered, this, &CentaurApp::onActionTileWindowsTriggered);
-    connect(m_ui->actionCascadeWindows, &QAction::triggered, this, &CentaurApp::onActionCascadeWindowsTriggered);
+    connect(m_ui->actionTileWindows, &QAction::triggered, m_ui->mdiArea, &QMdiArea::tileSubWindows);
+    connect(m_ui->actionCascadeWindows, &QAction::triggered, m_ui->mdiArea, &QMdiArea::cascadeSubWindows);
+
     connect(m_ui->actionAsks, &QAction::toggled, this, &CentaurApp::onActionAsksToggled);
     connect(m_ui->actionBalances, &QAction::toggled, this, &CentaurApp::onActionBalancesToggled);
     connect(m_ui->actionBids, &QAction::toggled, this, &CentaurApp::onActionBidsToggled);
     connect(m_ui->actionDepth, &QAction::toggled, this, &CentaurApp::onActionDepthToggled);
     connect(m_ui->actionLogging, &QAction::toggled, this, &CentaurApp::onActionLoggingToggled);
     connect(m_ui->actionSymbols, &QAction::toggled, this, &CentaurApp::onActionSymbolsToggled);
+
+    // Connect the candle actions
+    m_candleViewTimeFrameActions = std::make_unique<CandleViewTimeFrameActions>(this);
+    connect(m_candleViewTimeFrameActions->aSeconds_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1); });
+    connect(m_candleViewTimeFrameActions->aSeconds_5, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5); });
+    connect(m_candleViewTimeFrameActions->aSeconds_10, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10); });
+    connect(m_candleViewTimeFrameActions->aSeconds_30, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30); });
+    connect(m_candleViewTimeFrameActions->aSeconds_45, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45); });
+    connect(m_candleViewTimeFrameActions->aMinutes_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1); });
+    connect(m_candleViewTimeFrameActions->aMinutes_2, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2); });
+    connect(m_candleViewTimeFrameActions->aMinutes_3, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3); });
+    connect(m_candleViewTimeFrameActions->aMinutes_5, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5); });
+    connect(m_candleViewTimeFrameActions->aMinutes_10, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10); });
+    connect(m_candleViewTimeFrameActions->aMinutes_15, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15); });
+    connect(m_candleViewTimeFrameActions->aMinutes_30, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30); });
+    connect(m_candleViewTimeFrameActions->aMinutes_45, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45); });
+    connect(m_candleViewTimeFrameActions->aHours_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1); });
+    connect(m_candleViewTimeFrameActions->aHours_2, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2); });
+    connect(m_candleViewTimeFrameActions->aHours_4, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4); });
+    connect(m_candleViewTimeFrameActions->aHours_6, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6); });
+    connect(m_candleViewTimeFrameActions->aHours_8, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8); });
+    connect(m_candleViewTimeFrameActions->aHours_12, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12); });
+    connect(m_candleViewTimeFrameActions->aDays_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1); });
+    connect(m_candleViewTimeFrameActions->aDays_3, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3); });
+    connect(m_candleViewTimeFrameActions->aWeeks_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1); });
+    connect(m_candleViewTimeFrameActions->aMonths_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1); });
 
     // Remove the first index
     m_ui->dockSymbols->setWindowTitle(LS("ui-docks-symbols"));
@@ -599,16 +656,6 @@ void CENTAUR_NAMESPACE::CentaurApp::startCommunicationsServer() noexcept
         m_serverStatus->setStyleSheet(g_statusGreen);
     else
         m_serverStatus->setStyleSheet(g_statusRed);
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionTileWindowsTriggered()
-{
-    m_ui->m_mdiArea->tileSubWindows();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionCascadeWindowsTriggered()
-{
-    m_ui->m_mdiArea->cascadeSubWindows();
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::onActionSymbolsToggled(bool status)
@@ -1107,4 +1154,13 @@ CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFrom
     }
 
     return interface->second.exchange;
+}
+
+void cen::CentaurApp::onCandleView(const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf) noexcept
+{
+    auto subWindow = new QMdiSubWindow;
+    subWindow->setWidget(new CandleViewWidget(symbol, view, tf, subWindow));
+    subWindow->setAttribute(Qt::WA_DeleteOnClose);
+    m_ui->mdiArea->addSubWindow(subWindow);
+    subWindow->show();
 }

@@ -27,16 +27,13 @@
        <number>0</number>
       </property>
       <property name="background">
-       <brush brushstyle="Dense1Pattern">
+       <brush brushstyle="SolidPattern">
         <color alpha="255">
          <red>30</red>
          <green>31</green>
          <blue>32</blue>
         </color>
        </brush>
-      </property>
-      <property name="viewMode">
-       <enum>QMdiArea::SubWindowView</enum>
       </property>
       <property name="documentMode">
        <bool>false</bool>

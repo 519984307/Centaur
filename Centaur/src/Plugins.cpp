@@ -110,16 +110,16 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                 else
                 {
                     m_pluginsData.push_back(baseInterface);
+
+                    logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
+
                     // Init the plugin
-
                     auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
-
                     loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
                     baseInterface->setPluginInterfaces(g_logger,
                         static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig),
                         static_cast<CENTAUR_INTERFACE_NAMESPACE::ILongOperation *>(m_longOperation.get()));
 
-                    logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
                     // Generate the plugin data
                     m_configurationInterface[baseInterface->getPluginUUID().to_string().c_str()] = pluginConfig;
 
@@ -131,19 +131,27 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
                             loader->unload();
                             logWarn("plugin", QString(LS("warning-iexchange-plugin-unloaded")).arg(plFile));
                         }
-                        else
-                            updatePluginsMenus(exInterface->getPluginUUID(), doc, baseInterface);
                     }
                     else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                     {
                         logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
                         // Init the plugin
                         stInterface->initialization(m_ui->statusBar);
-                        updatePluginsMenus(stInterface->getPluginUUID(), doc, baseInterface);
+                    }
+                    else if (auto cvInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::ICandleView *>(plugin); cvInterface)
+                    {
+                        logInfo("plugin", QString(LS("info-plugin-icandleview")).arg(plFile));
+                        if (!initCandleViewPlugin(cvInterface))
+                        {
+                            loader->unload();
+                        }
                     }
 
                     if (loader->isLoaded())
+                    {
                         m_pluginInstances.emplace_back(loader);
+                        updatePluginsMenus(baseInterface->getPluginUUID(), doc, baseInterface);
+                    }
                 }
             }
             else
@@ -389,15 +397,13 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
         return false;
     }
 
-    auto list                                            = populateExchangeSymbolList(exchange, uuid.to_string().c_str());
+    auto list                                                        = populateExchangeSymbolList(exchange, uuid.to_string().c_str());
 
-    m_exchangeList[QString { uuid.to_string().c_str() }] = ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first };
+    m_exchangeList[QString::fromStdString(uuid.to_string().c_str())] = ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first };
 
     // clang-format off
     connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
     connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString,QString,quint64,QMap<qreal,QPair<qreal,qreal> >,QMap<qreal,QPair<qreal,qreal> >)), this, SLOT(onOrderbookUpdate(QString, QString, quint64, QMap<qreal,QPair<qreal,qreal> >,QMap<qreal,QPair<qreal,qreal> >)));
-    // connect(exchange->getPluginObject(), SIGNAL(emitAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)), this, SLOT(onBalanceAcceptAsset(QString,int,QList<QPair<QString,QIcon*> >)));
-    // connect(exchange->getPluginObject(), SIGNAL(emitBalanceUpdate(QList<QString>,int)), this, SLOT(onBalanceUpdate(QList<QString>,int)));
     // clang-format on
 
     return true;
@@ -475,4 +481,53 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
     logInfo("plugins", "Exchange list populated");
 
     return symbolsList;
+}
+
+bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView) noexcept
+{
+    auto obj = candleView->getPluginObject();
+
+    if (candleView->realtimePlotAllowed())
+    {
+        //  int i = obj->metaObject()->indexOfSignal(QMetaObject::normalizedSignature("void snRealTimeCandleUpdate(const uuid &id, Timestamp currentCandle, const CandleData &candle)"));
+
+        //   int l = 0;
+    }
+
+    // Get supported time frames
+    m_candleViewSupport[candleView] = { candleView->supportedExchanges(), candleView->supportedTimeFrames() };
+
+    return true;
+}
+
+CENTAUR_PLUGIN_NAMESPACE::PluginInformation cen::CentaurApp::pluginInformationFromBase(cen::plugin::IBase *base)
+{
+    return {
+        base->getPluginUUID(),
+        base->getPluginName(),
+        base->getPluginVersionString()
+    };
+}
+
+CENTAUR_PLUGIN_NAMESPACE::ICandleView *cen::CentaurApp::getSupportedCandleViewPlugins(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &id)
+{
+    for (auto &cvs : m_candleViewSupport)
+    {
+        for (auto &spexch : cvs.second.info)
+        {
+            if (spexch == id)
+                return cvs.first;
+        }
+    }
+
+    return nullptr;
+}
+
+std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> cen::CentaurApp::getCandleViewTimeframeSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *id) const
+{
+    auto it = m_candleViewSupport.find(id);
+    if (it == m_candleViewSupport.end())
+        return std::nullopt;
+
+    return std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> { std::cref(it->second.timeframes) };
 }

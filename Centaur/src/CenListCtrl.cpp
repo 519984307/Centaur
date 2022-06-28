@@ -55,12 +55,66 @@ void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
         {
             connect(&action, &QAction::triggered, this,
                 [&]() { emit snRemoveWatchList(index.row()); });
+
             exch = g_app->exchangeFromWatchlistRow(index.row());
         }
 
-
         if (exch != nullptr)
         {
+            if (m_remove)
+            {
+                // We are in the watchlist
+                auto exchInfo = CentaurApp::pluginInformationFromBase(exch);
+                auto pl       = g_app->getSupportedCandleViewPlugins(exchInfo);
+                if (pl != nullptr)
+                {
+                    auto tfs = g_app->getCandleViewTimeframeSupport(pl);
+                    if (tfs != std::nullopt)
+                    {
+                        auto timeframes = tfs->get();
+                        auto candleMenu = new QMenu(LS("ui-docs-symbols-candleview"), &contextMenu);
+                        if (!timeframes.empty())
+                        {
+                            contextMenu.addSeparator();
+                            contextMenu.addMenu(candleMenu);
+
+                            g_app->m_candleEmitter = { itemData, pl };
+                        }
+
+                        for (const auto &tf : timeframes)
+                        {
+                            switch (tf)
+                            {
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::nullTime: candleMenu->addSeparator(); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aSeconds_1); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aSeconds_5); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aSeconds_10); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aSeconds_30); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aSeconds_45); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_1); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_2); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_3); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_5); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_10); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_15); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_30); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMinutes_45); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aHours_1); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aHours_2); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aHours_4); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aHours_6); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aHours_8); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aHours_12); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aDays_1); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aDays_3); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aWeeks_1); break;
+                                case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1: candleMenu->addAction(g_app->m_candleViewTimeFrameActions->aMonths_1); break;
+                            }
+                        }
+                    }
+                }
+            }
+
             contextMenu.addSeparator();
             auto list = exch->dynamicWatchListMenuItems();
             for (const auto &ls : list)
@@ -85,6 +139,9 @@ void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
         {
             delete actions;
         }
+
+        // Release the emitter
+        g_app->m_candleEmitter = {};
     }
 }
 

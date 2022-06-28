@@ -33,7 +33,6 @@
 
 namespace CENTAUR_NAMESPACE
 {
-
     class FavoritesDBManager;
     class CentaurApp final : public QMainWindow
     {
@@ -49,6 +48,42 @@ namespace CENTAUR_NAMESPACE
         {
             QStandardItem *listItem;
             double previousPrice;
+        };
+
+        struct CandleViewSupport
+        {
+            QList<CENTAUR_PLUGIN_NAMESPACE::PluginInformation> info;
+            QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame> timeframes;
+        };
+
+        struct CandleViewTimeFrameActions
+        {
+            explicit CandleViewTimeFrameActions(QObject *parent);
+
+        public:
+            QAction *aSeconds_1 { nullptr };
+            QAction *aSeconds_5 { nullptr };
+            QAction *aSeconds_10 { nullptr };
+            QAction *aSeconds_30 { nullptr };
+            QAction *aSeconds_45 { nullptr };
+            QAction *aMinutes_1 { nullptr };
+            QAction *aMinutes_2 { nullptr };
+            QAction *aMinutes_3 { nullptr };
+            QAction *aMinutes_5 { nullptr };
+            QAction *aMinutes_10 { nullptr };
+            QAction *aMinutes_15 { nullptr };
+            QAction *aMinutes_30 { nullptr };
+            QAction *aMinutes_45 { nullptr };
+            QAction *aHours_1 { nullptr };
+            QAction *aHours_2 { nullptr };
+            QAction *aHours_4 { nullptr };
+            QAction *aHours_6 { nullptr };
+            QAction *aHours_8 { nullptr };
+            QAction *aHours_12 { nullptr };
+            QAction *aDays_1 { nullptr };
+            QAction *aDays_3 { nullptr };
+            QAction *aWeeks_1 { nullptr };
+            QAction *aMonths_1 { nullptr };
         };
 
         Q_OBJECT
@@ -107,6 +142,7 @@ namespace CENTAUR_NAMESPACE
 
     protected:
         bool initExchangePlugin(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange) noexcept;
+        bool initCandleViewPlugin(CENTAUR_PLUGIN_NAMESPACE::ICandleView *candleView) noexcept;
         CenListCtrl *populateExchangeSymbolList(CENTAUR_PLUGIN_NAMESPACE::IExchange *exchange, const QString &uuidString) noexcept;
 
     protected:
@@ -114,8 +150,6 @@ namespace CENTAUR_NAMESPACE
         void clearOrderbookListsAndDepth() noexcept;
 
     private slots:
-        void onActionTileWindowsTriggered();
-        void onActionCascadeWindowsTriggered();
         void onActionSymbolsToggled(bool status);
         void onActionLoggingToggled(bool status);
         void onActionBalancesToggled(bool status);
@@ -131,10 +165,20 @@ namespace CENTAUR_NAMESPACE
         void onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept;
         void onPlugins() noexcept;
 
+        void onCandleView(const QString &symbol, CENTAUR_PLUGIN_NAMESPACE::ICandleView *view, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf) noexcept;
+
     public:
         inline QTreeWidget *getBalancesTree() noexcept { return m_ui->ctrlBalances; }
         inline QLabel *getTotalLabel() noexcept { return m_ui->totalBalances; }
 
+    public:
+        static CENTAUR_PLUGIN_NAMESPACE::PluginInformation pluginInformationFromBase(CENTAUR_PLUGIN_NAMESPACE::IBase *);
+        CENTAUR_PLUGIN_NAMESPACE::ICandleView *getSupportedCandleViewPlugins(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &id);
+        std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> getCandleViewTimeframeSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *id) const;
+
+    public:
+        std::unique_ptr<CandleViewTimeFrameActions> m_candleViewTimeFrameActions;
+        QPair<QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *> m_candleEmitter;
         // General application state
     private:
         std::unique_ptr<Ui::CentaurApp> m_ui;
@@ -147,6 +191,7 @@ namespace CENTAUR_NAMESPACE
         QList<QPluginLoader *> m_pluginInstances;
         std::unordered_map<QString, PluginConfiguration *> m_configurationInterface;
         std::map<QString, ExchangeInformation> m_exchangeList;
+        std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CandleViewSupport> m_candleViewSupport;
         std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item
         std::pair<QString, QString> m_currentViewOrderbookSymbol;
 
@@ -181,6 +226,7 @@ namespace CENTAUR_NAMESPACE
         std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> m_pluginsData;
     };
     extern CentaurApp *g_app;
+
 } // namespace CENTAUR_NAMESPACE
 
 #define START_TIME(x)                    \

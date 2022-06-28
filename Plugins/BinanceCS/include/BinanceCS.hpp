@@ -57,7 +57,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         QList<QPair<Timestamp, CandleData>> getCandlesByPeriod(const QString &symbol, Timestamp start, Timestamp end, TimeFrame frame) noexcept override;
         bool realtimePlotAllowed() noexcept override;
         bool dynamicReframePlot() noexcept override;
-        QList<QToolBar *> getPluginBasedToolBar() noexcept override;
+        void reframe(TimeFrame frame) noexcept override;
 
     signals:
         void snRealTimeCandleUpdate(const uuid &id, Timestamp currentCandle, const CandleData &candle);

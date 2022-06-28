@@ -51,6 +51,8 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/LongOperation.cpp
         src/ConfigurationInterface.cpp
         src/CentaurLoadData.cpp
+        src/ProtocolClient.cpp
+        src/CandleViewWidget.cpp
         src/ProtocolServer.cpp
         include/CentaurApp.hpp
         include/CentaurGlobal.hpp
@@ -66,12 +68,16 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         include/XMLHelper.hpp
         include/crc64.hpp
         include/ProtocolServer.hpp
-        ../Plugins/include/CentaurPlugin.hpp
-        ../Plugins/include/CentaurInterface.hpp
+        include/CandleViewWidget.hpp
+        include/ProtocolClient.hpp
+        include/CandleViewWidget.hpp
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
         ui/LenghtyDialog.ui
-        ui/FavoritesDialog.ui src/ProtocolClient.cpp include/ProtocolClient.hpp)
+        ui/FavoritesDialog.ui
+        ui/CandleViewWidget.ui
+        ../Plugins/include/CentaurPlugin.hpp
+        ../Plugins/include/CentaurInterface.hpp)
 
 # Create the Apple Bundle
 IF (APPLE)
