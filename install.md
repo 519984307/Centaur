@@ -38,8 +38,8 @@
     5. Designated initializers
     7. Non C++20 compilers will be fruitless
     8. On MacOS you can download the clang 14.0.0 compiler and redirect with -DCMAKE_C_COMPILER and -DCMAKE_CXX_COMPILER
-       in CMake (at least that is how I do it). That's because Apple's clang version for C++ is not featured for
-       "complete" C++20
+       in CMake (at least that is how I do it). That's because Apple's clang version for C ++ does not have the required
+       features of C++20
 6. Download and uncompress the source code
 7. On the source code path:
     1. Create a dir named: debug
