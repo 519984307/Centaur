@@ -15,7 +15,7 @@ Contributing
 - For member static functions use **_camelCase_**.
 - For function parameters use **_camelCase_**.
 - For concepts use **_snake_case_** (or something extremely generic, like the standard library)
-- Use as much C++20 as possible, maintaining minimum compatibility between compilers (clang/gcc/msvc)
+- Use as much C++20 as possible, maintaining maximum compatibility between compilers (clang/gcc/msvc)
 
 ### C++ Guidelines
 
