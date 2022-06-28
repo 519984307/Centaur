@@ -42,8 +42,8 @@
        features of C++20
 6. Download and uncompress the source code
 7. On the source code path (if they dont exist):
-    1. Create a dir named: debug
-    2. Create a dir named: release
+    1. Create a dir named: conan/debug
+    2. Create a dir named: conan/release
 8. On the Source code path (where the CMakeLists.txt is located) run:
     1. conan install . -s build_type=Release -if conan/release -of conan2/ --build missing
     2. conan install . -s build_type=Debug -if conan/Debug -of conan2/ --build missing
