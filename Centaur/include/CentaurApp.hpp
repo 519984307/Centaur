@@ -164,8 +164,10 @@ namespace CENTAUR_NAMESPACE
         void onTickerUpdate(const QString &symbol, const int &id, const quint64 &receivedTime, const double &price) noexcept;
         void onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept;
         void onPlugins() noexcept;
+        void onRealTimeCandleUpdate(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
+        void onRealTimeCandleClose(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const CENTAUR_PLUGIN_NAMESPACE::ICandleView::CandleData &cd) noexcept;
 
-        void onCandleView(const QString &symbol, CENTAUR_PLUGIN_NAMESPACE::ICandleView *view, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf) noexcept;
+        void onCandleView(const QString &symbol, CENTAUR_PLUGIN_NAMESPACE::ICandleView *view, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf, const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter) noexcept;
 
     public:
         inline QTreeWidget *getBalancesTree() noexcept { return m_ui->ctrlBalances; }
@@ -178,7 +180,7 @@ namespace CENTAUR_NAMESPACE
 
     public:
         std::unique_ptr<CandleViewTimeFrameActions> m_candleViewTimeFrameActions;
-        QPair<QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *> m_candleEmitter;
+        std::tuple<CENTAUR_PLUGIN_NAMESPACE::PluginInformation, QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *> m_candleEmitter;
         // General application state
     private:
         std::unique_ptr<Ui::CentaurApp> m_ui;
@@ -192,6 +194,7 @@ namespace CENTAUR_NAMESPACE
         std::unordered_map<QString, PluginConfiguration *> m_configurationInterface;
         std::map<QString, ExchangeInformation> m_exchangeList;
         std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CandleViewSupport> m_candleViewSupport;
+        std::unordered_map<uuid, std::tuple<QMdiSubWindow *, QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>> m_candleViewDisplay;
         std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item
         std::pair<QString, QString> m_currentViewOrderbookSymbol;
 
@@ -228,6 +231,11 @@ namespace CENTAUR_NAMESPACE
     extern CentaurApp *g_app;
 
 } // namespace CENTAUR_NAMESPACE
+
+Q_DECLARE_METATYPE(cen::uuid)
+Q_DECLARE_METATYPE(cen::plugin::ICandleView::Timestamp)
+Q_DECLARE_METATYPE(cen::plugin::ICandleView::CandleData)
+Q_DECLARE_METATYPE(cen::plugin::ICandleView::TimeFrame)
 
 #define START_TIME(x)                    \
     auto x                               \
