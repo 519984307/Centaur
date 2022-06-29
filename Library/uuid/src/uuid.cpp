@@ -6,7 +6,7 @@
 
 #include "uuid.hpp"
 cen::uuid::uuid(const std::string &str) :
-    uuid_bytes {}
+    data {}
 {
     if (!str.empty())
     {
@@ -60,7 +60,7 @@ cen::uuid::uuid(const std::string &str) :
                     else if (ch >= 'a' && ch <= 'f')
                         t[j] = ch - lower + 10;
                 }
-                uuid_bytes[k] = static_cast<unsigned char>((t[0] << shift) | t[1]);
+                data.uuid_bytes[k] = static_cast<unsigned char>((t[0] << shift) | t[1]);
                 k++;
             }
         }
@@ -69,8 +69,94 @@ cen::uuid::uuid(const std::string &str) :
         throw std::runtime_error("uuid string is empty");
 }
 
+cen::uuid::uuid(const uint32_t u1, const uint16_t w1, const uint16_t w2, const uint16_t w3, const uint8_t b1, const uint8_t b2, const uint8_t b3, const uint8_t b4, const uint8_t b5, const uint8_t b6, bool endiannessCheck) noexcept :
+    data {}
+{
+    if (endiannessCheck)
+    {
+        if (std::endian::native == std::endian::big)
+        {
+            auto *p32 = reinterpret_cast<uint32_t *>(data.uuid_bytes);
+            auto *p16 = reinterpret_cast<uint16_t *>(data.uuid_bytes);
+            auto *p8  = reinterpret_cast<uint8_t *>(data.uuid_bytes);
+
+            p32[0]    = u1;
+            p16[2]    = w1;
+            p16[3]    = w2;
+            p16[4]    = w3;
+            p8[10]    = b1;
+            p8[11]    = b2;
+            p8[12]    = b3;
+            p8[13]    = b4;
+            p8[14]    = b5;
+            p8[15]    = b6;
+        }
+        else
+        {
+            auto *p8   = reinterpret_cast<uint8_t *>(data.uuid_bytes);
+            auto *u8   = reinterpret_cast<uint8_t *>(const_cast<uint32_t *>(&u1));
+            auto *w1_8 = reinterpret_cast<uint8_t *>(const_cast<uint16_t *>(&w1));
+            auto *w2_8 = reinterpret_cast<uint8_t *>(const_cast<uint16_t *>(&w2));
+            auto *w3_8 = reinterpret_cast<uint8_t *>(const_cast<uint16_t *>(&w3));
+
+            p8[0]      = u8[3];
+            p8[1]      = u8[2];
+            p8[2]      = u8[1];
+            p8[3]      = u8[0];
+            p8[4]      = w1_8[1];
+            p8[5]      = w1_8[0];
+            p8[6]      = w2_8[1];
+            p8[7]      = w2_8[0];
+            p8[8]      = w3_8[1];
+            p8[9]      = w3_8[0];
+            p8[10]     = b1;
+            p8[11]     = b2;
+            p8[12]     = b3;
+            p8[13]     = b4;
+            p8[14]     = b5;
+            p8[15]     = b6;
+        }
+    }
+    else
+    {
+        auto *p32 = reinterpret_cast<uint32_t *>(data.uuid_bytes);
+        auto *p16 = reinterpret_cast<uint16_t *>(data.uuid_bytes);
+        auto *p8  = reinterpret_cast<uint8_t *>(data.uuid_bytes);
+
+        p32[0]    = u1;
+        p16[2]    = w1;
+        p16[3]    = w2;
+        p16[4]    = w3;
+        p8[10]    = b1;
+        p8[11]    = b2;
+        p8[12]    = b3;
+        p8[13]    = b4;
+        p8[14]    = b5;
+        p8[15]    = b6;
+    }
+}
+
+cen::uuid::uuid(const cen::uuid &id) :
+    data {}
+{
+    memcpy(data.uuid_bytes, id.data.uuid_bytes, sizeof(data.uuid_bytes) / sizeof(data.uuid_bytes[0]));
+}
+
+cen::uuid::uuid(cen::uuid &&id) noexcept :
+    data {}
+{
+    memcpy(data.uuid_bytes, id.data.uuid_bytes, sizeof(data.uuid_bytes) / sizeof(data.uuid_bytes[0]));
+    memset(id.data.uuid_bytes, 0, sizeof(data.uuid_bytes) / sizeof(data.uuid_bytes[0]));
+}
+
+cen::uuid &cen::uuid::operator=(const cen::uuid &id)
+{
+    memcpy(data.uuid_bytes, id.data.uuid_bytes, sizeof(data.uuid_bytes) / sizeof(data.uuid_bytes[0]));
+    return *this;
+}
+
 cen::uuid::uuid() :
-    uuid_bytes {}
+    data {}
 {
 }
 
@@ -78,6 +164,7 @@ auto cen::uuid::to_string(bool upper) const -> std::string
 {
     std::string str;
     str.reserve(40);
+
     str                  = "{";
 
     const auto &char_set = [&upper] {
@@ -90,7 +177,7 @@ auto cen::uuid::to_string(bool upper) const -> std::string
     {
         if (i == 4 || i == 6 || i == 8 || i == 10)
             str += '-';
-        str += char_set[uuid_bytes[i]];
+        str += char_set[data.uuid_bytes[i]];
     }
     str += "}";
     return str;
@@ -98,5 +185,16 @@ auto cen::uuid::to_string(bool upper) const -> std::string
 
 bool cen::operator==(const uuid &id1, const uuid &id2) noexcept
 {
-    return memcmp(id1.uuid_bytes, id2.uuid_bytes, sizeof(id1.uuid_bytes) / sizeof(id1.uuid_bytes[0])) == 0;
+    return memcmp(id1.data.uuid_bytes, id2.data.uuid_bytes, sizeof(id1.data.uuid_bytes) / sizeof(id1.data.uuid_bytes[0])) == 0;
+}
+
+bool cen::operator==(const uuid &id1, const std::string &str) noexcept
+{
+    try
+    {
+        return id1 == cen::uuid { str };
+    } catch (C_UNUSED const std::exception &ex)
+    {
+        return false;
+    }
 }

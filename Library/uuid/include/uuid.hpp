@@ -19,15 +19,41 @@
 #include <random>
 #include <string>
 
+#ifdef QT_VERSION
+#include <QString>
+#define QT_INCLUDED
+#endif /*QT_VERSION*/
+
 #define CENTAUR_VALID_UUID_GENERATORS std::same_as<std::mt19937, generator> || std::same_as<std::mt19937_64, generator> || std::same_as<std::minstd_rand, generator> || std::same_as<std::minstd_rand0, generator> || std::same_as<std::ranlux24, generator> || std::same_as<std::ranlux48, generator>
+
+#ifndef CENTAUR_UUID_ALIGNMENT
+#if defined(__clang__) || defined(__GNUC__)
+#define CENTAUR_UUID_ALIGNMENT __attribute__((aligned(sizeof(uint64_t))))
+#elif defined MSVC
+#define CENTAUR_UUID_ALIGNMENT __declspec(align(8))
+#else
+#define CENTAUR_UUID_ALIGNMENT
+#endif /*defined(__clang__) || defined(__GNUC__)*/
+#endif /*CENTAUR_UUID_ALIGNMENT*/
 
 namespace CENTAUR_NAMESPACE
 {
+
     struct uuid
     {
         /// \brief Construct an uuid from a string
         /// \param str The string must have the curly braces and dashes
         explicit uuid(const std::string &str);
+
+        uuid(const uint32_t u1, const uint16_t w1, const uint16_t w2, const uint16_t w3, const uint8_t b1, const uint8_t b2, const uint8_t b3, const uint8_t b4, const uint8_t b5, const uint8_t b6, bool endiannessCheck = true) noexcept;
+
+        // Copy constructor
+        uuid(const uuid &id);
+
+        // Move constructor
+        uuid(uuid &&id) noexcept;
+
+        uuid &operator=(const uuid &id);
 
         uuid();
 
@@ -43,23 +69,28 @@ namespace CENTAUR_NAMESPACE
         C_NODISCARD static auto generate() -> cen::uuid
             requires CENTAUR_VALID_UUID_GENERATORS
         {
-            std::string uuid;
-            uuid.reserve(40);
             std::random_device rd;
             generator gen(rd());
-            std::uniform_int_distribution<std::size_t> distrib(0, 255);
+            std::uniform_int_distribution<std::size_t> distrib_u(0, 0xffffffffffff);
 
-            uuid = "{";
+            return cen::uuid {
+                static_cast<const uint32_t>(distrib_u(gen)),
+                static_cast<const uint16_t>(distrib_u(gen)),
+                static_cast<const uint16_t>(distrib_u(gen)),
+                static_cast<const uint16_t>(distrib_u(gen)),
+                static_cast<const uint8_t>(distrib_u(gen)),
+                static_cast<const uint8_t>(distrib_u(gen)),
+                static_cast<const uint8_t>(distrib_u(gen)),
+                static_cast<const uint8_t>(distrib_u(gen)),
+                static_cast<const uint8_t>(distrib_u(gen)),
+                static_cast<const uint8_t>(distrib_u(gen)),
+                false
+            };
+        }
 
-            for (uint32_t i = 0; i < 16; ++i)
-            {
-                if (i == 4 || i == 6 || i == 8 || i == 10)
-                    uuid += '-';
-                uuid += uuid_chars_lower[distrib(gen)];
-            }
-            uuid += "}";
-
-            return cen::uuid(uuid);
+        C_NODISCARD inline unsigned char *bytes() const
+        {
+            return reinterpret_cast<unsigned char *>(&data.uuid_bytes);
         }
 
     private:
@@ -107,12 +138,57 @@ namespace CENTAUR_NAMESPACE
         // clang-format on
 
     private:
-        unsigned char uuid_bytes[17];
-
+        struct CENTAUR_UUID_ALIGNMENT data_
+        {
+            unsigned char uuid_bytes[16]; // not null-terminated
+        } mutable data;
         friend bool operator==(const uuid &id1, const uuid &id2) noexcept;
+
+        // Make sure reinterpret_cast<const uint64_t *>(id.bytes()) in the std::hash<> does not misbehave
+        static_assert(std::alignment_of<data_>::value >= std::alignment_of<std::uint64_t>::value, "Invalid UUID data alignment");
+
+    public:
+        inline bool operator<(const uuid &id) const
+        {
+            auto thisBytes = reinterpret_cast<const uint64_t *>(bytes());
+            auto u1        = reinterpret_cast<const uint64_t *>(id.bytes());
+            return std::tie(thisBytes[0], thisBytes[1]) < std::tie(u1[0], u1[1]);
+        }
     };
 
     bool operator==(const uuid &id1, const uuid &id2) noexcept;
+
+    bool operator==(const uuid &id1, const std::string &str) noexcept;
+
+#ifdef QT_INCLUDED
+    inline bool operator==(const uuid &id1, const QString &str) noexcept
+    {
+        try
+        {
+            return id1 == cen::uuid { str.toStdString() };
+        } catch (C_UNUSED const std::exception &ex)
+        {
+            return false;
+        }
+    }
+#endif
+
 } // namespace CENTAUR_NAMESPACE
+
+#ifndef C_NO_UUID_HASH
+namespace std
+{
+    template <>
+    struct hash<CENTAUR_NAMESPACE::uuid> : public std::unary_function<const CENTAUR_NAMESPACE::uuid &, std::size_t>
+    {
+        inline std::size_t operator()(const CENTAUR_NAMESPACE::uuid &id) const
+        {
+            auto u1 = reinterpret_cast<const uint64_t *>(id.bytes());
+            std::hash<uint64_t> hs;
+            return hs(u1[0]) ^ hs(u1[1]);
+        }
+    };
+} // namespace std
+#endif /*C_NO_UUID_HASH*/
 
 #endif // CENTAUR_UUID_HPP
