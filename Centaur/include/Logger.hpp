@@ -139,10 +139,8 @@ namespace CENTAUR_NAMESPACE
 #define logDebug(x, y) \
     g_logger->debug(x, y)
 #else
-#define logTrace(x, y) \
-    ((void *)0)
-#define logDebug(x, y) \
-    ((void *)0)
+#define logTrace(x, y)
+#define logDebug(x, y)
 #endif /**/
 
 #define logError(x, y) \
