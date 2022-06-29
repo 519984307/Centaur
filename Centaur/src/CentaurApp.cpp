@@ -119,6 +119,7 @@ color: rgb(255, 255, 255);
 background-color: rgb(172, 6, 0);
 border-radius: 3px;
 min-width: 85px;
+margin: 0 0 0 10;
 qproperty-alignment: AlignCenter;
 })"
     };
@@ -129,6 +130,7 @@ color: rgb(255, 255, 255);
 background-color: rgb(0, 104, 18);
 border-radius: 3px;
 min-width: 85px;
+margin: 0 0 0 10;
 qproperty-alignment: AlignCenter;
 })"
     };
@@ -144,6 +146,11 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
 
     g_app     = this;
     g_globals = new Globals;
+
+    qRegisterMetaType<cen::uuid>("cen::uuid");
+    qRegisterMetaType<cen::plugin::ICandleView::CandleData>("cen::plugin::ICandleView::CandleData");
+    qRegisterMetaType<cen::plugin::ICandleView::TimeFrame>("cen::plugin::ICandleView::TimeFrame");
+    qRegisterMetaType<cen::plugin::ICandleView::Timestamp>("cen::plugin::ICandleView::Timestamp");
 
     m_ui->setupUi(this);
     installEventFilter(this);
@@ -227,14 +234,13 @@ void cen::CentaurApp::closeEvent(QCloseEvent *event)
             plugins->unload();
     }
 
+    saveInterfaceState();
+
     QWidget::closeEvent(event);
 }
 
 bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
 {
-    if (obj == this && event->type() == QEvent::Close)
-        saveInterfaceState();
-
     if (obj == m_ui->bidsChart && event->type() == QEvent::Resize && m_ui->bidsChart->chart() != nullptr)
     {
         auto resize    = dynamic_cast<QResizeEvent *>(event);
@@ -318,29 +324,29 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
 
     // Connect the candle actions
     m_candleViewTimeFrameActions = std::make_unique<CandleViewTimeFrameActions>(this);
-    connect(m_candleViewTimeFrameActions->aSeconds_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1); });
-    connect(m_candleViewTimeFrameActions->aSeconds_5, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5); });
-    connect(m_candleViewTimeFrameActions->aSeconds_10, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10); });
-    connect(m_candleViewTimeFrameActions->aSeconds_30, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30); });
-    connect(m_candleViewTimeFrameActions->aSeconds_45, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45); });
-    connect(m_candleViewTimeFrameActions->aMinutes_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1); });
-    connect(m_candleViewTimeFrameActions->aMinutes_2, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2); });
-    connect(m_candleViewTimeFrameActions->aMinutes_3, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3); });
-    connect(m_candleViewTimeFrameActions->aMinutes_5, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5); });
-    connect(m_candleViewTimeFrameActions->aMinutes_10, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10); });
-    connect(m_candleViewTimeFrameActions->aMinutes_15, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15); });
-    connect(m_candleViewTimeFrameActions->aMinutes_30, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30); });
-    connect(m_candleViewTimeFrameActions->aMinutes_45, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45); });
-    connect(m_candleViewTimeFrameActions->aHours_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1); });
-    connect(m_candleViewTimeFrameActions->aHours_2, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2); });
-    connect(m_candleViewTimeFrameActions->aHours_4, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4); });
-    connect(m_candleViewTimeFrameActions->aHours_6, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6); });
-    connect(m_candleViewTimeFrameActions->aHours_8, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8); });
-    connect(m_candleViewTimeFrameActions->aHours_12, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12); });
-    connect(m_candleViewTimeFrameActions->aDays_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1); });
-    connect(m_candleViewTimeFrameActions->aDays_3, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3); });
-    connect(m_candleViewTimeFrameActions->aWeeks_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1); });
-    connect(m_candleViewTimeFrameActions->aMonths_1, &QAction::triggered, this, [&]() { onCandleView(m_candleEmitter.first, m_candleEmitter.second, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1); });
+    connect(m_candleViewTimeFrameActions->aSeconds_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aSeconds_5, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aSeconds_10, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aSeconds_30, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aSeconds_45, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_2, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_3, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_5, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_10, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_15, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_30, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMinutes_45, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aHours_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aHours_2, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aHours_4, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aHours_6, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aHours_8, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aHours_12, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aDays_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aDays_3, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aWeeks_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1, std::get<0>(m_candleEmitter)); });
+    connect(m_candleViewTimeFrameActions->aMonths_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1, std::get<0>(m_candleEmitter)); });
 
     // Remove the first index
     m_ui->dockSymbols->setWindowTitle(LS("ui-docks-symbols"));
@@ -1156,11 +1162,35 @@ CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFrom
     return interface->second.exchange;
 }
 
-void cen::CentaurApp::onCandleView(const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf) noexcept
+void cen::CentaurApp::onCandleView(const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf, const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter) noexcept
 {
     auto subWindow = new QMdiSubWindow;
-    subWindow->setWidget(new CandleViewWidget(symbol, view, tf, subWindow));
+
+    bool unique    = false;
+    uuid uid { uuid::generate<std::mt19937_64>() };
+
+    while (!unique)
+    {
+        if (m_candleViewDisplay.contains(uid))
+            uid = uuid::generate<std::mt19937_64>();
+        else
+        {
+            m_candleViewDisplay[uid] = { subWindow, symbol, view, tf };
+            unique                   = true;
+        }
+    }
+
+    subWindow->setWidget(new CandleViewWidget(emitter, uid, symbol, view, tf, subWindow));
+
     subWindow->setAttribute(Qt::WA_DeleteOnClose);
     m_ui->mdiArea->addSubWindow(subWindow);
     subWindow->show();
+}
+
+void cen::CentaurApp::onRealTimeCandleUpdate(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
+{
+}
+
+void cen::CentaurApp::onRealTimeCandleClose(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
+{
 }
