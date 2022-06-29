@@ -561,7 +561,98 @@ namespace BINAPI_NAMESPACE
             std::vector<OrderBookEntry> bids;
         };
 
+        struct RecentTrade
+        {
+            int64_t id;
+            uint64_t time;
+            currency_t price;
+            quantity_t qty;
+            quantity_t quoteQty;
+            bool isBuyerMaker;
+            bool isBestMatch;
+        };
+
+        // Same information
+        using OldTrade = RecentTrade;
+
+        struct CompressedAggregateTradeList
+        {
+            uint64_t id;
+            int64_t firstTradeId;
+            int64_t lastTradeId;
+            uint64_t timestamp;
+            currency_t price;
+            quantity_t qty;
+            bool isBuyerMaker;
+            bool isBestMatch;
+        };
+
+        struct AveragePrice
+        {
+            int64_t minutes;
+            currency_t price;
+        };
+
+        struct TickerPriceChangeStatistics
+        {
+            uint64_t openTime;
+            uint64_t closeTime;
+            int64_t firstId;
+            int64_t lastId;
+            int64_t count;
+            currency_t priceChange;
+            currency_t priceChangePercent;
+            currency_t weightedAvgPrice;
+            currency_t prevClosePrice;
+            currency_t lastPrice;
+            quantity_t lastQty;
+            currency_t bidPrice;
+            quantity_t bidQty;
+            currency_t askPrice;
+            quantity_t askQty;
+            currency_t openPrice;
+            currency_t lowPrice;
+            quantity_t volume;
+            quantity_t quoteVolume;
+        };
+
+        struct SymbolPriceTicker
+        {
+            currency_t price;
+        };
+
+        struct SymbolOrderBookTicker
+        {
+            currency_t bidPrice;
+            quantity_t bidQty;
+            currency_t askPrice;
+            quantity_t askQty;
+        };
+
+        struct RollingWindowPriceChangeStatistics
+        {
+            uint64_t openTime;
+            uint64_t closeTime;
+            int64_t firstId;
+            int64_t lastId;
+            int64_t count;
+            currency_t priceChange;
+            currency_t priceChangePercent;
+            currency_t weightedAvgPrice;
+            currency_t openPrice;
+            currency_t highPrice;
+            currency_t lowPrice;
+            currency_t lastPrice;
+            quantity_t volume;
+            quantity_t quoteVolume;
+        };
+
     } // namespace SPOT
+
+    namespace SPOTStreams
+    {
+
+    }
 
     namespace Futures
     {
@@ -910,26 +1001,6 @@ namespace BINAPI_NAMESPACE
         std::string symbol;
         percentage_t fundingRate;
         uint64_t fundingTime;
-    };
-
-    struct TickerPrice24hr
-    {
-        std::string symbol;
-        currency_t priceChange;
-        percentage_t priceChangePercent;
-        currency_t weightedAvgPrice;
-        currency_t lastPrice;
-        quantity_t lastQty;
-        currency_t openPrice;
-        currency_t highPrice;
-        currency_t lowPrice;
-        quantity_t volume;
-        quantity_t quoteVolume;
-        uint64_t openTime;
-        uint64_t closeTime;
-        int64_t firstId;
-        int64_t lastId;
-        int64_t count;
     };
 
     struct FuturesSymbolPriceTicker

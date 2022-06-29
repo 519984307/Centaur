@@ -49,6 +49,19 @@ namespace BINAPI_NAMESPACE::local::schemas
         extern char check_server_time[];
         extern char exchange_info[];
         extern char order_book[];
+        extern char recent_trade_list[];
+        extern char old_trade_lookup[];
+        extern char compressed_aggregate_trades_list[];
+        extern char candlestick_data[];
+        extern char current_average_price[];
+        extern char ticker_price_change_statistics[];
+        extern char ticker_price_change_statistics_multiple[];
+        extern char symbol_price_ticker[];
+        extern char symbol_price_ticker_multiple[];
+        extern char symbol_order_book_ticker[];
+        extern char symbol_order_book_ticker_multiple[];
+        extern char rolling_window_price_change_statistics[];
+        extern char rolling_window_price_change_statistics_multiple[];
 
     } // namespace SPOT
 

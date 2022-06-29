@@ -521,6 +521,95 @@ namespace BINAPI_NAMESPACE
         ///                this wrapper does it before sending it to the servers
         /// \return Returns the order book
         T_NODISCARD auto getOrderBook(v_sym_t symbol, uint32_t limit = 100) -> SPOT::OrderBook;
+
+        /// \brief Get recent trades.
+        /// \param symbol Symbol name
+        /// \param limit default is 500; max is 1000
+        /// \return A List with trades
+        T_NODISCARD auto recentTradeList(v_sym_t symbol, uint32_t limit = 500) -> std::vector<SPOT::RecentTrade>;
+
+        /// \brief Get older market trades. (MARKET_DATA)
+        /// \param symbol Symbol name
+        /// \param limit default is 500; max is 1000
+        /// \param byId If byId is specified. limit will be ignored
+        /// \return A list with the old trades
+        T_NODISCARD auto oldTradeLookup(v_sym_t symbol, uint32_t limit = 500, int32_t byId = -1) -> std::vector<SPOT::OldTrade>;
+
+        /// \brief Get compressed, aggregate trades. Trades that fill at the time, from the same order, with the same price will have the quantity aggregated.
+        /// \param symbol Symbol name
+        /// \param id Trade id
+        /// \return The trade
+        T_NODISCARD auto compressedAggregateTradeList(v_sym_t symbol, int32_t id) -> std::vector<SPOT::CompressedAggregateTradeList>;
+
+        /// \brief Get compressed, aggregate trades. Trades that fill at the time, from the same order, with the same price will have the quantity aggregated.
+        /// \param symbol Symbol name
+        /// \param startTime Start time ignored if set to 0
+        /// \param endTime End time, ignored if set to 0
+        /// \param limit default is 500; max is 1000
+        /// \return The trade
+        T_NODISCARD auto compressedAggregateTradeList(v_sym_t symbol, uint64_t startTime, uint64_t endTime, uint64_t limit = 500) -> std::vector<SPOT::CompressedAggregateTradeList>;
+
+        /// \brief Get candel data
+        /// \param symbol Symbol name
+        /// \param bti Time interval for the candle
+        /// \param startTime Start time ignored if set to 0
+        /// \param endTime  End time ignored if set to 0
+        /// \param limit default is 500; max is 1000
+        /// \return A candle list
+        T_NODISCARD auto candlestickData(v_sym_t symbol, BinanceTimeIntervals bti, uint64_t startTime, uint64_t endTime, uint64_t limit = 500) -> std::vector<Candlestick>;
+
+        /// \brief Current average price for a symbol
+        /// \param symbol Symbol name
+        /// \return Symbol average price
+        T_NODISCARD auto currentAveragePrice(v_sym_t symbol) -> SPOT::AveragePrice;
+
+        /// \brief 24 hour rolling window price change statistics. Careful when accessing this with no symbol.
+        /// \param symbol Symbol name
+        /// \return Statistics
+        T_NODISCARD auto tickerPriceChangeStatistics24hr(v_sym_t symbol) -> SPOT::TickerPriceChangeStatistics;
+
+        /// \brief 24 hour rolling window price change statistics. Careful when accessing this with no symbol.
+        /// \param symbols Symbol name list
+        /// \return Statistics for each symbol
+        T_NODISCARD auto tickerPriceChangeStatistics24hr(const std::vector<sym_t> &symbols) -> std::unordered_map<sym_t, SPOT::TickerPriceChangeStatistics>;
+
+        /// \brief Latest price for a symbol or symbols.
+        /// \param symbol Symbol name
+        /// \return Price ticker for the symbol
+        T_NODISCARD auto symbolPriceTicker(v_sym_t symbol) -> SPOT::SymbolPriceTicker;
+
+        /// \brief Latest price for a symbol or symbols.
+        /// \param symbols Symbol name list
+        /// \return Price ticker for each symbol
+        T_NODISCARD auto symbolPriceTicker(const std::vector<sym_t> &symbols) -> std::unordered_map<sym_t, SPOT::SymbolPriceTicker>;
+
+        /// \brief Best price/qty on the order book for a symbol or symbols.
+        /// \param symbol Symbol name
+        /// \return Order book ticker
+        T_NODISCARD auto symbolOrderBookTicker(v_sym_t symbol) -> SPOT::SymbolOrderBookTicker;
+
+        /// \brief Best price/qty on the order book for a symbol or symbols.
+        /// \param symbols Symbol name list
+        /// \return List with the Order book ticker for each symbols
+        T_NODISCARD auto symbolOrderBookTicker(const std::vector<sym_t> &symbols) -> std::unordered_map<sym_t, SPOT::SymbolOrderBookTicker>;
+
+        /// \brief Rolling window price change statistics
+        /// \param symbol Symbol name
+        /// \param windowSize  Supported windowSize values:
+        /// 1m,2m....59m for minutes
+        /// 1h, 2h....23h - for hours
+        /// 1d...7d - for days
+        /// \return Statistics for the symbol
+        T_NODISCARD auto rollingWindowPriceChangeStatistics(v_sym_t symbol, std::string_view windowSize) -> SPOT::RollingWindowPriceChangeStatistics;
+
+        /// \brief Rolling window price change statistics
+        /// \param symbols Symbol name list
+        /// \param windowSize  Supported windowSize values:
+        /// 1m,2m....59m for minutes
+        /// 1h, 2h....23h - for hours
+        /// 1d...7d - for days
+        /// \return Statistics for the symbols
+        T_NODISCARD auto rollingWindowPriceChangeStatistics(const std::vector<sym_t> &symbols, std::string_view windowSize) -> std::unordered_map<sym_t, SPOT::RollingWindowPriceChangeStatistics>;
     };
 
     // COIN-M Futures end-points wrapper

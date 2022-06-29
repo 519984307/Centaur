@@ -38,7 +38,7 @@ namespace
 #endif /*defined(__clang__) || defined(__GNUC__)*/
 
     using namespace BINAPI_NAMESPACE::local;
-    const std::array<BinanceAPIRequest, 30> g_spotRequests {
+    const std::array<BinanceAPIRequest, 44> g_spotRequests {
         {
             // Wallet Endpoints
             { 1, "/sapi/v1/system/status", HTTPRequest::GET, false, loadSchema(schemas::SPOT::system_status), loadSchema(schemas::sapi_error), true, false },
@@ -72,6 +72,20 @@ namespace
             { 5, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
             { 10, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
             { 50, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
+            { 1, "/api/v3/trades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::recent_trade_list), loadSchema(schemas::api_error), false, false },
+            { 5, "/api/v3/historicalTrades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::old_trade_lookup), loadSchema(schemas::api_error), false, true },
+            { 1, "/api/v3/aggTrades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::compressed_aggregate_trades_list), loadSchema(schemas::api_error), false, false },
+            { 1, "/api/v3/klines", HTTPRequest::GET, false, loadSchema(schemas::SPOT::candlestick_data), loadSchema(schemas::api_error), false, false },
+            { 1, "/api/v3/avgPrice", HTTPRequest::GET, false, loadSchema(schemas::SPOT::current_average_price), loadSchema(schemas::api_error), false, false },
+            { 1, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics), loadSchema(schemas::api_error), false, false },
+            { 20, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics), loadSchema(schemas::api_error), false, false },
+            { 40, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
+            { 1, "/api/v3/ticker/price", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_price_ticker), loadSchema(schemas::api_error), false, false },
+            { 2, "/api/v3/ticker/price", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_price_ticker_multiple), loadSchema(schemas::api_error), false, false },
+            { 1, "/api/v3/ticker/bookTicker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_order_book_ticker), loadSchema(schemas::api_error), false, false },
+            { 2, "/api/v3/ticker/bookTicker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_order_book_ticker_multiple), loadSchema(schemas::api_error), false, false },
+            { 2, "/api/v3/ticker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::rolling_window_price_change_statistics), loadSchema(schemas::api_error), false, false },
+            { 100, "/api/v3/ticker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::rolling_window_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
         }
     };
 
@@ -113,6 +127,20 @@ namespace
         ORDER_BOOK_5,
         ORDER_BOOK_10,
         ORDER_BOOK_50,
+        RECENT_TRADE_LIST,
+        OLD_TRADE_LOOKUP,
+        COMPRESSED_AGGREGATE_TRADE_LIST,
+        CANDLESTICK,
+        CURRENT_AVERAGE_PRICE,
+        TICKER_PRICE_CHANGE_STATISTICS_1,
+        TICKER_PRICE_CHANGE_STATISTICS_20,
+        TICKER_PRICE_CHANGE_STATISTICS_40,
+        SYMBOL_PRICE_TICKER_1,
+        SYMBOL_PRICE_TICKER_2,
+        SYMBOL_ORDER_BOOK_TICKER_1,
+        SYMBOL_ORDER_BOOK_TICKER_2,
+        ROLLING_WINDOW_PRICE_CHANGE_STATISTICS_2,
+        ROLLING_WINDOW_PRICE_CHANGE_STATISTICS_100
     };
 
 } // namespace
@@ -1384,4 +1412,461 @@ auto binapi::BinanceAPISpot::getOrderBook(binapi::v_sym_t symbol, uint32_t limit
     }
 
     return ob;
+}
+
+auto binapi::BinanceAPISpot::recentTradeList(v_sym_t symbol, uint32_t limit) -> std::vector<SPOT::RecentTrade>
+{
+    const eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) },
+        { "limit", fmt::to_string(limit) }
+    };
+
+    auto doc = apiRequest(g_spotRequests[RECENT_TRADE_LIST], parameters, false);
+
+    std::vector<SPOT::RecentTrade> vsrt;
+
+    for (const auto &data : doc.GetArray())
+    {
+        vsrt.push_back({ .id = data["id"].GetInt64(),
+            .time            = data["time"].GetUint64(),
+            .price           = JTO_DOB(data, "price"),
+            .qty             = JTO_DOB(data, "qty"),
+            .quoteQty        = JTO_DOB(data, "quoteQty"),
+            .isBuyerMaker    = data["isBuyerMaker"].GetBool(),
+            .isBestMatch     = data["isBestMatch"].GetBool() });
+    }
+
+    return vsrt;
+}
+
+auto binapi::BinanceAPISpot::oldTradeLookup(v_sym_t symbol, uint32_t limit, int32_t byId) -> std::vector<SPOT::OldTrade>
+{
+    eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) }
+    };
+    if (byId != -1)
+        parameters.emplace_back("fromId", fmt::to_string(byId));
+    else
+        parameters.emplace_back("limit", fmt::to_string(limit));
+
+    auto doc = apiRequest(g_spotRequests[OLD_TRADE_LOOKUP], parameters, true);
+
+    std::vector<SPOT::OldTrade> vsot;
+
+    for (const auto &data : doc.GetArray())
+    {
+        vsot.push_back({ .id = data["id"].GetInt64(),
+            .time            = data["time"].GetUint64(),
+            .price           = JTO_DOB(data, "price"),
+            .qty             = JTO_DOB(data, "qty"),
+            .quoteQty        = JTO_DOB(data, "quoteQty"),
+            .isBuyerMaker    = data["isBuyerMaker"].GetBool(),
+            .isBestMatch     = data["isBestMatch"].GetBool() });
+    }
+
+    return vsot;
+}
+
+/// \brief Get compressed, aggregate trades. Trades that fill at the time, from the same order, with the same price will have the quantity aggregated.
+/// \param symbol Symbol name
+/// \param id Trade id
+/// \return The trade
+auto binapi::BinanceAPISpot::compressedAggregateTradeList(v_sym_t symbol, int32_t id) -> std::vector<SPOT::CompressedAggregateTradeList>
+{
+    const eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) },
+        { "fromId", fmt::to_string(id) }
+    };
+
+    auto doc = apiRequest(g_spotRequests[COMPRESSED_AGGREGATE_TRADE_LIST], parameters, false);
+
+    std::vector<SPOT::CompressedAggregateTradeList> svspcatl;
+
+    svspcatl.push_back({ doc["a"].GetUint64(),
+        doc["f"].GetInt64(),
+        doc["l"].GetInt64(),
+        doc["T"].GetUint64(),
+        JTO_DOB(doc, "p"),
+        JTO_DOB(doc, "q"),
+        doc["m"].GetBool(),
+        doc["M"].GetBool() });
+
+    return svspcatl;
+}
+
+auto binapi::BinanceAPISpot::compressedAggregateTradeList(v_sym_t symbol, uint64_t startTime, uint64_t endTime, uint64_t limit) -> std::vector<SPOT::CompressedAggregateTradeList>
+{
+    eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) },
+        { "limit", fmt::to_string(limit) }
+    };
+
+    if (startTime)
+        parameters.emplace_back("startTime", fmt::to_string(startTime));
+    if (endTime)
+        parameters.emplace_back("endTime", fmt::to_string(endTime));
+
+    auto doc = apiRequest(g_spotRequests[COMPRESSED_AGGREGATE_TRADE_LIST], parameters, false);
+
+    std::vector<SPOT::CompressedAggregateTradeList> svspcatl;
+
+    for (const auto &data : doc.GetArray())
+    {
+        svspcatl.push_back({ data["a"].GetUint64(),
+            data["f"].GetInt64(),
+            data["l"].GetInt64(),
+            data["T"].GetUint64(),
+            JTO_DOB(data, "p"),
+            JTO_DOB(data, "q"),
+            data["m"].GetBool(),
+            data["M"].GetBool() });
+    }
+
+    return svspcatl;
+}
+
+auto binapi::BinanceAPISpot::candlestickData(v_sym_t symbol, BinanceTimeIntervals bti, uint64_t startTime, uint64_t endTime, uint64_t limit) -> std::vector<Candlestick>
+{
+    eparams parameters {
+        { "symbol", VIEW_INIT(symbol) },
+        { "interval", VIEW_INIT(fromIntervalToString(bti)) },
+        { "limit", fmt::format("{}", limit) }
+    };
+
+    if (endTime != 0)
+    {
+        parameters.emplace_back("endTime", fmt::to_string(endTime));
+    }
+    if (startTime != 0)
+    {
+        parameters.emplace_back("startTime", fmt::to_string(startTime));
+    }
+
+    auto doc = apiRequest(g_spotRequests[CANDLESTICK], parameters, false);
+
+    std::vector<Candlestick> cdl;
+    for (const auto &candleData : doc.GetArray())
+    {
+        std::size_t i = 0;
+        Candlestick csd {};
+        for (const auto &candle : candleData.GetArray())
+        {
+            switch (i)
+            {
+                case 0:
+                    csd.openTime = candle.GetUint64();
+                    break;
+                case 1:
+                    csd.open = std::stod(candle.GetString());
+                    break;
+                case 2:
+                    csd.high = std::stod(candle.GetString());
+                    break;
+                case 3:
+                    csd.low = std::stod(candle.GetString());
+                    break;
+                case 4:
+                    csd.close = std::stod(candle.GetString());
+                    break;
+                case 5:
+                    csd.volume = std::stod(candle.GetString());
+                    break;
+                case 6:
+                    csd.closeTime = candle.GetUint64();
+                    break;
+                case 7:
+                    csd.quoteAssetVolume = std::stod(candle.GetString());
+                    break;
+                case 8:
+                    csd.numberOfTrades = candle.GetUint64();
+                    break;
+                case 9:
+                    csd.takerBaseAssetVolume = std::stod(candle.GetString());
+                    break;
+                case 10:
+                    csd.takerQuoteAssetVolume = std::stod(candle.GetString());
+                    break;
+                default:
+                    break;
+            }
+            ++i;
+        }
+        cdl.push_back(csd);
+    }
+
+    return cdl;
+}
+
+auto binapi::BinanceAPISpot::currentAveragePrice(v_sym_t symbol) -> SPOT::AveragePrice
+{
+    const eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) },
+    };
+
+    auto doc = apiRequest(g_spotRequests[CURRENT_AVERAGE_PRICE], parameters, false);
+
+    return SPOT::AveragePrice {
+        .minutes = doc["mins"].GetInt64(),
+        .price   = JTO_DOB(doc, "price")
+    };
+}
+
+auto binapi::BinanceAPISpot::tickerPriceChangeStatistics24hr(v_sym_t symbol) -> SPOT::TickerPriceChangeStatistics
+{
+    const eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) },
+    };
+
+    auto doc = apiRequest(g_spotRequests[TICKER_PRICE_CHANGE_STATISTICS_1], parameters, false);
+
+    return SPOT::TickerPriceChangeStatistics {
+        .openTime           = doc["openTime"].GetUint64(),
+        .closeTime          = doc["closeTime"].GetUint64(),
+        .firstId            = doc["firstId"].GetInt64(),
+        .lastId             = doc["lastId"].GetInt64(),
+        .count              = doc["count"].GetInt64(),
+        .priceChange        = JTO_DOB(doc, "priceChange"),
+        .priceChangePercent = JTO_DOB(doc, "priceChangePercent"),
+        .weightedAvgPrice   = JTO_DOB(doc, "weightedAvgPrice"),
+        .prevClosePrice     = JTO_DOB(doc, "prevClosePrice"),
+        .lastPrice          = JTO_DOB(doc, "lastPrice"),
+        .lastQty            = JTO_DOB(doc, "lastQty"),
+        .bidPrice           = JTO_DOB(doc, "bidPrice"),
+        .bidQty             = JTO_DOB(doc, "bidQty"),
+        .askPrice           = JTO_DOB(doc, "askPrice"),
+        .askQty             = JTO_DOB(doc, "askQty"),
+        .openPrice          = JTO_DOB(doc, "openPrice"),
+        .lowPrice           = JTO_DOB(doc, "lowPrice"),
+        .volume             = JTO_DOB(doc, "volume"),
+        .quoteVolume        = JTO_DOB(doc, "quoteVolume")
+    };
+}
+
+auto binapi::BinanceAPISpot::tickerPriceChangeStatistics24hr(const std::vector<sym_t> &symbols) -> std::unordered_map<sym_t, SPOT::TickerPriceChangeStatistics>
+{
+    std::unordered_map<sym_t, SPOT::TickerPriceChangeStatistics> smsstpcs;
+
+    if (symbols.size() == 1)
+    {
+        smsstpcs[symbols[0]] = tickerPriceChangeStatistics24hr(symbols[0].c_str());
+        return smsstpcs;
+    }
+
+    std::string symbolList = "[";
+    for (const auto &s : symbols)
+        symbolList += fmt::format("\"{}\",", s);
+    symbolList.pop_back(); // Remove the last comma
+    symbolList += "]";
+
+    const eparams parameters {
+        { "symbols", symbolList },
+    };
+
+    const auto request = [count = symbols.size()]() {
+        if (count <= 20)
+            return TICKER_PRICE_CHANGE_STATISTICS_1;
+        else if (count >= 21 && count <= 100)
+            return TICKER_PRICE_CHANGE_STATISTICS_20;
+        else
+            return TICKER_PRICE_CHANGE_STATISTICS_40;
+    }();
+
+    auto doc = apiRequest(g_spotRequests[request], parameters, false);
+
+    for (const auto &data : doc.GetArray())
+    {
+        smsstpcs[JTO_STRING(data, "symbol")] = SPOT::TickerPriceChangeStatistics {
+            .openTime           = data["openTime"].GetUint64(),
+            .closeTime          = data["closeTime"].GetUint64(),
+            .firstId            = data["firstId"].GetInt64(),
+            .lastId             = data["lastId"].GetInt64(),
+            .count              = data["count"].GetInt64(),
+            .priceChange        = JTO_DOB(data, "priceChange"),
+            .priceChangePercent = JTO_DOB(data, "priceChangePercent"),
+            .weightedAvgPrice   = JTO_DOB(data, "weightedAvgPrice"),
+            .prevClosePrice     = JTO_DOB(data, "prevClosePrice"),
+            .lastPrice          = JTO_DOB(data, "lastPrice"),
+            .lastQty            = JTO_DOB(data, "lastQty"),
+            .bidPrice           = JTO_DOB(data, "bidPrice"),
+            .bidQty             = JTO_DOB(data, "bidQty"),
+            .askPrice           = JTO_DOB(data, "askPrice"),
+            .askQty             = JTO_DOB(data, "askQty"),
+            .openPrice          = JTO_DOB(data, "openPrice"),
+            .lowPrice           = JTO_DOB(data, "lowPrice"),
+            .volume             = JTO_DOB(data, "volume"),
+            .quoteVolume        = JTO_DOB(data, "quoteVolume")
+        };
+    }
+    return smsstpcs;
+}
+
+auto binapi::BinanceAPISpot::symbolPriceTicker(v_sym_t symbol) -> SPOT::SymbolPriceTicker
+{
+    const eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) }
+    };
+
+    auto doc = apiRequest(g_spotRequests[SYMBOL_PRICE_TICKER_1], parameters, false);
+
+    return {
+        .price = JTO_DOB(doc, "price")
+    };
+}
+
+auto binapi::BinanceAPISpot::symbolPriceTicker(const std::vector<sym_t> &symbols) -> std::unordered_map<sym_t, SPOT::SymbolPriceTicker>
+{
+    std::unordered_map<sym_t, SPOT::SymbolPriceTicker> smssspt;
+
+    if (symbols.size() == 1)
+    {
+        smssspt[symbols[0]] = symbolPriceTicker(symbols[0].c_str());
+        return smssspt;
+    }
+
+    std::string symbolList = "[";
+    for (const auto &s : symbols)
+        symbolList += fmt::format("\"{}\",", s);
+    symbolList.pop_back(); // Remove the last comma
+    symbolList += "]";
+
+    const eparams parameters {
+        { "symbols", symbolList },
+    };
+
+    auto doc = apiRequest(g_spotRequests[SYMBOL_PRICE_TICKER_2], parameters, false);
+
+    for (const auto &data : doc.GetArray())
+    {
+        smssspt[JTO_STRING(data, "symbol")] = {
+            .price = JTO_DOB(data, "price")
+        };
+    }
+    return smssspt;
+}
+
+auto binapi::BinanceAPISpot::symbolOrderBookTicker(v_sym_t symbol) -> SPOT::SymbolOrderBookTicker
+{
+    const eparams parameters { { "symbol", S_VIEW_INIT(symbol) } };
+
+    auto doc = apiRequest(g_spotRequests[SYMBOL_ORDER_BOOK_TICKER_1], parameters, false);
+
+    return {
+        .bidPrice = JTO_DOB(doc, "bidPrice"),
+        .bidQty   = JTO_DOB(doc, "bidQty"),
+        .askPrice = JTO_DOB(doc, "askPrice"),
+        .askQty   = JTO_DOB(doc, "askQty")
+    };
+}
+
+auto binapi::BinanceAPISpot::symbolOrderBookTicker(const std::vector<sym_t> &symbols) -> std::unordered_map<sym_t, SPOT::SymbolOrderBookTicker>
+{
+    std::unordered_map<sym_t, SPOT::SymbolOrderBookTicker> susssobt;
+
+    if (symbols.size() == 1)
+    {
+        susssobt[symbols[0]] = symbolOrderBookTicker(symbols[0].c_str());
+        return susssobt;
+    }
+
+    std::string symbolList = "[";
+    for (const auto &s : symbols)
+        symbolList += fmt::format("\"{}\",", s);
+    symbolList.pop_back(); // Remove the last comma
+    symbolList += "]";
+
+    const eparams parameters {
+        { "symbols", symbolList },
+    };
+
+    auto doc = apiRequest(g_spotRequests[SYMBOL_ORDER_BOOK_TICKER_2], parameters, false);
+
+    for (const auto &data : doc.GetArray())
+    {
+        susssobt[JTO_STRING(data, "symbol")] = {
+            .bidPrice = JTO_DOB(doc, "bidPrice"),
+            .bidQty   = JTO_DOB(doc, "bidQty"),
+            .askPrice = JTO_DOB(doc, "askPrice"),
+            .askQty   = JTO_DOB(doc, "askQty")
+        };
+    }
+    return susssobt;
+}
+
+auto binapi::BinanceAPISpot::rollingWindowPriceChangeStatistics(v_sym_t symbol, std::string_view windowSize) -> SPOT::RollingWindowPriceChangeStatistics
+{
+    const eparams parameters {
+        { "symbol", S_VIEW_INIT(symbol) },
+        { "windowSize", S_VIEW_INIT(windowSize) }
+    };
+
+    auto doc = apiRequest(g_spotRequests[ROLLING_WINDOW_PRICE_CHANGE_STATISTICS_2], parameters, false);
+
+    return {
+        .openTime           = doc["openTime"].GetUint64(),
+        .closeTime          = doc["closeTime"].GetUint64(),
+        .firstId            = doc["firstId"].GetInt64(),
+        .lastId             = doc["lastId"].GetInt64(),
+        .count              = doc["count"].GetInt64(),
+        .priceChange        = JTO_DOB(doc, "priceChange"),
+        .priceChangePercent = JTO_DOB(doc, "priceChangePercent"),
+        .weightedAvgPrice   = JTO_DOB(doc, "weightedAvgPrice"),
+        .openPrice          = JTO_DOB(doc, "openPrice"),
+        .highPrice          = JTO_DOB(doc, "highPrice"),
+        .lowPrice           = JTO_DOB(doc, "lowPrice"),
+        .lastPrice          = JTO_DOB(doc, "lastPrice"),
+        .volume             = JTO_DOB(doc, "volume"),
+        .quoteVolume        = JTO_DOB(doc, "quoteVolume")
+    };
+}
+
+auto binapi::BinanceAPISpot::rollingWindowPriceChangeStatistics(const std::vector<sym_t> &symbols, std::string_view windowSize) -> std::unordered_map<sym_t, SPOT::RollingWindowPriceChangeStatistics>
+{
+    std::unordered_map<sym_t, SPOT::RollingWindowPriceChangeStatistics> sussrwpcs;
+
+    if (symbols.size() == 1)
+    {
+        sussrwpcs[symbols[0]] = rollingWindowPriceChangeStatistics(symbols[0].c_str(), windowSize);
+        return sussrwpcs;
+    }
+
+    std::string symbolList = "[";
+    for (const auto &s : symbols)
+        symbolList += fmt::format("\"{}\",", s);
+    symbolList.pop_back(); // Remove the last comma
+    symbolList += "]";
+
+    const eparams parameters {
+        { "symbols", symbolList },
+        { "windowSize", S_VIEW_INIT(windowSize) }
+    };
+
+    const auto request = [count = symbols.size()]() {
+        if (count <= 50)
+            return ROLLING_WINDOW_PRICE_CHANGE_STATISTICS_2;
+        else
+            return ROLLING_WINDOW_PRICE_CHANGE_STATISTICS_100;
+    }();
+
+    auto doc = apiRequest(g_spotRequests[request], parameters, false);
+
+    for (const auto &data : doc.GetArray())
+    {
+        sussrwpcs[JTO_STRING(data, "symbol")] = {
+            .openTime           = data["openTime"].GetUint64(),
+            .closeTime          = data["closeTime"].GetUint64(),
+            .firstId            = data["firstId"].GetInt64(),
+            .lastId             = data["lastId"].GetInt64(),
+            .count              = data["count"].GetInt64(),
+            .priceChange        = JTO_DOB(data, "priceChange"),
+            .priceChangePercent = JTO_DOB(data, "priceChangePercent"),
+            .weightedAvgPrice   = JTO_DOB(data, "weightedAvgPrice"),
+            .openPrice          = JTO_DOB(data, "openPrice"),
+            .highPrice          = JTO_DOB(data, "highPrice"),
+            .lowPrice           = JTO_DOB(data, "lowPrice"),
+            .lastPrice          = JTO_DOB(data, "lastPrice"),
+            .volume             = JTO_DOB(data, "volume"),
+            .quoteVolume        = JTO_DOB(data, "quoteVolume")
+        };
+    }
+    return sussrwpcs;
 }
