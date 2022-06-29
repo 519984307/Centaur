@@ -26,6 +26,7 @@ color: rgb(255, 255, 255);
 background-color: rgb(172, 6, 0);
 border-radius: 3px;
 min-width: 85px;
+margin: 0 0 0 10;
 qproperty-alignment: AlignCenter;
 })"
     };
@@ -36,6 +37,7 @@ color: rgb(255, 255, 255);
 background-color: rgb(0, 104, 18);
 border-radius: 3px;
 min-width: 85px;
+margin: 0 0 0 10;
 qproperty-alignment: AlignCenter;
 })"
     };
@@ -46,6 +48,7 @@ color: rgb(25, 25, 25);
 background-color: rgb(158, 231, 255);
 border-radius: 3px;
 min-width: 85px;
+margin: 0 0 0 10;
 qproperty-alignment: AlignCenter;
 })"
     };
