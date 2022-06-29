@@ -78,7 +78,7 @@ void CENTAUR_NAMESPACE::CenListCtrl::showContextMenu(const QPoint &pos)
                             contextMenu.addSeparator();
                             contextMenu.addMenu(candleMenu);
 
-                            g_app->m_candleEmitter = { itemData, pl };
+                            g_app->m_candleEmitter = { exchInfo, itemData, pl };
                         }
 
                         for (const auto &tf : timeframes)
