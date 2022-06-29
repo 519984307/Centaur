@@ -4,6 +4,7 @@
 #include <catch2/catch.hpp>
 #include <chrono>
 #include <iostream>
+#include <unordered_map>
 #include <uuid.hpp>
 
 TEST_CASE("UUID Construction")
@@ -23,6 +24,59 @@ TEST_CASE("UUID Construction")
     cen::uuid uuid("{abcdefAB-CDEF-0123-4567-890000000000}");
     CHECK(uuid.to_string() == "{abcdefab-cdef-0123-4567-890000000000}");
     CHECK(uuid.to_string(true) == "{ABCDEFAB-CDEF-0123-4567-890000000000}");
+
+    cen::uuid bytes { 0xabcdefAB, 0xcdef, 0x0123, 0x4567, 0x89, 0x10, 0xcc, 0x90, 0x34, 0x35, true };
+    CHECK(bytes == "{abcdefab-cdef-0123-4567-8910cc903435}");
+
+    cen::uuid bytes_endianness { 0xabcdefAB, 0xcdef, 0x0123, 0x4567, 0x89, 0x10, 0xcc, 0x90, 0x34, 0x35, false };
+    CHECK(bytes_endianness == "{abefcdab-efcd-2301-6745-8910cc903435}");
+}
+
+TEST_CASE("UUID maps")
+{
+    std::map<cen::uuid, int> l;
+
+    cen::uuid i1 { "{abcdefAB-CDEF-0123-4567-890000000000}" };
+    cen::uuid i2 { "{6f12121d-1212-1212-1224-014C14a11c14}" };
+
+    l[i1] = 0x3433;
+    l[i2] = 0x56c1;
+
+    CHECK(l[i1] == 0x3433);
+    CHECK(l[i2] == 0x56c1);
+}
+
+TEST_CASE("UUID unordered_maps")
+{
+    std::unordered_map<cen::uuid, int> l;
+
+    cen::uuid i1 { "{abcdefAB-CDEF-0123-4567-890000000000}" };
+    cen::uuid i2 { "{6f12121d-1212-1212-1224-014C14a11c14}" };
+
+    l[i1] = 0x3433;
+    l[i2] = 0x56c1;
+
+    CHECK(l[i1] == 0x3433);
+    CHECK(l[i2] == 0x56c1);
+}
+
+TEST_CASE("UUID unordered_maps no random collisions")
+{
+    std::unordered_map<cen::uuid, int> l;
+
+    int col = 0;
+    for (uint i = 0; i < 5'000; ++i)
+    {
+        auto id = cen::uuid::generate<std::mt19937_64>();
+        if (auto iter = l.find(id); iter != l.end())
+        {
+            ++col;
+            std::cout << id.to_string() << "<-->" << iter->first.to_string() << "\n";
+        }
+        else
+            l[id] = 0x12;
+    }
+    CHECK(col == 0);
 }
 
 TEST_CASE("UUID Benchmark")
@@ -32,6 +86,20 @@ TEST_CASE("UUID Benchmark")
     {
         std::vector<Catch::Benchmark::storage_for<cen::uuid>> uuids(static_cast<std::size_t>(meter.runs()));
         meter.measure([&](std::size_t i) { uuids[i].construct("{6f12121d-1212-1212-1224-014C14a11c14}"); });
+    };
+
+    BENCHMARK_ADVANCED("UUID Constructor integers endian=true")
+    (Catch::Benchmark::Chronometer meter)
+    {
+        std::vector<Catch::Benchmark::storage_for<cen::uuid>> uuids(static_cast<std::size_t>(meter.runs()));
+        meter.measure([&](std::size_t i) { uuids[i].construct(0xabcdefAB, 0xcdef, 0x0123, 0x4567, 0x89, 0x10, 0xcc, 0x90, 0x34, 0x35, true); });
+    };
+
+    BENCHMARK_ADVANCED("UUID Constructor integers endian=false")
+    (Catch::Benchmark::Chronometer meter)
+    {
+        std::vector<Catch::Benchmark::storage_for<cen::uuid>> uuids(static_cast<std::size_t>(meter.runs()));
+        meter.measure([&](std::size_t i) { uuids[i].construct(0xabcdefAB, 0xcdef, 0x0123, 0x4567, 0x89, 0x10, 0xcc, 0x90, 0x34, 0x35, false); });
     };
 
     BENCHMARK("UUID Generator mt19937")
@@ -134,18 +202,16 @@ TEST_CASE("Communication JSON Protocols. Accept Connection")
     using namespace CENTAUR_NAMESPACE;
     protocol::message::Protocol_AcceptConnection pac;
 
-    pac.uuid()           = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
-    pac.name()           = "Connection test";
+    pac.uuid() = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
+    pac.name() = "Connection test";
 
-
-    CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test","implementation":"exchange"}})");
+    CHECK(pac.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","name":"Connection test"}})");
 
     protocol::message::Protocol_AcceptConnection pacRes;
     pacRes.fromJson(pac.json().c_str());
 
     CHECK(pacRes.uuid() == "{afc31b50-481a-0dce-40b5-4bd59f1118ad}");
     CHECK(pacRes.name() == "Connection test");
-
 }
 
 TEST_CASE("Communication JSON Protocols. Accepted Connection")
@@ -153,15 +219,13 @@ TEST_CASE("Communication JSON Protocols. Accepted Connection")
     using namespace CENTAUR_NAMESPACE;
 
     protocol::message::Protocol_AcceptedConnection padc;
-    padc.uuid()   = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
+    padc.uuid() = "{afc31b50-481a-0dce-40b5-4bd59f1118ad}";
 
-
-    CHECK(padc.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}","status":1}})");
+    CHECK(padc.json() == R"({"data":{"uuid":"{afc31b50-481a-0dce-40b5-4bd59f1118ad}"}})");
 
     protocol::message::Protocol_AcceptedConnection padcRes;
     padcRes.fromJson(padc.json().c_str());
     CHECK(padcRes.uuid() == "{afc31b50-481a-0dce-40b5-4bd59f1118ad}");
-
 }
 
 TEST_CASE("Protocol: Packed ProtocolHedare")
