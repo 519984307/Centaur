@@ -315,23 +315,24 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /**
         signals:
            /// \brief Emit this signal to notify the UI that a candle must be update
-           /// \param id The id sent by acquire
-           /// \param currentCandle This is the candle to be updated. however, internally, the UI will access the last element directly
-           /// \param candle New candle data
-           /// \param frame Time frame
+           /// \param uuid The id sent by acquire
+           /// \param Timestamp This is the candle to be updated. however, internally, the UI will access the last element directly
+           /// \param CandleData New candle data
            /// \remarks 0. The UI will assume that the Timestamp is always the last one in the internal candle buffer and it will be stop to be updated once snRealTimeCandleClose is called
            /// \remarks 1. If this signal is emitted without a previous acquire called the signal will be disconnected from the interface when unwantedSignalLimit is reached
            /// nd the interface can't do anything to reconnect.
            /// \remarks 2. The same case applies if a call to disengage is made and the interface keeps pushing the data
-           void snRealTimeCandleUpdate(const uuid &id, Timestamp currentCandle, const CandleData &candle);
+           /// \remarks 3. IMPORTANT: MAKE SURE YOUR SIGNAL HAS THIS EXACT SIGNATURE, OTHERWISE, THE UI WILL FAILED TO LOAD THE PLUGIN
+           void snRealTimeCandleUpdate(const cen::uuid &, cen::plugin::ICandleView::Timestamp , const cen::plugin::ICandleView::CandleData &);
 
            /// \brief Emit this signal to notify that a candle has been closed
-           /// \param id The id sent by acquire
-           /// \param currentCandle Current timeframe. If currentCandle and the currentCandle in the time
-           /// \param candle New candle data
+           /// \param uuid The id sent by acquire
+           /// \param Timestamp Current timestamp. If currentCandle and the currentCandle in the time
+           /// \param CandleData New candle data
            /// \param frame Time frame
            /// \remarks IMPORTANT: KEEP IN MIND THAT THE CANDLE LIST IS LIMITED TO ICandleView::candleLimit
-           void snRealTimeCandleClose(const uuid &id, Timestamp currentCandle, const CandleData &candle, TimeFrame frame);
+           /// \remarks IMPORTANT: MAKE SURE YOUR SIGNAL HAS THIS EXACT SIGNATURE, OTHERWISE, THE UI WILL FAILED TO LOAD THE PLUGIN
+           void snRealTimeCandleClose(const cen::uuid &, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &);
         */
     };
 
