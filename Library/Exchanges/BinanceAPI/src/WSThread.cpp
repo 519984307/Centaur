@@ -61,7 +61,9 @@ auto BINAPI_NAMESPACE::ws::WSThread::setPingTimer(const uint64_t &timer) -> void
 void BINAPI_NAMESPACE::ws::WSThread::terminate()
 {
     m_terminate = true;
-    lws_cancel_service(m_context);
+
+    if (m_context)
+        lws_cancel_service(m_context);
 }
 
 auto BINAPI_NAMESPACE::ws::WSThread::getJsonData() const -> const std::string &
