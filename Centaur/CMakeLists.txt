@@ -54,6 +54,11 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/ProtocolClient.cpp
         src/CandleViewWidget.cpp
         src/ProtocolServer.cpp
+        src/CandleChart/CandleItem.cpp
+        src/CandleChart/CandleChartWidget.cpp
+        src/CandleChart/CandleChartScene.cpp
+        src/CandleChart/PriceAxisItem.cpp
+        src/CandleChart/TimeAxisItem.cpp
         include/CentaurApp.hpp
         include/CentaurGlobal.hpp
         include/CentaurUIState.hpp
@@ -71,13 +76,18 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         include/CandleViewWidget.hpp
         include/ProtocolClient.hpp
         include/CandleViewWidget.hpp
+        include/CandleChart/CandleItem.hpp
+        include/CandleChart/CandleChartWidget.hpp
+        include/CandleChart/CandleChartScene.hpp
+        include/CandleChart/PriceAxisItem.hpp
+        include/CandleChart/TimeAxisItem.hpp
+        ../Plugins/include/CentaurPlugin.hpp
+        ../Plugins/include/CentaurInterface.hpp
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
         ui/LenghtyDialog.ui
         ui/FavoritesDialog.ui
-        ui/CandleViewWidget.ui
-        ../Plugins/include/CentaurPlugin.hpp
-        ../Plugins/include/CentaurInterface.hpp)
+        ui/CandleViewWidget.ui)
 
 # Create the Apple Bundle
 IF (APPLE)

@@ -8,7 +8,7 @@
 
 #include "CentaurApp.hpp"
 
-void CENTAUR_NAMESPACE::CentaurApp::onLog(const unsigned long long &date, const int &session, const int &level, const QString &usr, const QString &source, const QString &msg) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onLog(unsigned long long date, int session, int level, const QString &usr, const QString &source, const QString &msg) noexcept
 {
     QTableWidget *logger = m_ui->logsTable;
     if (logger->rowCount() > 2000)

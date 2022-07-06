@@ -188,13 +188,15 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     initializeInterface();
 
     // Start the server
-    startCommunicationsServer();
+    // startCommunicationsServer();
 
     // Load plugins
     loadPlugins();
 
     // Load the favorites list. Since all plugins must be loaded
     loadFavoritesWatchList();
+
+    onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_30, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
 
     END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
     logInfo("app", QString(LS("trace-initialize-time")).arg(initializationTime.count(), 0, 'f', 4));
@@ -236,7 +238,7 @@ void cen::CentaurApp::closeEvent(QCloseEvent *event)
 
     saveInterfaceState();
 
-    QWidget::closeEvent(event);
+    event->accept();
 }
 
 bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
@@ -739,7 +741,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, cons
         logError("watchlist", QString("Symbol %1 was not added to the watchlist").arg(symbol));
     }
 }
-void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, const int &id, const quint64 &receivedTime, const double &price) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, int id, quint64 receivedTime, double price) noexcept
 {
     // Find the item in the Watchlist items
     auto itemIter         = m_watchlistItems.find(id);
@@ -800,7 +802,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, const 
     itemLatency->setText(QString("%1 ms").arg(latency));
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onRemoveWatchList(const int &row) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onRemoveWatchList(int row) noexcept
 {
     logTrace("watchlist", "CentaurApp::onRemoveWatchList");
     /// Retrieve the IExchange from the row based on the 4 column which has the PluginUUID Source
@@ -880,6 +882,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onSetWatchlistSelection(const QString &sourc
 
     auto &interface = itemIter->second.exchange;
     interface->updateOrderbook(symbol);
+    clearOrderbookListsAndDepth();
     m_currentViewOrderbookSymbol = { source, symbol };
     m_ui->bidsSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
     m_ui->asksSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
@@ -902,7 +905,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onWatchlistRemoveSelection() noexcept
     clearOrderbookListsAndDepth();
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept
+void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, quint64 receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept
 {
     const auto &[curSource, curSymbol] = m_currentViewOrderbookSymbol;
 
@@ -1012,8 +1015,26 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
 
 void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qreal>> &asks, const QMap<qreal, QPair<qreal, qreal>> &bids) noexcept
 {
+    auto yAxisBids = qobject_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Vertical).first());
+    auto xAxisBids = qobject_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Horizontal).first());
+    auto yAxisAsks = qobject_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Vertical).first());
+    auto xAxisAsks = qobject_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Horizontal).first());
+
     m_ui->asksChart->setUpdatesEnabled(false);
     m_ui->bidsChart->setUpdatesEnabled(false);
+
+    /*
+    yAxisBids->setUpdatesEnabled(false);
+    xAxisBids->setUpdatesEnabled(false);
+    xAxisAsks->setUpdatesEnabled(false);
+    yAxisAsks->setUpdatesEnabled(false);
+    m_ui->bidsChart->setUpdatesEnabled(false);
+    m_ui->asksChart->setUpdatesEnabled(false);
+    m_bidsDepthFill->setUpdatesEnabled(false);
+    m_bidsDepth->setUpdatesEnabled(false);
+    m_asksDepthFill->setUpdatesEnabled(false);
+    m_asksDepth->setUpdatesEnabled(false);
+*/
 
     auto generatePoints = [](const QMap<qreal, QPair<qreal, qreal>> &data, QList<QPointF> &prices, QList<QPointF> &fill) {
         double prevQuant = 0.0;
@@ -1078,12 +1099,13 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
     auto &[bidsMinX, bidsMaxX, bidsStepsX] = rangeBidsX;
     auto &[bidsMinY, bidsMaxY, bidsStepsY] = rangeBidsY;
 
-    auto yAxisBids                         = dynamic_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Vertical).first());
-    auto xAxisBids                         = dynamic_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Horizontal).first());
-
-    yAxisBids->setRange(bidsMinY, bidsMaxY);
+    // yAxisBids->setRange(bidsMinY, bidsMaxY);
+    yAxisBids->setMin(bidsMinY);
+    yAxisBids->setMax(bidsMaxY);
     yAxisBids->setTickInterval(bidsStepsY);
-    xAxisBids->setRange(bidsMinX, bidsMaxX);
+    // xAxisBids->setRange(bidsMinX, bidsMaxX);
+    xAxisBids->setMin(bidsMinX);
+    xAxisBids->setMax(bidsMaxX);
     xAxisBids->setTickInterval(bidsStepsX);
 
     m_bidsDepthFill->clear();
@@ -1092,12 +1114,13 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
     m_bidsDepthFill->append(bidsFill);
     m_bidsDepth->append(bidsPoints);
 
-    auto yAxisAsks = dynamic_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Vertical).first());
-    auto xAxisAsks = dynamic_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Horizontal).first());
-
-    yAxisAsks->setRange(asksMinY, asksMaxY);
+    // yAxisAsks->setRange(asksMinY, asksMaxY);
+    yAxisAsks->setMin(asksMinY);
+    yAxisAsks->setMax(asksMaxY);
     yAxisAsks->setTickInterval(asksStepsY);
-    xAxisAsks->setRange(asksMinX, asksMaxX);
+    // xAxisAsks->setRange(asksMinX, asksMaxX);
+    xAxisAsks->setMin(asksMinX);
+    xAxisAsks->setMax(asksMaxX);
     xAxisAsks->setTickInterval(asksStepsX);
 
     m_asksDepthFill->clear();
@@ -1105,6 +1128,18 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
 
     m_asksDepthFill->append(asksFill);
     m_asksDepth->append(asksPoints);
+
+    /*
+    yAxisBids->blockSignals(false);
+    xAxisBids->blockSignals(false);
+    xAxisAsks->blockSignals(false);
+    yAxisAsks->blockSignals(false);
+    m_ui->bidsChart->blockSignals(false);
+    m_ui->asksChart->blockSignals(false);
+    m_bidsDepthFill->blockSignals(false);
+    m_bidsDepth->blockSignals(false);
+    m_asksDepthFill->blockSignals(false);
+    m_asksDepth->blockSignals(false);*/
 
     m_ui->asksChart->setUpdatesEnabled(true);
     m_ui->bidsChart->setUpdatesEnabled(true);
@@ -1143,7 +1178,7 @@ void CENTAUR_NAMESPACE::CentaurApp::removeFavoritesWatchListDB(const QString &sy
     m_sqlFavorites->del(symbol, sender);
 }
 
-CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFromWatchlistRow(const int &row) noexcept
+CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFromWatchlistRow(int row) noexcept
 {
     const QString itemSource = m_watchlistItemModel->item(row, 4)->text();
     return exchangeFromWatchlistRow(itemSource);
@@ -1187,10 +1222,21 @@ void cen::CentaurApp::onCandleView(const QString &symbol, cen::plugin::ICandleVi
     subWindow->show();
 }
 
-void cen::CentaurApp::onRealTimeCandleUpdate(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
+void cen::CentaurApp::onRealTimeCandleUpdate(const cen::uuid &id, quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
 {
-}
+    auto iter = m_candleViewDisplay.find(id);
+    if (iter == m_candleViewDisplay.end())
+    {
+        logError("onRealTimeCandleUpdate", LS("error-no-candle-view"));
+        return;
+    }
+    auto &info  = iter->second;
+    auto widget = std::get<0>(info)->widget();
 
-void cen::CentaurApp::onRealTimeCandleClose(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
-{
+    QMetaObject::invokeMethod(widget,
+        "onUpdateCandle",
+        Qt::QueuedConnection,
+        Q_ARG(quint64, eventTime),
+        Q_ARG(cen::plugin::ICandleView::Timestamp, ts),
+        Q_ARG(cen::plugin::ICandleView::CandleData, cd));
 }

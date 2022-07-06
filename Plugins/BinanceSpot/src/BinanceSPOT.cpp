@@ -275,7 +275,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
     m_longOperation->hide();
 }
 
-bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, const int &item) noexcept
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, int item) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::addSymbol()");
 
@@ -297,7 +297,7 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, const 
     else
     {
         // Subscribe the method
-        logInfo("BinanceSpotPluing", QString("Attempting to add %1 to the wathclist").arg(name));
+        logInfo("BinanceSpotPlugin", QString("Attempting to add %1 to the watchlist").arg(name));
         auto subsVar = m_spotWS->subscribeIndividualMiniTicker(name.toStdString());
         if (std::holds_alternative<int>(subsVar))
             m_wsIds[std::get<int>(subsVar)] = name;
@@ -314,7 +314,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbol(const QString &name) noe
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::removeSymbol()");
 
-    logInfo("BinanceSpotPlugin", QString("Attempting to remove %1 to the watchlist").arg(name));
+    logInfo("BinanceSpotPlugin", QString("Attempting to remove %1 from the watchlist").arg(name));
 
     // Remove from the id's list
     m_symbolId.erase(name);
@@ -331,6 +331,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbol(const QString &name) noe
             m_spotWSThread->join();
         }
         m_spotWSThread.reset();
+        m_spotWS.reset();
         logWarn("BinanceSpotPlugin", "The Spot WebSocket thread stopped.");
     }
     else
@@ -341,7 +342,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbol(const QString &name) noe
     }
 }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::onTickerUpdate(const QString &symbol, const quint64 &receivedTime, const double &price) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onTickerUpdate(const QString &symbol, quint64 receivedTime, double price) noexcept
 {
     // Don't log since this message will be sent every 500 ms
 
@@ -357,7 +358,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onTickerUpdate(const QString &symbol,
     emit snTickerUpdate(symbol, itemId->second, receivedTime, price);
 }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSubscription(const bool &subscribe, const bool &status, const int &id) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSubscription(bool subscribe, bool status, int id) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onSubscription()");
 
@@ -424,7 +425,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::stopOrderbook(const QString &symbol) 
     m_symbolOrderbookSnapshot.erase(symbol);
 }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, const quint64 &eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, quint64 eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) noexcept
 {
     /*
     Open a stream to wss://stream.binance.com:9443/ws/bnbbtc@@depth.

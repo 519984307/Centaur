@@ -27,7 +27,7 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui Widgets REQUIRED)
 add_library(${BCS} SHARED
         include/BinanceCS.hpp
         src/BinanceCS.cpp
-        )
+        src/CandleSpotMarketWS.cpp)
 
 
 target_include_directories(${BCS} PRIVATE

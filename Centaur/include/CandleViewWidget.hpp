@@ -15,10 +15,10 @@
 
 #include "../../Centaur.hpp"
 #include "../ui/ui_CandleViewWidget.h"
+#include "CandleChart/CandleChartWidget.hpp"
 #include "CentaurPlugin.hpp"
 #include "Globals.hpp"
 
-#include <QCandlestickSeries>
 #include <QToolBar>
 
 namespace CENTAUR_NAMESPACE
@@ -56,26 +56,71 @@ namespace CENTAUR_NAMESPACE
             QAction *aMonths_1 { nullptr };
         };
 
+        struct CandleWindow
+        {
+            CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp begin;
+            CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end;
+        };
+
     public:
-        CandleViewWidget(const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf, QWidget *parent = nullptr);
+        CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter, const uuid &id, const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf, QWidget *parent = nullptr);
         ~CandleViewWidget() override = default;
+
+    protected:
+        void closeEvent(QCloseEvent *event) override;
 
     protected:
         void initToolBar() noexcept;
         void initChart() noexcept;
 
+    protected:
+        void storeLastTimeWindow() noexcept;
+        void loadLastTimeWindow() noexcept;
+
+    signals:
+        void snRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end);
+        void snUpdateSeries();
+
     public slots:
-        /// void updateCandle();
+        void onRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end) noexcept;
+        void onUpdateSeries() noexcept;
+        void onUpdateCandle(quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
 
     protected:
+        void updateLatency(quint64 event) noexcept;
+
+        // Information
+    protected:
+        uuid m_uuid;
         QString m_symbol;
         cen::plugin::ICandleView *m_view;
         cen::plugin::ICandleView::TimeFrame m_tf;
+        CENTAUR_PLUGIN_NAMESPACE::PluginInformation m_pi;
 
+        // General data
+    private:
+        CandleWindow m_candleWindow;
+
+        // Chart
+    protected:
+        QList<QPair<CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp, CENTAUR_PLUGIN_NAMESPACE::ICandleView::CandleData>> m_localData;
+
+        // UI
     private:
         QToolBar *m_toolbar { nullptr };
         std::unique_ptr<CandleViewTimeFrameToolBarActions> m_candleViewTimeFrameToolBarActions;
         std::unique_ptr<Ui::CandleViewWidget> m_ui;
+
+    private:
+        // Builds a string identifier with: symbol@@pluginName@@timeFrame!!
+        static QString buildSettingsGroupName(const QString &symbol, const QString &pluginName, cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        static QString timeFrameToString(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        // Converts the timeframes to ms. For example: 1 seconds = 1000 ms; 60 min = 360,000 ms
+        static CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp timeFrameToMilliseconds(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        /// \brief Calculate the beginning and the end based on current timestamp
+        /// \return [begin, end] timestamps
+        static CandleWindow getClosedCandlesTimes(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        static QPair<double, double> calculateMinMaxVerticalAxis(double highestHigh, double lowestLow) noexcept;
     };
 } // namespace CENTAUR_NAMESPACE
 

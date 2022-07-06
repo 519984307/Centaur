@@ -41,14 +41,14 @@ namespace btrader::stream
         auto getStartedPromise() const -> std::promise<void> & { return m_started; }
 
     protected:
-        void individualSymbolMiniTicker(const std::string &symbol, const uint64_t &eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker) override;
+        void individualSymbolMiniTicker(const std::string &symbol, uint64_t eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker) override;
 
     protected: /// WSThread base methods
         // Connected must set m_started
         auto connected() -> void override;
         auto close() -> void override;
         auto connectionError() -> void override;
-        void pingSent(const bool &success) noexcept override;
+        void pingSent(bool success) noexcept override;
 
     private:
         mutable std::promise<void> m_started;

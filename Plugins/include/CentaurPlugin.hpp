@@ -150,7 +150,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \param item Keep track of this variable and link it to the symbol and pass
         /// it with updateSymbol. NEVER CHANGE IT'S VALUE \return True on success;
         /// false on error
-        C_NODISCARD virtual bool addSymbol(const QString &name, const int &item) noexcept = 0;
+        C_NODISCARD virtual bool addSymbol(const QString &name, int item) noexcept = 0;
 
         /// \brief removeSymbol The symbol was removed from the watchlist in the UI
         /// \param name Name of the symbol deleted
@@ -318,21 +318,13 @@ namespace CENTAUR_PLUGIN_NAMESPACE
            /// \param uuid The id sent by acquire
            /// \param Timestamp This is the candle to be updated. however, internally, the UI will access the last element directly
            /// \param CandleData New candle data
-           /// \remarks 0. The UI will assume that the Timestamp is always the last one in the internal candle buffer and it will be stop to be updated once snRealTimeCandleClose is called
+           /// \remarks 0. The UI will assume that the Timestamp is always the last one in the internal candle buffer
            /// \remarks 1. If this signal is emitted without a previous acquire called the signal will be disconnected from the interface when unwantedSignalLimit is reached
            /// nd the interface can't do anything to reconnect.
            /// \remarks 2. The same case applies if a call to disengage is made and the interface keeps pushing the data
            /// \remarks 3. IMPORTANT: MAKE SURE YOUR SIGNAL HAS THIS EXACT SIGNATURE, OTHERWISE, THE UI WILL FAILED TO LOAD THE PLUGIN
-           void snRealTimeCandleUpdate(const cen::uuid &, cen::plugin::ICandleView::Timestamp , const cen::plugin::ICandleView::CandleData &);
+           void snRealTimeCandleUpdate(const cen::uuid &, quint64 eventTime, cen::plugin::ICandleView::Timestamp , const cen::plugin::ICandleView::CandleData &);
 
-           /// \brief Emit this signal to notify that a candle has been closed
-           /// \param uuid The id sent by acquire
-           /// \param Timestamp Current timestamp. If currentCandle and the currentCandle in the time
-           /// \param CandleData New candle data
-           /// \param frame Time frame
-           /// \remarks IMPORTANT: KEEP IN MIND THAT THE CANDLE LIST IS LIMITED TO ICandleView::candleLimit
-           /// \remarks IMPORTANT: MAKE SURE YOUR SIGNAL HAS THIS EXACT SIGNATURE, OTHERWISE, THE UI WILL FAILED TO LOAD THE PLUGIN
-           void snRealTimeCandleClose(const cen::uuid &, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &);
         */
     };
 

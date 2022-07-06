@@ -47,7 +47,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::connectionError()
     m_connected.set_value();
 }
 
-void CENTAUR_NAMESPACE::SpotMarketWS::subscribe(const bool &status, const int &id)
+void CENTAUR_NAMESPACE::SpotMarketWS::subscribe(bool status, int id)
 {
     logTrace("SpotMarketWS", "SpotMarketWS::subscribe");
 
@@ -58,7 +58,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::subscribe(const bool &status, const int &i
         Q_ARG(int, id));
 }
 
-void CENTAUR_NAMESPACE::SpotMarketWS::unsubscribe(const bool &status, const int &id)
+void CENTAUR_NAMESPACE::SpotMarketWS::unsubscribe(bool status, int id)
 {
     logTrace("SpotMarketWS", "SpotMarketWS::unsubscribe");
 
@@ -69,7 +69,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::unsubscribe(const bool &status, const int 
         Q_ARG(int, id));
 }
 
-void CENTAUR_NAMESPACE::SpotMarketWS::individualSymbolMiniTicker(const std::string &symbol, const uint64_t &eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker)
+void CENTAUR_NAMESPACE::SpotMarketWS::individualSymbolMiniTicker(const std::string &symbol, uint64_t eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker)
 {
     // m_logger->trace("SpotMarketWS", " SpotMarketWS::individualSymbolMiniTicker");
 
@@ -81,7 +81,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::individualSymbolMiniTicker(const std::stri
         Q_ARG(double, static_cast<double>(ticker.closePrice)));
 }
 
-void CENTAUR_NAMESPACE::SpotMarketWS::depthUpdate(const std::string &symbol, const uint64_t &eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp)
+void CENTAUR_NAMESPACE::SpotMarketWS::depthUpdate(const std::string &symbol, uint64_t eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp)
 {
     // m_logger->trace("SpotMarketWS", " SpotMarketWS::depthUpdate");
 
@@ -92,7 +92,7 @@ void CENTAUR_NAMESPACE::SpotMarketWS::depthUpdate(const std::string &symbol, con
         Q_ARG(binapi::StreamDepthUpdate, sdp));
 }
 
-void cen::SpotMarketWS::pingSent(const bool &success) noexcept
+void cen::SpotMarketWS::pingSent(bool success) noexcept
 {
     logTrace("SpotMarketWS", QString("Market SpotWS ping sent: %1").arg(success ? "Succeeded" : "Failed"));
 }

@@ -492,27 +492,19 @@ bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView)
     {
         auto meta = obj->metaObject();
 
-        if (meta->indexOfSignal(QMetaObject::normalizedSignature("snRealTimeCandleClose(const cen::uuid &, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &)")) == -1)
-        {
-            logError("plugins", QString(LS("error-candle-plugin-signature-close")).arg(candleView->getPluginName()));
-            return false;
-        }
 
-        if (meta->indexOfSignal(QMetaObject::normalizedSignature("snRealTimeCandleUpdate(const cen::uuid &, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &)")) == -1)
+        if (meta->indexOfSignal(QMetaObject::normalizedSignature("snRealTimeCandleUpdate(const cen::uuid &, quint64, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &)")) == -1)
         {
             logError("plugins", QString(LS("error-candle-plugin-signature-update")).arg(candleView->getPluginName()));
             return false;
         }
 
+
         // clang-format off
         connect(obj,
-            SIGNAL(snRealTimeCandleClose(cen::uuid,cen::plugin::ICandleView::Timestamp,cen::plugin::ICandleView::CandleData)),
+            SIGNAL(snRealTimeCandleUpdate(cen::uuid,quint64,cen::plugin::ICandleView::Timestamp,cen::plugin::ICandleView::CandleData)),
             this,
-            SLOT(onRealTimeCandleClose(cen::uuid, cen::plugin::ICandleView::Timestamp,cen::plugin::ICandleView::CandleData)));
-        connect(obj,
-            SIGNAL(snRealTimeCandleUpdate(cen::uuid,cen::plugin::ICandleView::Timestamp,cen::plugin::ICandleView::CandleData)),
-            this,
-            SLOT(onRealTimeCandleUpdate(cen::uuid,cen::plugin::ICandleView::Timestamp,cen::plugin::ICandleView::CandleData)));
+            SLOT(onRealTimeCandleUpdate(cen::uuid,quint64,cen::plugin::ICandleView::Timestamp,cen::plugin::ICandleView::CandleData)));
         // clang-format on
     }
 

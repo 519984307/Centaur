@@ -26,6 +26,7 @@
 #include "ProtocolServer.hpp"
 #include "XMLHelper.hpp"
 #include <QPluginLoader>
+#include <QSignalMapper>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QSplineSeries>
 #include <chrono>
@@ -86,6 +87,16 @@ namespace CENTAUR_NAMESPACE
             QAction *aMonths_1 { nullptr };
         };
 
+        /// \brief General data types
+        using PluginInstanceList      = QList<QPluginLoader *>;
+        using PluginConfigurationMap  = std::unordered_map<QString, PluginConfiguration *>;
+        using PluginExchangesMap      = std::map<QString, ExchangeInformation>;
+        using PluginCandleViewSupport = std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CandleViewSupport>;
+        using PluginCandleViewDisplay = std::unordered_map<uuid, std::tuple<QMdiSubWindow *, QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>;
+        using WatchListInformationMap = std::unordered_map<int, WatchlistInformation>;
+        using OrderbookDisplay        = std::pair<QString, QString>;
+        using PluginCandleEmitter     = std::tuple<CENTAUR_PLUGIN_NAMESPACE::PluginInformation, QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *>;
+
         Q_OBJECT
     public:
         explicit CentaurApp(QWidget *parent = nullptr);
@@ -137,7 +148,7 @@ namespace CENTAUR_NAMESPACE
         void removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept;
 
     public:
-        plugin::IExchange *exchangeFromWatchlistRow(const int &row) noexcept;
+        plugin::IExchange *exchangeFromWatchlistRow(int row) noexcept;
         plugin::IExchange *exchangeFromWatchlistRow(const QString &sender) noexcept;
 
     protected:
@@ -156,16 +167,15 @@ namespace CENTAUR_NAMESPACE
         void onActionAsksToggled(bool status);
         void onActionBidsToggled(bool status);
         void onActionDepthToggled(bool status);
-        void onLog(const unsigned long long &date, const int &session, const int &level, const QString &usr, const QString &source, const QString &msg) noexcept;
+        void onLog(unsigned long long date, int session, int level, const QString &usr, const QString &source, const QString &msg) noexcept;
         void onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept;
         void onWatchlistRemoveSelection() noexcept;
         void onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept;
-        void onRemoveWatchList(const int &row) noexcept;
-        void onTickerUpdate(const QString &symbol, const int &id, const quint64 &receivedTime, const double &price) noexcept;
-        void onOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept;
+        void onRemoveWatchList(int row) noexcept;
+        void onTickerUpdate(const QString &symbol, int id, quint64 receivedTime, double price) noexcept;
+        void onOrderbookUpdate(const QString &source, const QString &symbol, quint64 receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept;
         void onPlugins() noexcept;
-        void onRealTimeCandleUpdate(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
-        void onRealTimeCandleClose(const cen::uuid &id, cen::plugin::ICandleView::Timestamp ts, const CENTAUR_PLUGIN_NAMESPACE::ICandleView::CandleData &cd) noexcept;
+        void onRealTimeCandleUpdate(const cen::uuid &id, quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
 
         void onCandleView(const QString &symbol, CENTAUR_PLUGIN_NAMESPACE::ICandleView *view, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf, const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter) noexcept;
 
@@ -180,7 +190,8 @@ namespace CENTAUR_NAMESPACE
 
     public:
         std::unique_ptr<CandleViewTimeFrameActions> m_candleViewTimeFrameActions;
-        std::tuple<CENTAUR_PLUGIN_NAMESPACE::PluginInformation, QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *> m_candleEmitter;
+        PluginCandleEmitter m_candleEmitter; /// Information of the item of the candle requested of each symbol (The candle emitter)
+
         // General application state
     private:
         std::unique_ptr<Ui::CentaurApp> m_ui;
@@ -190,13 +201,13 @@ namespace CENTAUR_NAMESPACE
 
         // Plugins
     private:
-        QList<QPluginLoader *> m_pluginInstances;
-        std::unordered_map<QString, PluginConfiguration *> m_configurationInterface;
-        std::map<QString, ExchangeInformation> m_exchangeList;
-        std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CandleViewSupport> m_candleViewSupport;
-        std::unordered_map<uuid, std::tuple<QMdiSubWindow *, QString, CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>> m_candleViewDisplay;
-        std::map<int, WatchlistInformation> m_watchlistItems; // id associated with the item
-        std::pair<QString, QString> m_currentViewOrderbookSymbol;
+        PluginInstanceList m_pluginInstances;            /// All instances of the plugins
+        PluginConfigurationMap m_configurationInterface; /// Every PluginConfiguration mapped to the Plugin UUID
+        PluginExchangesMap m_exchangeList;               /// Every ExchangeInformation (IExchanges plugin and their basic information) map
+        PluginCandleViewSupport m_candleViewSupport;     /// Map of every ICandleView plugins with their supported timeframes and IExchange(s)
+        PluginCandleViewDisplay m_candleViewDisplay;     /// Current candles on display
+        WatchListInformationMap m_watchlistItems;        /// Each WatchlistInformation (price info and item list) mapped to ther corresponding id
+        OrderbookDisplay m_currentViewOrderbookSymbol;   /// Each item being displayed on the Orderbook
 
         // Long Operation Dialog
     private:
@@ -234,7 +245,7 @@ namespace CENTAUR_NAMESPACE
 
 Q_DECLARE_METATYPE(cen::uuid)
 Q_DECLARE_METATYPE(cen::plugin::ICandleView::Timestamp)
-Q_DECLARE_METATYPE(cen::plugin::ICandleView::CandleData)
+// Q_DECLARE_METATYPE(cen::plugin::ICandleView::CandleData)
 Q_DECLARE_METATYPE(cen::plugin::ICandleView::TimeFrame)
 
 #define START_TIME(x)                    \

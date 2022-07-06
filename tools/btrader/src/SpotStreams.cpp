@@ -39,7 +39,7 @@ auto btrader::stream::SpotStreams::connectionError() -> void
     m_started.set_value();
 }
 
-void btrader::stream::SpotStreams::pingSent(const bool &success) noexcept
+void btrader::stream::SpotStreams::pingSent(bool success) noexcept
 {
     if (success)
         logSuccess("SPOT Streams ping send");
@@ -47,7 +47,7 @@ void btrader::stream::SpotStreams::pingSent(const bool &success) noexcept
         logFailure("SPOT Streams ping was not send");
 }
 
-void btrader::stream::SpotStreams::individualSymbolMiniTicker(const std::string &symbol, C_UNUSED const uint64_t &eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker)
+void btrader::stream::SpotStreams::individualSymbolMiniTicker(const std::string &symbol, C_UNUSED uint64_t eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker)
 {
     std::string asset = symbol.substr(0, symbol.size() - 4); // We can be for sure that every symbol has the USDT as quote
     // The application has the ids on upper case

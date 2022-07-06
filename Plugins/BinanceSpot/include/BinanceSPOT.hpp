@@ -60,7 +60,7 @@ namespace CENTAUR_NAMESPACE
         bool initialization() noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIcon getSymbolListName() const noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIconVector getSymbolList() const noexcept override;
-        bool addSymbol(const QString &name, const int &item) noexcept override;
+        bool addSymbol(const QString &name, int item) noexcept override;
         void removeSymbol(const QString &name) noexcept override;
         void updateOrderbook(const QString &symbol) noexcept override;
         void stopOrderbook(const QString &symbol) noexcept override;
@@ -70,9 +70,9 @@ namespace CENTAUR_NAMESPACE
         bool setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const uuid &id) noexcept override;
 
     public slots:
-        void onTickerUpdate(const QString &symbol, const quint64 &receivedTime, const double &price) noexcept;
-        void onSubscription(const bool &subscribe, const bool &status, const int &id) noexcept;
-        void onDepthUpdate(const QString &symbol, const quint64 &eventTime, const binapi::StreamDepthUpdate &sdp) noexcept;
+        void onTickerUpdate(const QString &symbol, quint64 receivedTime, double price) noexcept;
+        void onSubscription(bool subscribe, bool status, int id) noexcept;
+        void onDepthUpdate(const QString &symbol, quint64 eventTime, const binapi::StreamDepthUpdate &sdp) noexcept;
         void onSpotStatus() noexcept;
         void onCoinInformation() noexcept;
         void onSpotDepositHistory() noexcept;
@@ -85,8 +85,8 @@ namespace CENTAUR_NAMESPACE
         void onShowFees(const QString &symbol = "") noexcept;
 
     signals:
-        void snTickerUpdate(const QString &symbol, const int &symbolId, const quint64 &receivedTime, const double &price);
-        void snOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks);
+        void snTickerUpdate(const QString &symbol, int symbolId, quint64 receivedTime, double price);
+        void snOrderbookUpdate(const QString &source, const QString &symbol, quint64 receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks);
 
         // Resources
     protected:
@@ -131,13 +131,13 @@ namespace CENTAUR_NAMESPACE
         void connected() override;
         void close() override;
         void connectionError() override;
-        void pingSent(const bool &success) noexcept override;
+        void pingSent(bool success) noexcept override;
 
     protected:
-        void subscribe(const bool &status, const int &id) override;
-        void unsubscribe(const bool &status, const int &id) override;
-        void individualSymbolMiniTicker(const std::string &symbol, const uint64_t &eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker) override;
-        void depthUpdate(const std::string &symbol, const uint64_t &eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) override;
+        void subscribe(bool status, int id) override;
+        void unsubscribe(bool status, int id) override;
+        void individualSymbolMiniTicker(const std::string &symbol, uint64_t eventTime, const BINAPI_NAMESPACE::StreamIndividualSymbolMiniTicker &ticker) override;
+        void depthUpdate(const std::string &symbol, uint64_t eventTime, const BINAPI_NAMESPACE::StreamDepthUpdate &sdp) override;
 
     private:
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
