@@ -36,7 +36,7 @@ namespace BINAPI_NAMESPACE::ws
         /// \brief Called when the WebSocket failed to connect
         virtual auto connectionError() -> void = 0;
         /// \brief Called when the ping frame was sent successfully or unsuccessfully
-        virtual void pingSent(const bool &success) noexcept = 0;
+        virtual void pingSent(bool success) noexcept = 0;
 
     protected:
         auto getJsonData() const -> const std::string &;
@@ -44,7 +44,7 @@ namespace BINAPI_NAMESPACE::ws
     public:
         auto isRunning() -> bool;
         auto isTerminated() -> bool;
-        auto setPingTimer(const uint64_t &timer) -> void;
+        auto setPingTimer(uint64_t timer) -> void;
 
     public:
         /// \brief This function can be called to change the endpoint. Just make sure to call it before a calling run()

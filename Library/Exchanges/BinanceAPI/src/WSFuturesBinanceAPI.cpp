@@ -123,27 +123,27 @@ BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::WSFuturesBinanceAPI(std::string endPo
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribe(const std::string &stream, const int &id)
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribe(const std::string &stream, int id)
 {
     std::string subscribe = fmt::format(R"({{"method": "SUBSCRIBE","params":["{}"],"id":{}}})", stream, id);
     sendData(subscribe);
 }
 
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::unsubscribe(const std::string &stream, const int &id)
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::unsubscribe(const std::string &stream, int id)
 {
     std::string unsubscribe = fmt::format(R"({{"method": "UNSUBSCRIBE","params":["{}"],"id":{}}})", stream, id);
     sendData(unsubscribe);
 }
 
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribe([[maybe_unused]] const bool &result, [[maybe_unused]] const int &id)
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribe([[maybe_unused]] bool result, [[maybe_unused]] int id)
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::unsubscribe([[maybe_unused]] const bool &result, [[maybe_unused]] const int &id)
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::unsubscribe([[maybe_unused]] bool result, [[maybe_unused]] int id)
 {
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeMarkPrice(const std::string &symbol, const int &update)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeMarkPrice(const std::string &symbol, int update)
 {
     assert(update == 1000 || update == 3000);
     const int sec = [&update]() {
@@ -160,7 +160,7 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscr
     std::string stream = fmt::format("{}@markPrice@{}s", symbolToLower(symbol), sec);
     SUBSCRIBE_METHOD(stream)
 }
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeMarkPriceAllMarket(const int &update)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeMarkPriceAllMarket(int update)
 {
     assert(update == 1000 || update == 3000);
     const int sec = [&update]() {
@@ -184,13 +184,13 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscr
     SUBSCRIBE_METHOD(stream)
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeKline(const std::string &symbol, const BinanceTimeIntervals &interval)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeKline(const std::string &symbol, BinanceTimeIntervals interval)
 {
     std::string stream = fmt::format("{}@kline_{}", symbolToLower(symbol), BINAPI_NAMESPACE::BinanceAPI::fromIntervalToString(interval));
     SUBSCRIBE_METHOD(stream)
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeContinuousContractKline(const std::string &symbol, const ContractType &ctype, const BinanceTimeIntervals &interval)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeContinuousContractKline(const std::string &symbol, ContractType ctype, BinanceTimeIntervals interval)
 {
     const std::string cotc = [&ctype]() -> std::string {
         switch (ctype)
@@ -256,7 +256,7 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscr
     SUBSCRIBE_METHOD("!forceOrder@arr")
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribePartialBookDepth(const std::string &symbol, const int &levels, const int &update)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribePartialBookDepth(const std::string &symbol, int levels, int update)
 {
     assert(levels == 5 || levels == 10 || levels == 20);
     assert(update == 250 || update == 500 || update == 100);
@@ -264,7 +264,7 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscr
     SUBSCRIBE_METHOD(stream)
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeDiffBookDepth(const std::string &symbol, const int &update)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeDiffBookDepth(const std::string &symbol, int update)
 {
     assert(update == 250 || update == 500 || update == 100);
     std::string stream = fmt::format("{}@depth@{}ms", symbolToLower(symbol), update);
@@ -277,7 +277,7 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscr
     SUBSCRIBE_METHOD(stream)
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeBLVTNavKline(const std::string &tokenName, const BinanceTimeIntervals &interval)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::subscribeBLVTNavKline(const std::string &tokenName, BinanceTimeIntervals interval)
 {
     std::string stream = fmt::format("{}@nav_Kline_{}", symbolToUpper(tokenName), BinanceAPI::fromIntervalToString(interval));
     SUBSCRIBE_METHOD(stream)
@@ -714,20 +714,20 @@ void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::receivedData()
     }
 }
 
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::aggregateTradeStream([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamAggregateTrade &as) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::markPriceStream([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamMarkPrice &smp) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::aggregateTradeStream([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamAggregateTrade &as) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::markPriceStream([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamMarkPrice &smp) { }
 void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::markPriceStreamAllMarket([[maybe_unused]] const std::vector<StreamMarkPriceAllMarket> &vsmpal) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::kline([[maybe_unused]] const BINAPI_NAMESPACE::sym_t &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const BinanceTimeIntervals &interval, [[maybe_unused]] const Candlestick &cs) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::continuousKline([[maybe_unused]] const BINAPI_NAMESPACE::sym_t &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const ContractType &ct, [[maybe_unused]] const BinanceTimeIntervals &interval, [[maybe_unused]] const Candlestick &cs) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::individualSymbolMiniTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamIndividualSymbolMiniTicker &ticker) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::kline([[maybe_unused]] const BINAPI_NAMESPACE::sym_t &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] BinanceTimeIntervals interval, [[maybe_unused]] const Candlestick &cs) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::continuousKline([[maybe_unused]] const BINAPI_NAMESPACE::sym_t &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] ContractType ct, [[maybe_unused]] BinanceTimeIntervals interval, [[maybe_unused]] const Candlestick &cs) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::individualSymbolMiniTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamIndividualSymbolMiniTicker &ticker) { }
 void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::allMarketMiniTickers([[maybe_unused]] const std::multimap<std::string, std::pair<uint64_t, StreamMarketMiniTickers>> &mm) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::individualSymbolTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamIndividualSymbolTicker &ticker) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::individualSymbolTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamIndividualSymbolTicker &ticker) { }
 void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::allMarketTickers([[maybe_unused]] const std::multimap<std::string, std::pair<uint64_t, StreamMarketTickers>> &mm) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::bookTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamBookTicker &ticker) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::liquidationOrder([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamLiquidationOrder &slo) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::depthUpdate([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamDepthUpdate &sdp) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::blvtInfo([[maybe_unused]] const std::string &blvtName, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamBLVTInfo &blvt) { }
-void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::compositeIndex([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const currency_t &price, [[maybe_unused]] const std::vector<StreamCompositionIndex> &sci) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::bookTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamBookTicker &ticker) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::liquidationOrder([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamLiquidationOrder &slo) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::depthUpdate([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamDepthUpdate &sdp) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::blvtInfo([[maybe_unused]] const std::string &blvtName, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamBLVTInfo &blvt) { }
+void BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::compositeIndex([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] currency_t price, [[maybe_unused]] const std::vector<StreamCompositionIndex> &sci) { }
 
 std::string BINAPI_NAMESPACE::ws::WSFuturesBinanceAPI::constructEndPointFromList(const std::vector<std::string> &subscriptions) noexcept
 {

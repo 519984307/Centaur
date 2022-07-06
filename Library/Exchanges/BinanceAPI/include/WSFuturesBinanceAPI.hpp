@@ -39,14 +39,14 @@ namespace BINAPI_NAMESPACE::ws
         /// \param stream stream name
         /// \param id stream id. This id will be passed to void subscribe(const bool &result, const int &id) function to confirmed success of failure of the subscription
         /// \remark If you override subscribe, make sure to call the parent function in order to remove the id from the ids
-        void subscribe(const std::string &stream, const int &id);
+        void subscribe(const std::string &stream, int id);
 
         /// \brief Unsubscribe to a streams. thread-safe
         ///
         /// \param stream stream name
         /// \param id stream id. This id will be passed to void unsubscribe(const bool &result, const int &id) function to confirmed success of failure of the unsubscription
         /// \remark If you override subscribe, make sure to call the parent function in order to remove the id from the ids
-        void unsubscribe(const std::string &stream, const int &id);
+        void unsubscribe(const std::string &stream, int id);
 
     public:
         /// \brief Blocking function to start receiving the Exchange streams
@@ -110,7 +110,7 @@ namespace BINAPI_NAMESPACE::ws
 #endif /*__clang__*/
 
     private:
-        void pingSent([[maybe_unused]] const bool &success) noexcept override { }
+        void pingSent([[maybe_unused]] bool success) noexcept override { }
         auto receivedData() -> void override;
 
         /// Receiving methods
@@ -119,26 +119,26 @@ namespace BINAPI_NAMESPACE::ws
         /// This functions are not internally implemented and do not access internal data of the object
         /// Parameters with std::multimap<std::string, std::pair<uint64_t, ...>> goes as: multimap.first = SYMBOL, .second { EventTime, Stream Data}
     protected:
-        virtual void subscribe(const bool &result, const int &id);
-        virtual void unsubscribe(const bool &result, const int &id);
-        virtual void aggregateTradeStream(const std::string &symbol, const uint64_t &eventTime, const StreamAggregateTrade &as);
-        virtual void markPriceStream(const std::string &symbol, const uint64_t &eventTime, const StreamMarkPrice &smp);
+        virtual void subscribe(bool result, int id);
+        virtual void unsubscribe(bool result, int id);
+        virtual void aggregateTradeStream(const std::string &symbol, uint64_t eventTime, const StreamAggregateTrade &as);
+        virtual void markPriceStream(const std::string &symbol, uint64_t eventTime, const StreamMarkPrice &smp);
         virtual void markPriceStreamAllMarket(const std::vector<StreamMarkPriceAllMarket> &vsmpal);
         /// kline handles 'Kline/Candlestick Streams' and 'BLVT NAV Kline/Candlestick Streams'
-        virtual void kline(const BINAPI_NAMESPACE::sym_t &symbol, const uint64_t &eventTime, const BinanceTimeIntervals &interval, const Candlestick &cs);
-        virtual void continuousKline(const BINAPI_NAMESPACE::sym_t &symbol, const uint64_t &eventTime, const ContractType &ct, const BinanceTimeIntervals &interval, const Candlestick &cs);
-        virtual void individualSymbolMiniTicker(const std::string &symbol, const uint64_t &eventTime, const StreamIndividualSymbolMiniTicker &ticker);
+        virtual void kline(const BINAPI_NAMESPACE::sym_t &symbol, uint64_t eventTime, BinanceTimeIntervals interval, const Candlestick &cs);
+        virtual void continuousKline(const BINAPI_NAMESPACE::sym_t &symbol, uint64_t eventTime, ContractType ct, BinanceTimeIntervals interval, const Candlestick &cs);
+        virtual void individualSymbolMiniTicker(const std::string &symbol, uint64_t eventTime, const StreamIndividualSymbolMiniTicker &ticker);
         virtual void allMarketMiniTickers(const std::multimap<std::string, std::pair<uint64_t, StreamMarketMiniTickers>> &mm);
-        virtual void individualSymbolTicker(const std::string &symbol, const uint64_t &eventTime, const StreamIndividualSymbolTicker &ticker);
+        virtual void individualSymbolTicker(const std::string &symbol, uint64_t eventTime, const StreamIndividualSymbolTicker &ticker);
         virtual void allMarketTickers(const std::multimap<std::string, std::pair<uint64_t, StreamMarketTickers>> &mm);
         // bookTicker handles 'Individual Symbol Book Ticker Streams' and 'All Book Tickers Stream'
-        virtual void bookTicker(const std::string &symbol, const uint64_t &eventTime, const StreamBookTicker &ticker);
+        virtual void bookTicker(const std::string &symbol, uint64_t eventTime, const StreamBookTicker &ticker);
         // liquidationOrder handles 'Liquidation Order Streams' and 'All Market Liquidation Order Streams'
-        virtual void liquidationOrder(const std::string &symbol, const uint64_t &eventTime, const StreamLiquidationOrder &slo);
+        virtual void liquidationOrder(const std::string &symbol, uint64_t eventTime, const StreamLiquidationOrder &slo);
         /// depthUpdate handles 'Partial Book Depth Streams' and 'Diff. Book Depth Streams'
-        virtual void depthUpdate(const std::string &symbol, const uint64_t &eventTime, const StreamDepthUpdate &sdp);
-        virtual void blvtInfo(const std::string &blvtName, const uint64_t &eventTime, const StreamBLVTInfo &blvt);
-        virtual void compositeIndex(const std::string &symbol, const uint64_t &eventTime, const currency_t &price, const std::vector<StreamCompositionIndex> &sci);
+        virtual void depthUpdate(const std::string &symbol, uint64_t eventTime, const StreamDepthUpdate &sdp);
+        virtual void blvtInfo(const std::string &blvtName, uint64_t eventTime, const StreamBLVTInfo &blvt);
+        virtual void compositeIndex(const std::string &symbol, uint64_t eventTime, currency_t price, const std::vector<StreamCompositionIndex> &sci);
 
         /// All subscription methods are thread-safe
     public:
@@ -165,13 +165,13 @@ namespace BINAPI_NAMESPACE::ws
         ///          {
         ///                if( id == _id) fmt::print("SUBSCRITION FOR MARK PRICE STREAM FOR ETHUSDT WAS {}", result);
         ///          }
-        std::variant<std::string, int> subscribeMarkPrice(const std::string &symbol, const int &update = 1000);
+        std::variant<std::string, int> subscribeMarkPrice(const std::string &symbol, int update = 1000);
 
         /// \brief Mark price and funding rate for all symbols pushed every 3 seconds or every second.
         ///
         /// \param update Set to 1000 or 3000 to specified the update milliseconds interval. assert will be issue if update is not any of this values
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeMarkPriceAllMarket(const int &update = 1000);
+        std::variant<std::string, int> subscribeMarkPriceAllMarket(int update = 1000);
 
         /// \brief  The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100 milliseconds.
         ///
@@ -184,7 +184,7 @@ namespace BINAPI_NAMESPACE::ws
         /// \param symbol Symbol name. The symbol can be uppercase, however, the method will convert to lowercase
         /// \param interval Time interval
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeKline(const std::string &symbol, const BinanceTimeIntervals &interval);
+        std::variant<std::string, int> subscribeKline(const std::string &symbol, BinanceTimeIntervals interval);
 
         /// \brief The continuous Kline/Candlestick Stream push updates to the current klines/candlestick every 250 milliseconds (if existing)
         ///
@@ -192,7 +192,7 @@ namespace BINAPI_NAMESPACE::ws
         /// \param ctype Contract type. ContractType::none will default to ConstracType::perpetual
         /// \param interval Time interval
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeContinuousContractKline(const std::string &symbol, const ContractType &ctype, const BinanceTimeIntervals &interval);
+        std::variant<std::string, int> subscribeContinuousContractKline(const std::string &symbol, ContractType ctype, BinanceTimeIntervals interval);
 
         /// \brief 24hr rolling window mini-ticker statistics for a single symbol. These are NOT the statistics of the UTC day, but a 24hr rolling window from requestTime to 24hrs before
         ///
@@ -257,14 +257,14 @@ namespace BINAPI_NAMESPACE::ws
         /// \param levels Valid are 5, 10, or 20.
         /// \param update Valid are 250, 500 or 100 and the time is in milliseconds
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribePartialBookDepth(const std::string &symbol, const int &levels, const int &update);
+        std::variant<std::string, int> subscribePartialBookDepth(const std::string &symbol, int levels, int update);
 
         /// \brief Bids and asks, pushed update milliseconds
         ///
         /// \param symbol The symbol can be uppercase, however, the method will convert to lowercase
         /// \param update 250 milliseconds, 500 milliseconds, 100 milliseconds (if existing)
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeDiffBookDepth(const std::string &symbol, const int &update);
+        std::variant<std::string, int> subscribeDiffBookDepth(const std::string &symbol, int update);
 
         /// \brief BLVT Info Streams
         ///
@@ -277,7 +277,7 @@ namespace BINAPI_NAMESPACE::ws
         /// \param tokenName The symbol can be lowercase, however, the method will convert to uppercase
         /// \param interval Time interval
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeBLVTNavKline(const std::string &tokenName, const BinanceTimeIntervals &interval);
+        std::variant<std::string, int> subscribeBLVTNavKline(const std::string &tokenName, BinanceTimeIntervals interval);
 
         /// \brief Composite index information for index symbols pushed every second.
         ///

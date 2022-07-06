@@ -64,13 +64,13 @@ BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::WSSpotBinanceAPI(std::string endpoint) :
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe(const std::string &stream, const int &id)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe(const std::string &stream, int id)
 {
     std::string subscribe = fmt::format(R"({{"method": "SUBSCRIBE","params":["{}"],"id":{}}})", stream, id);
     sendData(subscribe);
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribe(const std::string &stream, const int &id)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribe(const std::string &stream, int id)
 {
     std::string unsubscribe = fmt::format(R"({{"method": "UNSUBSCRIBE","params":["{}"],"id":{}}})", stream, id);
     sendData(unsubscribe);
@@ -152,10 +152,16 @@ if (m_lws != nullptr)
     lws_callback_on_writable(m_lws);
 }*/
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribeKline(const std::string &symbol, const BinanceTimeIntervals &interval)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribeKline(const std::string &symbol, BinanceTimeIntervals interval)
 {
     std::string stream = fmt::format("{}@kline_{}", symbolToLower(symbol), BINAPI_NAMESPACE::BinanceAPI::fromIntervalToString(interval));
     SUBSCRIBE_METHOD(stream)
+}
+
+int BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribeKline(const std::string &symbol, BinanceTimeIntervals interval)
+{
+    std::string stream = fmt::format("{}@kline_{}", symbolToLower(symbol), BINAPI_NAMESPACE::BinanceAPI::fromIntervalToString(interval));
+    UNSUBSCRIBE_METHOD(stream)
 }
 
 std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribeIndividualMiniTicker(const std::string &symbol)
@@ -200,7 +206,7 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe
     SUBSCRIBE_METHOD(stream);
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribePartialBookDepth(const std::string &symbol, const int &levels, const int &update)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribePartialBookDepth(const std::string &symbol, int levels, int update)
 {
     assert(levels == 5 || levels == 10 || levels == 20);
     assert(update == 1000 || update == 100);
@@ -208,33 +214,33 @@ std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe
     SUBSCRIBE_METHOD(stream)
 }
 
-std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribeDiffBookDepth(const std::string &symbol, const int &update)
+std::variant<std::string, int> BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribeDiffBookDepth(const std::string &symbol, int update)
 {
     assert(update == 1000 || update == 100);
     std::string stream = fmt::format("{}@depth@{}ms", symbolToLower(symbol), update);
     SUBSCRIBE_METHOD(stream)
 }
 
-int BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribeDiffBookDepth(const std::string &symbol, const int &update)
+int BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribeDiffBookDepth(const std::string &symbol, int update)
 {
     assert(update == 1000 || update == 100);
     std::string stream = fmt::format("{}@depth@{}ms", symbolToLower(symbol), update);
     UNSUBSCRIBE_METHOD(stream)
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe([[maybe_unused]] const bool &result, [[maybe_unused]] const int &id)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::subscribe([[maybe_unused]] bool result, [[maybe_unused]] int id)
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribe([[maybe_unused]] const bool &result, [[maybe_unused]] const int &id)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::unsubscribe([[maybe_unused]] bool result, [[maybe_unused]] int id)
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::kline([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const BinanceTimeIntervals &interval, [[maybe_unused]] const Candlestick &cs)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::kline([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] BinanceTimeIntervals interval, [[maybe_unused]] const Candlestick &cs)
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::individualSymbolMiniTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamIndividualSymbolMiniTicker &ticker)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::individualSymbolMiniTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamIndividualSymbolMiniTicker &ticker)
 {
 }
 
@@ -242,7 +248,7 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::allMarketMiniTickers([[maybe_unused
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::individualSymbolTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamIndividualSymbolTicker &ticker)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::individualSymbolTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamIndividualSymbolTicker &ticker)
 {
 }
 
@@ -250,11 +256,11 @@ void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::allMarketTickers([[maybe_unused]] c
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::bookTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamBookTicker &ticker)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::bookTicker([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamBookTicker &ticker)
 {
 }
 
-void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::depthUpdate([[maybe_unused]] const std::string &symbol, [[maybe_unused]] const uint64_t &eventTime, [[maybe_unused]] const StreamDepthUpdate &sdp)
+void BINAPI_NAMESPACE::ws::WSSpotBinanceAPI::depthUpdate([[maybe_unused]] const std::string &symbol, [[maybe_unused]] uint64_t eventTime, [[maybe_unused]] const StreamDepthUpdate &sdp)
 {
 }
 /*

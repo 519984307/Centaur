@@ -146,7 +146,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::getRecvWindow() const noexcept -> uint32_t
     return m_recvWindow;
 }
 
-auto BINAPI_NAMESPACE::BinanceAPI::getCandlesTimesAndLimits(const BinanceTimeIntervals &interval, const uint64_t &startTime, const uint64_t &endTime, uint64_t &totalExpected) noexcept -> std::vector<std::tuple<uint64_t, uint64_t, uint64_t>>
+auto BINAPI_NAMESPACE::BinanceAPI::getCandlesTimesAndLimits(BinanceTimeIntervals interval, uint64_t startTime, uint64_t endTime, uint64_t &totalExpected) noexcept -> std::vector<std::tuple<uint64_t, uint64_t, uint64_t>>
 {
     std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> data;
 
@@ -189,7 +189,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::getCandlesTimesAndLimits(const BinanceTimeInt
     return data;
 }
 
-auto BINAPI_NAMESPACE::BinanceAPI::request(const local::BinanceAPIRequest &request, const std::vector<std::pair<std::string, std::string>> &params, const bool &secure, double *const timeLog) -> rapidjson::Document
+auto BINAPI_NAMESPACE::BinanceAPI::request(const local::BinanceAPIRequest &request, const std::vector<std::pair<std::string, std::string>> &params, bool secure, double *const timeLog) -> rapidjson::Document
 {
     using namespace BINAPI_NAMESPACE::local;
 
@@ -309,7 +309,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::request(const local::BinanceAPIRequest &reque
     return jsonDoc;
 }
 
-auto BINAPI_NAMESPACE::BinanceAPI::secureRequest(cpr::Session &session, cpr::Parameters &parameters, const cpr::CurlHolder &cprCurlHolder, const bool &preventSignature) noexcept -> void
+auto BINAPI_NAMESPACE::BinanceAPI::secureRequest(cpr::Session &session, cpr::Parameters &parameters, const cpr::CurlHolder &cprCurlHolder, bool preventSignature) noexcept -> void
 {
     cpr::Header header = cpr::Header { { "X-MBX-APIKEY", m_binanceKeys->apiKey } };
     session.SetHeader(header);
@@ -325,7 +325,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::secureRequest(cpr::Session &session, cpr::Par
     }
 }
 
-auto BINAPI_NAMESPACE::BinanceAPI::handleAPIRequestError(const bool &data, const rapidjson::Value &value, int &code, std::string &message) -> bool
+auto BINAPI_NAMESPACE::BinanceAPI::handleAPIRequestError(bool data, const rapidjson::Value &value, int &code, std::string &message) -> bool
 {
     if (data) /* Means a Binance WAPI call*/
     {
@@ -357,12 +357,12 @@ auto BINAPI_NAMESPACE::BinanceAPI::handleHTTPErrorResponse(const std::string &js
     message = jsonDoc["msg"].GetString();
 }
 
-auto BINAPI_NAMESPACE::BinanceAPI::apiRequest(const local::BinanceAPIRequest &requests, const bool &secure) -> rapidjson::Document
+auto BINAPI_NAMESPACE::BinanceAPI::apiRequest(const local::BinanceAPIRequest &requests, bool secure) -> rapidjson::Document
 {
     return request(requests, {}, secure, &m_lastCallSeconds);
 }
 
-auto BINAPI_NAMESPACE::BinanceAPI::apiRequest(const local::BinanceAPIRequest &requests, const std::vector<std::pair<std::string, std::string>> &parameters, const bool &secure) -> rapidjson::Document
+auto BINAPI_NAMESPACE::BinanceAPI::apiRequest(const local::BinanceAPIRequest &requests, const std::vector<std::pair<std::string, std::string>> &parameters, bool secure) -> rapidjson::Document
 {
     return request(requests, parameters, secure, &m_lastCallSeconds);
 }

@@ -31,14 +31,14 @@ namespace BINAPI_NAMESPACE::ws
         /// \param stream stream name
         /// \param id stream id. This id will be passed to void subscribe(const bool &result, const int &id) function to confirmed success of failure of the subscription
         /// \remark If you override subscribe, make sure to call the parent function in order to remove the id from the ids
-        void subscribe(const std::string &stream, const int &id);
+        void subscribe(const std::string &stream, int id);
 
         /// \brief Unsubscribe to a streams. thread-safe
         ///
         /// \param stream stream name
         /// \param id stream id. This id will be passed to void unsubscribe(const bool &result, const int &id) function to confirmed success of failure of the unsubscription
         /// \remark If you override subscribe, make sure to call the parent function in order to remove the id from the ids
-        void unsubscribe(const std::string &stream, const int &id);
+        void unsubscribe(const std::string &stream, int id);
 
     public:
         /// \brief Blocking function to start receiving the Exchange streams
@@ -61,17 +61,17 @@ namespace BINAPI_NAMESPACE::ws
         /// This functions are not internally implemented and do not access internal data of the object
         /// Parameters with std::multimap<std::string, std::pair<uint64_t, ...>> goes as: multimap.first = SYMBOL, .second { EventTime, Stream Data}
     protected:
-        virtual void subscribe(const bool &result, const int &id);
-        virtual void unsubscribe(const bool &result, const int &id);
-        virtual void kline(const std::string &symbol, const uint64_t &eventTime, const BinanceTimeIntervals &interval, const Candlestick &cs);
-        virtual void individualSymbolMiniTicker(const std::string &symbol, const uint64_t &eventTime, const StreamIndividualSymbolMiniTicker &ticker);
+        virtual void subscribe(bool result, int id);
+        virtual void unsubscribe(bool result, int id);
+        virtual void kline(const std::string &symbol, uint64_t eventTime, BinanceTimeIntervals interval, const Candlestick &cs);
+        virtual void individualSymbolMiniTicker(const std::string &symbol, uint64_t eventTime, const StreamIndividualSymbolMiniTicker &ticker);
         virtual void allMarketMiniTickers(const std::multimap<std::string, std::pair<uint64_t, StreamMarketMiniTickers>> &mm);
-        virtual void individualSymbolTicker(const std::string &symbol, const uint64_t &eventTime, const StreamIndividualSymbolTicker &ticker);
+        virtual void individualSymbolTicker(const std::string &symbol, uint64_t eventTime, const StreamIndividualSymbolTicker &ticker);
         virtual void allMarketTickers(const std::multimap<std::string, std::pair<uint64_t, StreamMarketTickers>> &mm);
         // bookTicker handles 'Individual Symbol Book Ticker Streams' and 'All Book Tickers Stream'
-        virtual void bookTicker(const std::string &symbol, const uint64_t &eventTime, const StreamBookTicker &ticker);
+        virtual void bookTicker(const std::string &symbol, uint64_t eventTime, const StreamBookTicker &ticker);
         /// depthUpdate handles 'Partial Book Depth Streams' and 'Diff. Book Depth Streams'
-        virtual void depthUpdate(const std::string &symbol, const uint64_t &eventTime, const StreamDepthUpdate &sdp);
+        virtual void depthUpdate(const std::string &symbol, uint64_t eventTime, const StreamDepthUpdate &sdp);
 
     public:
 #ifdef __clang__
@@ -158,7 +158,13 @@ namespace BINAPI_NAMESPACE::ws
         /// \param symbol Symbol name. The symbol can be uppercase, however, the method will convert to lowercase
         /// \param interval Time interval
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeKline(const std::string &symbol, const BinanceTimeIntervals &interval);
+        std::variant<std::string, int> subscribeKline(const std::string &symbol, BinanceTimeIntervals interval);
+
+        /// \brief Stop receiving the symbol data
+        /// \param symbol Symbol name
+        /// \param interval Time interval
+        /// \return The unsubscription ID
+        int unsubscribeKline(const std::string &symbol, BinanceTimeIntervals interval);
 
         /// \brief 24hr rolling window mini-ticker statistics.
         /// These are NOT the statistics of the UTC day, but a 24hr rolling window for the previous 24hrs.
@@ -213,14 +219,14 @@ namespace BINAPI_NAMESPACE::ws
         /// \param levels Valid are 5, 10, or 20.
         /// \param update Valid are 100ms or 1000ms
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribePartialBookDepth(const std::string &symbol, const int &levels, const int &update);
+        std::variant<std::string, int> subscribePartialBookDepth(const std::string &symbol, int levels, int update);
 
         /// \brief Bids and asks, pushed update milliseconds
         ///
         /// \param symbol The symbol can be uppercase, however, the method will convert to lowercase
         /// \param update 100 milliseconds, 1000 milliseconds (if existing)
         /// \return std::variant<std::string, int> see subscribeMarkPriceStream return and remarks documentation subsection
-        std::variant<std::string, int> subscribeDiffBookDepth(const std::string &symbol, const int &update);
+        std::variant<std::string, int> subscribeDiffBookDepth(const std::string &symbol, int update);
 
         ///
         /// \brief subscribeDiffBookDepth Stop receiving the Diff. Book depth stream
@@ -228,7 +234,7 @@ namespace BINAPI_NAMESPACE::ws
         /// \param update update time
         /// \return the stream id from the exchange
         ///
-        int unsubscribeDiffBookDepth(const std::string &symbol, const int &update);
+        int unsubscribeDiffBookDepth(const std::string &symbol, int update);
 
     private:
         std::atomic_bool m_combined { false };

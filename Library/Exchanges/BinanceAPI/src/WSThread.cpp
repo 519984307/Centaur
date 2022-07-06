@@ -53,7 +53,7 @@ auto BINAPI_NAMESPACE::ws::WSThread::isTerminated() -> bool
     return m_terminate.load();
 }
 
-auto BINAPI_NAMESPACE::ws::WSThread::setPingTimer(const uint64_t &timer) -> void
+auto BINAPI_NAMESPACE::ws::WSThread::setPingTimer(uint64_t timer) -> void
 {
     m_pingTimer = timer;
 }

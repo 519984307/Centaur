@@ -17,7 +17,7 @@
         x[y].GetString(), x[y].GetStringLength() \
     }
 
-BINAPI_NAMESPACE::ws::WSFuturesBinanceUser::WSFuturesBinanceUser(const std::string &listenKey, const uint64_t &pingTimer) :
+BINAPI_NAMESPACE::ws::WSFuturesBinanceUser::WSFuturesBinanceUser(const std::string &listenKey, uint64_t pingTimer) :
     WSThread("fstream.binance.com", fmt::format("/ws/{}", listenKey), 443)
 {
     setPingTimer(pingTimer);

@@ -183,10 +183,10 @@ namespace BINAPI_NAMESPACE
         /// \param secure Will call ExchangeAPI::secure to ensure a secure request
         /// \param timeLog On success a JSON Document otherwise will throw
         /// \return rapidjson::Document ExchangeAPIError on error
-        auto request(const local::BinanceAPIRequest &request, const eparams &params, const bool &secure = false, double *const timeLog = nullptr) -> rapidjson::Document;
+        auto request(const local::BinanceAPIRequest &request, const eparams &params, bool secure = false, double *const timeLog = nullptr) -> rapidjson::Document;
 
     private:
-        auto secureRequest(cpr::Session &session, cpr::Parameters &parameters, const cpr::CurlHolder &cprCurlHolder, const bool &preventSignature) noexcept -> void;
+        auto secureRequest(cpr::Session &session, cpr::Parameters &parameters, const cpr::CurlHolder &cprCurlHolder, bool preventSignature) noexcept -> void;
 
         /// \brief Handle an API Error request
         ///
@@ -196,7 +196,7 @@ namespace BINAPI_NAMESPACE
         /// \param message nor code not message are initialized
         /// \return true No error
         /// \return false Error
-        static auto handleAPIRequestError(const bool &data, const rapidjson::Value &value, int &code, std::string &message) -> bool;
+        static auto handleAPIRequestError(bool data, const rapidjson::Value &value, int &code, std::string &message) -> bool;
 
         /// \brief When an HTTP call returns a code different of 200 and the response body is a JSON object this function needs to handle
         ///
@@ -211,7 +211,7 @@ namespace BINAPI_NAMESPACE
         /// \param requests Request data
         /// \param secure Secure or not
         /// \return rapidjson::Document The JSON Document
-        auto apiRequest(const local::BinanceAPIRequest &requests, const bool &secure = false) -> rapidjson::Document;
+        auto apiRequest(const local::BinanceAPIRequest &requests, bool secure = false) -> rapidjson::Document;
 
         /// \brief Wrapper for a request with parameters
         ///
@@ -219,7 +219,7 @@ namespace BINAPI_NAMESPACE
         /// \param parameters Parameters to pass
         /// \param secure Secure or not
         /// \return rapidjson::Document The JSON Document
-        auto apiRequest(const local::BinanceAPIRequest &requests, const eparams &parameters, const bool &secure = false) -> rapidjson::Document;
+        auto apiRequest(const local::BinanceAPIRequest &requests, const eparams &parameters, bool secure = false) -> rapidjson::Document;
 
     public:
         /// \brief Get the last api call the time to retrieve the data from the internet
@@ -236,7 +236,7 @@ namespace BINAPI_NAMESPACE
 
         /// \brief Change the default recvWindow parameter of the API. Default is 4000
         /// \param recvWindow new value
-        auto setRecvWindow(const uint32_t recvWindow) noexcept -> void;
+        auto setRecvWindow(uint32_t recvWindow) noexcept -> void;
 
         /// \brief Returns recvWindow to the exchange default (5000)
         auto setRecvWindowDefault() noexcept -> void;
@@ -283,7 +283,7 @@ namespace BINAPI_NAMESPACE
         ///                candles.push_back(candles); // Not necessary correct but just to get an idea
         ///            }
         ///
-        T_NODISCARD static auto getCandlesTimesAndLimits(const BINAPI_NAMESPACE::BinanceTimeIntervals &interval, const uint64_t &startTime, const uint64_t &endTime, uint64_t &totalExpected) noexcept -> std::vector<std::tuple<uint64_t, uint64_t, uint64_t>>;
+        T_NODISCARD static auto getCandlesTimesAndLimits(BINAPI_NAMESPACE::BinanceTimeIntervals interval, uint64_t startTime, uint64_t endTime, uint64_t &totalExpected) noexcept -> std::vector<std::tuple<uint64_t, uint64_t, uint64_t>>;
 
     private:
         std::string_view m_baseURL;

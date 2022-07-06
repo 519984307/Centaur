@@ -23,17 +23,17 @@ namespace BINAPI_NAMESPACE::ws
     class BINAPI_EXPORT WSFuturesBinanceUser : public WSThread
     {
     public:
-        WSFuturesBinanceUser(const std::string &listenKey, const uint64_t &pingTimer);
+        WSFuturesBinanceUser(const std::string &listenKey, uint64_t pingTimer);
         ~WSFuturesBinanceUser() override;
 
-        virtual void listenKeyExpired(const uint64_t &eventTime) noexcept = 0;
+        virtual void listenKeyExpired(uint64_t eventTime) noexcept = 0;
 
     protected:
-        virtual void eventMarginCall(const uint64_t &eventTime, const BINAPI_NAMESPACE::UserStreamMarginCallFutures &marginCall) noexcept                                                              = 0;
-        virtual void eventBalanceAndPositionUpdate() noexcept                                                                                                                                          = 0;
-        virtual void eventOrderUpdate(const uint64_t &eventTime, const uint64_t &transactionTime, const BINAPI_NAMESPACE::sym_t &symbol, const BINAPI_NAMESPACE::UserStreamOrderUpdate &data) noexcept = 0;
-        virtual void eventLeverageUpdate(const uint64_t &eventTime, const uint64_t &transactionTime, const std::string &symbol, const int64_t &newLeverage) noexcept                                   = 0;
-        virtual void eventMultiAssetsModeUpdate(const uint64_t &eventTime, const uint64_t &transactionTime, const bool &multiAssetsMode) noexcept                                                      = 0;
+        virtual void eventMarginCall(uint64_t eventTime, const BINAPI_NAMESPACE::UserStreamMarginCallFutures &marginCall) noexcept                                                       = 0;
+        virtual void eventBalanceAndPositionUpdate() noexcept                                                                                                                            = 0;
+        virtual void eventOrderUpdate(uint64_t eventTime, uint64_t transactionTime, const BINAPI_NAMESPACE::sym_t &symbol, const BINAPI_NAMESPACE::UserStreamOrderUpdate &data) noexcept = 0;
+        virtual void eventLeverageUpdate(uint64_t eventTime, uint64_t transactionTime, const std::string &symbol, int64_t newLeverage) noexcept                                          = 0;
+        virtual void eventMultiAssetsModeUpdate(uint64_t eventTime, uint64_t transactionTime, bool multiAssetsMode) noexcept                                                             = 0;
 
     private:
         auto receivedData() -> void override;
