@@ -5,6 +5,8 @@
 //
 
 #include "CandleViewWidget.hpp"
+#include "CandleChart/CandleChartScene.hpp"
+#include "CandleChart/CandleItem.hpp"
 #include "CentaurApp.hpp"
 #include <QCloseEvent>
 #include <QSettings>
@@ -47,6 +49,7 @@ cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginIn
     m_ui { new Ui::CandleViewWidget }
 {
     m_ui->setupUi(this);
+    m_ui->graphicsView->setEnabled(true);
     setWindowTitle(symbol);
 
     connect(this, &CandleViewWidget::snRetrieveCandles, this, &CandleViewWidget::onRetrieveCandles);
@@ -73,6 +76,8 @@ cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginIn
 
     // Acquire the candles from the interface
     emit snRetrieveCandles(m_candleWindow.begin, m_candleWindow.end);
+
+    connect(m_ui->graphicsView->getCandleChartScene(), &CandleChartScene::snUpdateCandleMousePosition, this, &CandleViewWidget::onUpdateCandleMousePosition);
 }
 
 void cen::CandleViewWidget::initToolBar() noexcept
@@ -334,6 +339,7 @@ void cen::CandleViewWidget::onRetrieveCandles(cen::plugin::ICandleView::Timestam
             min = std::min(min, cd.second.low);
     }
     m_ui->graphicsView->setPriceMinMax(min, max);
+    m_ui->graphicsView->setTimeMinMax(start, end);
 
     // emit snUpdateSeries();
 }
@@ -344,6 +350,53 @@ void cen::CandleViewWidget::initChart() noexcept
 
 void cen::CandleViewWidget::onUpdateSeries() noexcept
 {
+}
+
+void cen::CandleViewWidget::onUpdateCandleMousePosition(uint64_t timestamp)
+{
+    auto candle              = m_ui->graphicsView->getCandleItem(timestamp);
+
+    const QString timeFormat = [&]() {
+        const uint64_t candleTimeframe = timeFrameToMilliseconds(m_tf);
+        if (candleTimeframe < 3'600'000) // 3,600,000 is the number of milliseconds in a minute, thus, if the time is less a minute we must include the seconds on the label
+            return "dd-MM-yyyy HH:mm:ss";
+        else
+            return "dd-MM-yyyy HH:mm";
+    }();
+
+    // const auto &time       = m_candleRects.at(m_cursorIndex);
+    QDateTime dt      = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(timestamp));
+    QString infoLabel = dt.toString(timeFormat);
+
+    m_ui->labelTime->setText(infoLabel);
+    if (candle == nullptr)
+    {
+        m_ui->labelClose->setText({});
+        m_ui->labelOpen->setText({});
+        m_ui->labelHigh->setText({});
+        m_ui->labelLow->setText({});
+    }
+    else
+    {
+        auto setLabelColor = [](QLabel *label, const QColor &color) {
+            QPalette palette = label->palette();
+            palette.setColor(QPalette::ColorRole::WindowText, color);
+            label->setPalette(palette);
+        };
+
+        QColor color = candle->isCandleBullish() ? QColor { 0, 255, 0 } : QColor { 255, 0, 0 };
+
+        setLabelColor(m_ui->labelClose, color);
+        setLabelColor(m_ui->labelOpen, color);
+        setLabelColor(m_ui->labelHigh, color);
+        setLabelColor(m_ui->labelLow, color);
+
+        int precision = m_ui->graphicsView->pricePrecision();
+        m_ui->labelClose->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->close(), 'f', precision)));
+        m_ui->labelOpen->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->open(), 'f', precision)));
+        m_ui->labelHigh->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->high(), 'f', precision)));
+        m_ui->labelLow->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->low(), 'f', precision)));
+    }
 }
 
 void cen::CandleViewWidget::updateLatency(quint64 event) noexcept

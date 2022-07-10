@@ -85,6 +85,7 @@ namespace CENTAUR_NAMESPACE
         void onRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end) noexcept;
         void onUpdateSeries() noexcept;
         void onUpdateCandle(quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
+        void onUpdateCandleMousePosition(uint64_t timestamp);
 
     protected:
         void updateLatency(quint64 event) noexcept;
@@ -100,10 +101,6 @@ namespace CENTAUR_NAMESPACE
         // General data
     private:
         CandleWindow m_candleWindow;
-
-        // Chart
-    protected:
-        QList<QPair<CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp, CENTAUR_PLUGIN_NAMESPACE::ICandleView::CandleData>> m_localData;
 
         // UI
     private:

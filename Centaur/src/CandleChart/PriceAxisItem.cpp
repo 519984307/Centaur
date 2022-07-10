@@ -8,7 +8,7 @@
 #include <QLocale>
 #include <QPainter>
 
-cen::PriceAxisItem::PriceAxisItem(double width, double maxLabelHeight, double min, double max, QGraphicsItem *parent) :
+cen::PriceAxisItem::PriceAxisItem(double width, double maxLabelHeight, double labelSpacing, double min, double max, QGraphicsItem *parent) :
     QGraphicsRectItem(parent),
     m_width { width },
     m_maxLabelHeight { maxLabelHeight },
@@ -16,13 +16,12 @@ cen::PriceAxisItem::PriceAxisItem(double width, double maxLabelHeight, double mi
     m_max { max },
     m_yPoint { 0 },
     m_maxLabelPosition { 0 },
+    m_labelSpacing { labelSpacing },
     m_precision { 3 },
     m_mouseInScene { false },
     m_font { "Roboto", 12 }
 
 {
-
-    m_labelSpacing = 10;
 
     m_barBrush.setColor(QColor(40, 40, 40));
     m_barBrush.setStyle(Qt::SolidPattern);
@@ -44,7 +43,7 @@ void cen::PriceAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGra
     painter->setBrush(m_barBrush);
 
     const QRectF &thisRect = rect();
-    painter->drawRect(thisRect);
+    //  painter->drawRect(thisRect);
 
     const double dHeight    = thisRect.height();
     const double factor     = m_maxLabelHeight + m_labelSpacing;
@@ -59,8 +58,8 @@ void cen::PriceAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGra
         const QString text        = QString("%1").arg(QLocale(QLocale::English).toString(currentAxisValue, 'f', m_precision));
         const QRectF textRect { thisRect.left(), thisRect.top() + newYPosition, thisRect.width(), m_maxLabelHeight };
 
-        /// painter->setBrush(QBrush(QColor(255, 0, 255, 120)));
-        /// painter->drawRect(textRect);
+        // painter->setBrush(QBrush(QColor(255, 0, 255, 120)));
+        // painter->drawRect(textRect);
 
         painter->setPen(m_labelPen);
         painter->drawText(textRect, Qt::AlignVCenter, text);
@@ -69,9 +68,6 @@ void cen::PriceAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGra
 
         m_maxLabelPosition = thisRect.top() + newYPosition + (m_maxLabelHeight / 2);
     }
-
-    painter->setPen(m_axisPen);
-    painter->drawLine(QLineF { thisRect.left(), thisRect.top(), thisRect.left(), dHeight });
 
     if (m_mouseInScene)
     {
@@ -96,7 +92,9 @@ void cen::PriceAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGra
         painter->drawText(rc, priceText);
     }
 
-    //   QGraphicsRectItem::paint(painter, option, widget);
+    painter->setPen(m_axisPen);
+    painter->drawLine(QLineF { thisRect.left(), thisRect.top(), thisRect.left(), dHeight });
+    painter->drawLine(QLineF { thisRect.left(), dHeight, thisRect.right(), dHeight });
 }
 
 void cen::PriceAxisItem::setWidth(double width) noexcept
@@ -115,9 +113,19 @@ void cen::PriceAxisItem::setMaxLabelHeight(double height) noexcept
 
 void cen::PriceAxisItem::setMinMax(double min, double max) noexcept
 {
-    m_min = min;
-    m_max = max;
-    update();
+    bool doUpdate = false;
+    if (min >= 0 && !qFuzzyCompare(min, m_min))
+    {
+        m_min    = min;
+        doUpdate = true;
+    }
+    if (max >= 0 && !qFuzzyCompare(max, m_max))
+    {
+        m_max    = max;
+        doUpdate = true;
+    }
+    if (doUpdate)
+        update();
 }
 
 void cen::PriceAxisItem::setPrecision(int precision) noexcept
@@ -155,6 +163,7 @@ QList<double> cen::PriceAxisItem::getGridLinePositions() noexcept
 
     return lines;
 }
+
 double cen::PriceAxisItem::priceToAxisPoint(double price)
 {
     double point;
@@ -163,9 +172,12 @@ double cen::PriceAxisItem::priceToAxisPoint(double price)
     const double half        = m_maxLabelHeight / 2.0;
     const double minHeight   = thisRect.top() + half;
     const double rangeFactor = (m_max - m_min);
-    // const double invertedPoint = m_maxLabelPosition + minHeight - m_yPoint; // As Y grows the price grows, however, the axis is inverted, so, we must invert the Y value
 
-    /// const double priceValue    = (rangeFactor * (invertedPoint - minHeight) / (m_maxLabelPosition - minHeight)) + m_min;
+    // Just solve for m_yPoint from this fragment of code in PriceAxisItem::paint
+    //
+    // const double invertedPoint = m_maxLabelPosition + minHeight - m_yPoint;
+    // const double priceValue    = (rangeFactor * (invertedPoint - minHeight) / (m_maxLabelPosition - minHeight)) + m_min;
+    //
 
     point = -((((price - m_min) * (m_maxLabelPosition - minHeight)) / rangeFactor) - m_maxLabelPosition);
 

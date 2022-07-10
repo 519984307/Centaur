@@ -24,7 +24,7 @@ namespace CENTAUR_NAMESPACE
     class PriceAxisItem : public QGraphicsRectItem
     {
     public:
-        PriceAxisItem(double width, double maxLabelHeight, double min, double max, QGraphicsItem *parent = nullptr);
+        PriceAxisItem(double width, double maxLabelHeight, double labelSpacing, double min, double max, QGraphicsItem *parent = nullptr);
         ~PriceAxisItem() override = default;
 
     public:
@@ -34,7 +34,11 @@ namespace CENTAUR_NAMESPACE
         void setPrecision(int precision) noexcept;
 
     public:
-        inline double getAxisWidth() const { return m_width; }
+        inline auto getAxisWidth() const noexcept { return m_width; }
+        inline auto getMin() const noexcept { return m_min; }
+        inline auto getMax() const noexcept { return m_max; }
+        inline auto getPrecision() const noexcept { return m_precision; }
+
         double priceToAxisPoint(double price);
 
     public:

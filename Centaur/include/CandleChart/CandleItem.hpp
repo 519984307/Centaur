@@ -18,10 +18,11 @@
 
 namespace CENTAUR_NAMESPACE
 {
-    class CandleItem : public QGraphicsItem
+    class CandleChartScene;
+    class CandleItem : public QGraphicsRectItem
     {
     public:
-        CandleItem(double open, double close, double high, double low, QGraphicsItem *parent = nullptr);
+        CandleItem(uint64_t timestamp, double open, double close, double high, double low, QGraphicsItem *parent = nullptr);
 
     public:
         C_NODISCARD inline double open() const { return m_data.open; }
@@ -39,17 +40,18 @@ namespace CENTAUR_NAMESPACE
         inline bool isCandleBearish() const
         {
             return !isCandleBullish();
-        } /*
+        }
 
-     signals:
-         /// \brief Emits when the mouse enter the item
-         /// \param item This item, this will be emitted as: emit snMouseHoverItemCandle(this);
-         void snMouseHoverItemCandle(CandleItem *item);*/
+    public:
+        void updateRect() noexcept;
+        void updateVisibility(bool visible) noexcept;
 
     protected:
+        void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
         void hoverEnterEvent(QGraphicsSceneHoverEvent *event) noexcept override;
 
     protected:
+        uint64_t m_timestamp;
         struct CandleData
         {
             double open;
@@ -57,6 +59,12 @@ namespace CENTAUR_NAMESPACE
             double high;
             double low;
         } m_data;
+        QLineF m_high;
+        QLineF m_low;
+        QRectF m_barRect;
+
+    private:
+        CandleChartScene *m_scene;
     };
 
 } // namespace CENTAUR_NAMESPACE
