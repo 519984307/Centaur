@@ -47,10 +47,10 @@ void cen::ProtocolServer::onNewConnection() noexcept
         logError("server", LS("error-server-empty_connection"));
         return;
     }
-    auto client     = new ProtocolClient(socket, this);
+    auto client = new ProtocolClient(socket, this);
 
     auto generateId = []() -> QString {
-        return QString::fromStdString(uuid::generate<std::mt19937>().to_string());
+        return QString::fromStdString(uuid::generate().to_string());
     };
 
     QString id { generateId() };

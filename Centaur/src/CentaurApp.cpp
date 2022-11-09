@@ -972,7 +972,7 @@ void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, con
     const auto ms      = static_cast<quint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     const auto latency = receivedTime > ms ? 0ull : ms - receivedTime;
 
-    auto changeColor   = [](QLabel *ctr, const QColor &color) {
+    auto changeColor = [](QLabel *ctr, const QColor &color) {
         QPalette pal = ctr->palette();
         pal.setColor(ctr->foregroundRole(), color);
         ctr->setPalette(pal);
@@ -1074,8 +1074,8 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
         const double stepsX = (maxX - minX) / 5.0;
 
         return {
-            { minX, maxX, stepsX },
-            { minY, maxY, stepsY }
+            {minX, maxX, stepsX},
+            {minY, maxY, stepsY}
         };
     };
 
@@ -1090,8 +1090,8 @@ void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qre
         return;
     }
 
-    auto [rangeAsksX, rangeAsksY]          = generateMinMax(asksPoints);
-    auto [rangeBidsX, rangeBidsY]          = generateMinMax(bidsPoints);
+    auto [rangeAsksX, rangeAsksY] = generateMinMax(asksPoints);
+    auto [rangeBidsX, rangeBidsY] = generateMinMax(bidsPoints);
 
     auto &[asksMinX, asksMaxX, asksStepsX] = rangeAsksX;
     auto &[asksMinY, asksMaxY, asksStepsY] = rangeAsksY;
@@ -1201,13 +1201,13 @@ void cen::CentaurApp::onCandleView(const QString &symbol, cen::plugin::ICandleVi
 {
     auto subWindow = new QMdiSubWindow;
 
-    bool unique    = false;
-    uuid uid { uuid::generate<std::mt19937_64>() };
+    bool unique = false;
+    uuid uid { uuid::generate() };
 
     while (!unique)
     {
         if (m_candleViewDisplay.contains(uid))
-            uid = uuid::generate<std::mt19937_64>();
+            uid = uuid::generate();
         else
         {
             m_candleViewDisplay[uid] = { subWindow, symbol, view, tf };
