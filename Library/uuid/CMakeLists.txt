@@ -1,26 +1,40 @@
-cmake_minimum_required(VERSION 3.21)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 
-set(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD 20)
 
 
-add_library(uuid
-        SHARED
+FIND_PACKAGE(Threads REQUIRED)
+FIND_PACKAGE(re2 CONFIG REQUIRED)
+
+SET(INCLUDE_FILES
         include/uuid.hpp
-        src/uuid.cpp
         ../../Centaur.hpp)
 
-target_compile_definitions(uuid PRIVATE BINAPI_LIBRARY)
+SET(SOURCE_FILES
+        src/uuid.cpp)
 
-include_directories(include PRIVATE)
+
+ADD_LIBRARY(uuid
+        SHARED
+        ${INCLUDE_FILES}
+        ${SOURCE_FILES})
+
+TARGET_COMPILE_DEFINITIONS(uuid PRIVATE BINAPI_LIBRARY)
+
+TARGET_LINK_LIBRARIES(uuid PRIVATE re2::re2)
+
+INCLUDE_DIRECTORIES(include PRIVATE)
 
 
-target_compile_options(uuid PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -Wno-poison-system-directories
-        -fdiagnostics-color=always)
+SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+
+SET_SOURCE_FILES_PROPERTIES(
+        ${SOURCE_FILES}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+SET_SOURCE_FILES_PROPERTIES(
+        ${INCLUDE_FILES}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+

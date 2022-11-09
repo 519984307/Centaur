@@ -105,7 +105,7 @@ ENDIF ()
 
 
 # Create the Apple Bundle
-IF (APPLE)
+IF (UNIX AND APPLE)
     set_target_properties(Centaur PROPERTIES
             MACOSX_BUNDLE_BUNDLE_NAME Centaur
             MACOSX_BUNDLE_GUI_IDENTIFIER com.centaurproject.Centaur
