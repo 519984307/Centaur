@@ -1,7 +1,10 @@
 
-#define CATCH_CONFIG_ENABLE_BENCHMARKING
+
 #include <Protocol.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/benchmark/catch_benchmark_all.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+
 #include <chrono>
 #include <iostream>
 #include <unordered_map>
@@ -9,21 +12,36 @@
 
 TEST_CASE("UUID Construction")
 {
-    CHECK_THROWS_WITH(cen::uuid(""), Catch::Contains("empty"));
-    CHECK_THROWS_WITH(cen::uuid("12121212-1212-1212-1212-141414141414}"), Catch::Contains("missing '{"));
-    CHECK_THROWS_WITH(cen::uuid("{12121212-1212-1212-1212-141414141414"), Catch::Contains("missing '}"));
-    CHECK_THROWS_WITH(cen::uuid("{12121212-1212-1212-122-14141414114}"), Catch::Contains("invalid size"));
-    CHECK_THROWS_WITH(cen::uuid("{12121212-1212-1212-1223-14141414114ad}"), Catch::Contains("invalid size"));
-    CHECK_THROWS_WITH(cen::uuid("{6f121212-1212-1212-1224-014m41414114}"), Catch::Contains("invalid character"));
-    CHECK_THROWS_WITH(cen::uuid("{6f121212-1212 1212-1224-014b41414114}"), Catch::Contains("invalid character"));
-    CHECK_THROWS_WITH(cen::uuid("{6f12121-0-1212-1212-1224-014C-141114}"), Catch::Contains("invalid format"));
+    using namespace Catch::Matchers;
+
+    CHECK_THROWS_WITH(cen::uuid(""), ContainsSubstring("empty"));
+    CHECK_THROWS_WITH(cen::uuid("12121212-1212-1212-1212-141414141414}"), ContainsSubstring("missing a bracket"));
+    CHECK_THROWS_WITH(cen::uuid("{12121212-1212-1212-1212-141414141414"), ContainsSubstring("missing a bracket"));
+    CHECK_THROWS_WITH(cen::uuid("{12121212-1212-1212-122-14141414114}"), ContainsSubstring("invalid size"));
+    CHECK_THROWS_WITH(cen::uuid("{12121212-1212-1212-1223-14141414114ad}"), ContainsSubstring("invalid size"));
+    CHECK_THROWS_WITH(cen::uuid("{6f121212-1212-1212-1224-014m41414114}"), ContainsSubstring("invalid character"));
+    CHECK_THROWS_WITH(cen::uuid("{6f121212-1212 1212-1224-014b41414114}"), ContainsSubstring("wrong format"));
+    CHECK_THROWS_WITH(cen::uuid("{6f12121-0-1212-1212-1224-014C-141114}"), ContainsSubstring("wrong format"));
     CHECK_NOTHROW(cen::uuid("{6f12121d-1212-1212-1224-014C14a11c14}"));
     CHECK_NOTHROW(cen::uuid("{abcdefAB-CDEF-0123-4567-890000000000}"));
-    CHECK_NOTHROW(cen::uuid::generate<std::mt19937_64>());
+
+    CHECK_NOTHROW(cen::uuid("12121212-1212-1212-1212-141414141414", false));
+    CHECK_NOTHROW(cen::uuid("12121212-1212-1212-1212-141414141414", false));
+    CHECK_THROWS_WITH(cen::uuid("12121212-1212-1212-122-14141414114", false), ContainsSubstring("invalid size"));
+    CHECK_THROWS_WITH(cen::uuid("12121212-1212-1212-1223-14141414114ad", false), ContainsSubstring("invalid size"));
+    CHECK_THROWS_WITH(cen::uuid("6f121212-1212-1212-1224-014m41414114", false), ContainsSubstring("invalid character"));
+    CHECK_THROWS_WITH(cen::uuid("6f121212-1212 1212-1224-014b41414114", false), ContainsSubstring("wrong format"));
+    CHECK_THROWS_WITH(cen::uuid("6f12121-0-1212-1212-1224-014C-141114", false), ContainsSubstring("wrong format"));
+    CHECK_NOTHROW(cen::uuid("6f12121d-1212-1212-1224-014C14a11c14", false));
+    CHECK_NOTHROW(cen::uuid("abcdefAB-CDEF-0123-4567-890000000000", false));
+
+    CHECK_NOTHROW(cen::uuid::generate());
 
     cen::uuid uuid("{abcdefAB-CDEF-0123-4567-890000000000}");
     CHECK(uuid.to_string() == "{abcdefab-cdef-0123-4567-890000000000}");
-    CHECK(uuid.to_string(true) == "{ABCDEFAB-CDEF-0123-4567-890000000000}");
+    CHECK(uuid.to_string(false) == "abcdefab-cdef-0123-4567-890000000000");
+    CHECK(uuid.to_string(true, true) == "{ABCDEFAB-CDEF-0123-4567-890000000000}");
+    CHECK(uuid.to_string(false, true) == "ABCDEFAB-CDEF-0123-4567-890000000000");
 
     cen::uuid bytes { 0xabcdefAB, 0xcdef, 0x0123, 0x4567, 0x89, 0x10, 0xcc, 0x90, 0x34, 0x35, true };
     CHECK(bytes == "{abcdefab-cdef-0123-4567-8910cc903435}");
@@ -65,9 +83,9 @@ TEST_CASE("UUID unordered_maps no random collisions")
     std::unordered_map<cen::uuid, int> l;
 
     int col = 0;
-    for (uint i = 0; i < 5'000; ++i)
+    for (uint i = 0; i < 5'000'000; ++i)
     {
-        auto id = cen::uuid::generate<std::mt19937_64>();
+        auto id = cen::uuid::generate();
         if (auto iter = l.find(id); iter != l.end())
         {
             ++col;
@@ -104,23 +122,13 @@ TEST_CASE("UUID Benchmark")
 
     BENCHMARK("UUID Generator mt19937")
     {
-        [[maybe_unused]] auto uuid = cen::uuid::generate<std::mt19937>();
-    };
-
-    BENCHMARK("UUID Generator mt19937_64")
-    {
-        [[maybe_unused]] auto uuid = cen::uuid::generate<std::mt19937_64>();
-    };
-
-    BENCHMARK("UUID Generator ranlux48")
-    {
-        [[maybe_unused]] auto uuid = cen::uuid::generate<std::ranlux48>();
+        [[maybe_unused]] auto uuid = cen::uuid::generate();
     };
 
     BENCHMARK("UUID Generator and stringify mt19937_64")
     {
-        [[maybe_unused]] auto uuid   = cen::uuid::generate<std::mt19937_64>();
-        [[maybe_unused]] auto string = cen::uuid::generate<std::mt19937_64>().to_string();
+
+        [[maybe_unused]] auto string = cen::uuid::generate().to_string();
     };
 }
 
