@@ -10,7 +10,8 @@
     "cpr",
     "zlib",
     "xerces-c",
-    "re2"
+    "re2",
+    "catch2"
   ],
   "overrides": [
     {
