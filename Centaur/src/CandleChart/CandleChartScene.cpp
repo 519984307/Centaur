@@ -77,9 +77,6 @@ void cen::CandleChartScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
             const auto scalingFactor = -xScale / 100;
 
             m_timeAxis->setCandleWidth(m_timeAxis->getCandleWidth() + scalingFactor /*, m_timeAxis->getCandleSpacing() + scalingFactor*/);
-
-            m_chartView->updateCandleRects();
-            m_chartView->updateVertGridLines();
         }
         else if (priceContained || m_priceAxisCapture)
         {
@@ -104,9 +101,6 @@ void cen::CandleChartScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 m_priceAxisMax = m_priceAxis->getMax();
                 m_priceAxisMin = m_priceAxis->getMin();
 
-                m_chartView->updateCandleRects();
-                m_chartView->updateHorzGridLines();
-
                 m_mouseMoveTime.start();
             }
         }
@@ -124,9 +118,6 @@ void cen::CandleChartScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
                     if (newMin >= 0) // This should protect us from the signed->unsigned conversion of negative numbers
                     {
                         m_timeAxis->setTimestampRange(static_cast<uint64_t>(newMin), m_timeAxisMax);
-
-                        m_chartView->updateCandleRects();
-                        m_chartView->updateVertGridLines();
 
                         // Update the parameter for an accurate movement
                         m_timeAxisMin = m_timeAxis->getMin();
@@ -151,18 +142,16 @@ void cen::CandleChartScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 
                     qDebug() << mouseElapsed << dMouseElapsed << mouseSpeed << m_priceSteps << movement << m_priceAxisMax << m_priceAxisMin;
 
-                    m_priceAxis->setMinMax(m_priceAxisMin + movement, m_priceAxisMax + movement);
+                    // m_priceAxis->setMinMax(m_priceAxisMin + movement, m_priceAxisMax + movement);
 
                     // Update the parameters for an accurate movement
                     m_priceAxisMax = m_priceAxis->getMax();
                     m_priceAxisMin = m_priceAxis->getMin();
-
-                    m_chartView->updateCandleRects();
-                    m_chartView->updateVertGridLines();
                 }
             }
         }
     }
+
 
     auto width     = this->views().first()->width();
     auto height    = this->views().first()->height();

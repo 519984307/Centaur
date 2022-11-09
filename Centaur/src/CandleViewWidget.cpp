@@ -77,7 +77,7 @@ cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginIn
     // Acquire the candles from the interface
     emit snRetrieveCandles(m_candleWindow.begin, m_candleWindow.end);
 
-    connect(m_ui->graphicsView->getCandleChartScene(), &CandleChartScene::snUpdateCandleMousePosition, this, &CandleViewWidget::onUpdateCandleMousePosition);
+    connect(m_ui->graphicsView, &CandleChartWidget::snUpdateCandleMousePosition, this, &CandleViewWidget::onUpdateCandleMousePosition);
 }
 
 void cen::CandleViewWidget::initToolBar() noexcept
@@ -270,7 +270,7 @@ cen::CandleViewWidget::CandleWindow cen::CandleViewWidget::getClosedCandlesTimes
     const auto t_end = end - (end % ms);
 
     if (ms <= 2'700'000)                          // less than 45 minutes
-        times = 10ull;                            // 200 candles at the beginning
+        times = 50ull;                            // 200 candles at the beginning
     else if (ms > 2'700'000 && ms <= 86'400'000)  // For hours
         times = 150ull;                           // 150 hour candles
     else if (ms > 86'400'000 && ms < 345'600'000) // For up to 4 weeks
@@ -322,6 +322,8 @@ void cen::CandleViewWidget::onRetrieveCandles(cen::plugin::ICandleView::Timestam
     m_candleWindow.begin = start;
     m_candleWindow.end   = end;
 
+    parentWidget()->setMaximumSize(500, 500);
+
     double min = 0, max = 0;
     bool minSet = false;
     for (const auto &cd : data)
@@ -338,8 +340,11 @@ void cen::CandleViewWidget::onRetrieveCandles(cen::plugin::ICandleView::Timestam
         else
             min = std::min(min, cd.second.low);
     }
-    m_ui->graphicsView->setPriceMinMax(min, max);
-    m_ui->graphicsView->setTimeMinMax(start, end);
+
+    parentWidget()->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+
+    //  m_ui->graphicsView->setPriceMinMax(min, max);
+    //  m_ui->graphicsView->setTimeMinMax(start, end);
 
     // emit snUpdateSeries();
 }
@@ -358,7 +363,7 @@ void cen::CandleViewWidget::onUpdateCandleMousePosition(uint64_t timestamp)
 
     const QString timeFormat = [&]() {
         const uint64_t candleTimeframe = timeFrameToMilliseconds(m_tf);
-        if (candleTimeframe < 3'600'000) // 3,600,000 is the number of milliseconds in a minute, thus, if the time is less a minute we must include the seconds on the label
+        if (candleTimeframe < 3'600'000) // 3,600,000 is the number of milliseconds in a minute, thus, if the time is less than a minute we must include the seconds on the label
             return "dd-MM-yyyy HH:mm:ss";
         else
             return "dd-MM-yyyy HH:mm";
@@ -391,7 +396,8 @@ void cen::CandleViewWidget::onUpdateCandleMousePosition(uint64_t timestamp)
         setLabelColor(m_ui->labelHigh, color);
         setLabelColor(m_ui->labelLow, color);
 
-        int precision = m_ui->graphicsView->pricePrecision();
+        int precision = m_ui->graphicsView->getPricePrecision();
+
         m_ui->labelClose->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->close(), 'f', precision)));
         m_ui->labelOpen->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->open(), 'f', precision)));
         m_ui->labelHigh->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->high(), 'f', precision)));

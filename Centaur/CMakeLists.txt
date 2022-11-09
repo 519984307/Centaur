@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(CMAKE_CXX_STANDARD 20)
-
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 find_package(FMT CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
@@ -22,22 +22,7 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 
-IF (UNIX AND NOT APPLE)
-    message("Centaur Linux Detected")
-ELSEIF (WIN32)
-    message("Centaur Windows Detected")
-    set(CENTAUR_EXECUTABLE WIN32)
-ELSEIF (UNIX AND APPLE)
-    message("Centaur Apple Detected")
-    set(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
-    set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
-ELSE ()
-    message(FATAL_ERROR "Unknown target platform")
-ENDIF ()
-
-add_executable(Centaur ${CENTAUR_EXECUTABLE}
-        qrc/resource.qrc
+SET(CENT_SOURCE
         src/main.cpp
         src/CentaurApp.cpp
         src/CenListCtrl.cpp
@@ -58,7 +43,9 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         src/CandleChart/CandleChartWidget.cpp
         src/CandleChart/CandleChartScene.cpp
         src/CandleChart/PriceAxisItem.cpp
-        src/CandleChart/TimeAxisItem.cpp
+        src/CandleChart/TimeAxisItem.cpp)
+
+SET(CENT_INCLUDE
         include/CentaurApp.hpp
         include/CentaurGlobal.hpp
         include/CentaurUIState.hpp
@@ -82,12 +69,40 @@ add_executable(Centaur ${CENTAUR_EXECUTABLE}
         include/CandleChart/PriceAxisItem.hpp
         include/CandleChart/TimeAxisItem.hpp
         ../Plugins/include/CentaurPlugin.hpp
-        ../Plugins/include/CentaurInterface.hpp
+        ../Plugins/include/CentaurInterface.hpp)
+
+SET(CENT_UI
         ui/CentaurApp.ui
         ui/PluginsDialog.ui
         ui/LenghtyDialog.ui
         ui/FavoritesDialog.ui
         ui/CandleViewWidget.ui)
+
+SET(CENT_RESOURCE
+        qrc/resource.qrc)
+
+add_executable(Centaur ${CENTAUR_EXECUTABLE}
+        ${CENT_RESOURCE}
+        ${CENT_UI}
+        ${CENT_INCLUDE}
+        ${CENT_SOURCE}
+        )
+
+
+IF (UNIX AND NOT APPLE)
+    message("Centaur Linux Detected")
+ELSEIF (WIN32)
+    message("Centaur Windows Detected")
+    set(CENTAUR_EXECUTABLE WIN32)
+ELSEIF (UNIX AND APPLE)
+    message("Centaur Apple Detected")
+    set(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
+    set(CMAKE_MACOSX_RPATH 1)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
+ELSE ()
+    message(FATAL_ERROR "Unknown target platform")
+ENDIF ()
+
 
 # Create the Apple Bundle
 IF (APPLE)
@@ -114,16 +129,15 @@ target_link_libraries(Centaur PRIVATE XercesC::XercesC)
 target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 
+SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
 
-target_compile_options(Centaur PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -fdiagnostics-color=always
-        -Wno-poison-system-directories
-        -Wno-redundant-parens
-        -Wno-reserved-identifier)
+set_source_files_properties(
+        ${CENT_INCLUDE}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+set_source_files_properties(
+        ${CENT_SOURCE}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+

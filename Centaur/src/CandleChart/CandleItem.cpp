@@ -5,23 +5,26 @@
 //
 
 #include "CandleChart/CandleItem.hpp"
-#include "CandleChart/CandleChartScene.hpp"
+#include "CandleChart/CandleChartWidget.hpp"
 
 #include <QPainter>
 
 CENTAUR_NAMESPACE::CandleItem::CandleItem(uint64_t timestamp, double open, double close, double high, double low, QGraphicsItem *parent) :
     QGraphicsRectItem(parent),
     m_timestamp { timestamp },
-    m_data { open, close, high, low },
-    m_scene { nullptr }
-
+    m_data { open, close, high, low }
 {
     setAcceptHoverEvents(true);
+    //  setFlag(ItemIsMovable, true);
 }
 
-void CENTAUR_NAMESPACE::CandleItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event) noexcept
+void CENTAUR_NAMESPACE::CandleItem::hoverEnterEvent(C_UNUSED QGraphicsSceneHoverEvent *event)
 {
-    // emit snMouseHoverItemCandle(this);
+    auto view = qobject_cast<CandleChartWidget *>(scene()->views().first());
+    assert(view != nullptr);
+    view->hoverItem(timestamp());
+
+    // qDebug() << event;
 }
 
 void CENTAUR_NAMESPACE::CandleItem::setParameters(double open, double close, double high, double low) noexcept
@@ -31,84 +34,101 @@ void CENTAUR_NAMESPACE::CandleItem::setParameters(double open, double close, dou
     update();
 }
 
-void cen::CandleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void cen::CandleItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGraphicsItem *option, C_UNUSED QWidget *widget)
 {
     const QRectF &thisRect = rect();
+    painter->setBrush(QBrush(QColor(50, 50, 50)));
+    painter->drawRect(thisRect);
+
+    // painter->drawLines({ m_high, m_low });
+
+    painter->setPen(QPen(QColor(0, 0, 255)));
+    painter->drawLine(m_high);
+    painter->setPen(QPen(QColor(255, 0, 255)));
+    painter->drawLine(m_low);
 
     if (isCandleBullish())
+    {
         painter->setBrush(QBrush(QColor(0, 255, 0)));
+        painter->setPen(QPen(QColor(0, 255, 0)));
+    }
     else
+    {
         painter->setBrush(QBrush(QColor(255, 0, 0)));
+        painter->setPen(QPen(QColor(255, 0, 0)));
+    }
 
     painter->drawRect(m_barRect);
-    /*
-        painter->setPen(QPen(QColor(0, 0, 255)));
-        painter->drawLine(m_high);
-        painter->setPen(QPen(QColor(255, 0, 255)));
-        painter->drawLine(m_low);*/
-    painter->drawLines({ m_high, m_low });
+
     //     QGraphicsRectItem::paint(painter, option, widget);
 }
 
-void cen::CandleItem::updateRect() noexcept
+void cen::CandleItem::updateCandleRect(double openPoint, double closePoint, double highPoint, double lowPoint) noexcept
 {
-    auto timeAxis                    = qobject_cast<CandleChartScene *>(scene())->getTimeAxis();
-    auto priceAxis                   = qobject_cast<CandleChartScene *>(scene())->getPriceAxis();
-    const auto &[xPosition, visible] = timeAxis->getGridFrame(m_timestamp);
+    const QRectF &itemRect = rect();
 
-    // qDebug() << visible << m_timestamp;
-    if (!visible)
-    {
-        // Simply hide
-        updateVisibility(false);
-        return;
-    }
+    auto view              = qobject_cast<CandleChartWidget *>(scene()->views().first());
+    assert(view != nullptr);
 
-    const auto candleWidth = timeAxis->getCandleWidth();
+    const auto &candleWidth = view->getCandleWidth() + view->getCandleSpacing();
+    const auto barLeft      = itemRect.left() + (view->getCandleSpacing() / 2);
 
-    const auto top         = priceAxis->priceToAxisPoint(m_data.high);
-    const auto bottom      = priceAxis->priceToAxisPoint(m_data.low);
+    m_barRect               = QRectF {
+        barLeft,
+        std::min(openPoint, closePoint),
+        view->getCandleWidth(),
+        std::abs(openPoint - closePoint)
 
-    const QRectF thisRect  = {
-         xPosition,
-         top,
-         candleWidth,
-         bottom - top
     };
 
-    const auto barTop    = priceAxis->priceToAxisPoint(m_data.open);
-    const auto barBottom = priceAxis->priceToAxisPoint(m_data.close);
+    const auto top       = std::min(highPoint, lowPoint);
+    const auto bottom    = std::max(highPoint, lowPoint);
 
-    m_barRect            = QRectF {
-        xPosition,
-        barTop,
-        candleWidth,
-        barBottom - barTop
-    };
+    const auto barTop    = m_barRect.top();
+    const auto barBottom = m_barRect.bottom();
 
-    const auto lineX = xPosition + (candleWidth / 2);
+    const auto lineX     = itemRect.left() + (candleWidth / 2);
 
-    m_high           = QLineF { lineX,
+    m_high               = QLineF { lineX,
         top,
         lineX,
         std::min(barTop, barBottom) };
 
-    m_low            = QLineF {
+    m_low                = QLineF {
         lineX,
         bottom,
         lineX,
         std::max(barTop, barBottom)
     };
-
-    prepareGeometryChange();
-    setRect(thisRect);
-    updateVisibility(true);
 }
 
-void cen::CandleItem::updateVisibility(bool visible) noexcept
-{
-    if (!isVisible() && visible)
-        show();
-    else if (isVisible() && !visible)
-        hide();
-}
+/*
+m_barRect               = {
+                  barLeft,
+    isCandleBearish() ? closePoint : openPoint,
+                  view->getCandleWidth(),
+                  std::abs(closePoint - openPoint)
+
+};
+
+
+const auto top       = itemRect.top();
+const auto bottom    = itemRect.bottom();
+
+const auto barTop    = m_barRect.top();
+const auto barBottom = m_barRect.bottom();
+
+const auto lineX     = itemRect.left() + (candleWidth / 2);
+
+
+m_high               = QLineF { lineX,
+top,
+lineX,
+std::min(barTop, barBottom) };
+
+m_low                = QLineF {
+lineX,
+bottom,
+lineX,
+std::max(barTop, barBottom)
+};*/

@@ -196,7 +196,7 @@ CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
     // Load the favorites list. Since all plugins must be loaded
     loadFavoritesWatchList();
 
-    onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Hours_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
+    onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
 
     END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
     logInfo("app", QString(LS("trace-initialize-time")).arg(initializationTime.count(), 0, 'f', 4));

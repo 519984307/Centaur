@@ -21,34 +21,43 @@ namespace CENTAUR_NAMESPACE
     class CandleChartScene;
     class CandleItem : public QGraphicsRectItem
     {
+        enum
+        {
+            Type = UserType + 1
+        };
+
     public:
         CandleItem(uint64_t timestamp, double open, double close, double high, double low, QGraphicsItem *parent = nullptr);
 
     public:
-        C_NODISCARD inline double open() const { return m_data.open; }
-        C_NODISCARD inline double close() const { return m_data.close; }
-        C_NODISCARD inline double high() const { return m_data.high; }
-        C_NODISCARD inline double low() const { return m_data.low; }
+        C_NODISCARD inline auto timestamp() const noexcept { return m_timestamp; }
+        C_NODISCARD inline auto open() const noexcept { return m_data.open; }
+        C_NODISCARD inline auto close() const noexcept { return m_data.close; }
+        C_NODISCARD inline auto high() const noexcept { return m_data.high; }
+        C_NODISCARD inline auto low() const noexcept { return m_data.low; }
 
+    public:
         void setParameters(double open, double close, double high, double low) noexcept;
 
     public:
-        inline bool isCandleBullish() const
+        C_NODISCARD inline bool isCandleBullish() const
         {
             return close() > open();
         }
-        inline bool isCandleBearish() const
+        C_NODISCARD inline bool isCandleBearish() const
         {
             return !isCandleBullish();
         }
 
     public:
-        void updateRect() noexcept;
-        void updateVisibility(bool visible) noexcept;
+        C_NODISCARD inline int type() const override { return Type; }
+
+    public:
+        void updateCandleRect(double openPoint, double closePoint, double highPoint, double lowPoint) noexcept;
 
     protected:
         void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
-        void hoverEnterEvent(QGraphicsSceneHoverEvent *event) noexcept override;
+        void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
 
     protected:
         uint64_t m_timestamp;
@@ -62,9 +71,6 @@ namespace CENTAUR_NAMESPACE
         QLineF m_high;
         QLineF m_low;
         QRectF m_barRect;
-
-    private:
-        CandleChartScene *m_scene;
     };
 
 } // namespace CENTAUR_NAMESPACE

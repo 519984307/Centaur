@@ -1,0 +1,22 @@
+{
+  "name": "centaur",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "openssl",
+    "yaml-cpp",
+    "rapidjson",
+    "libwebsockets",
+    "sqlite3",
+    "cpr",
+    "zlib",
+    "xerces-c",
+    "re2"
+  ],
+  "overrides": [
+    {
+      "name": "cpr",
+      "version": "1.8.3"
+    }
+  ],
+  "builtin-baseline": "2f0a16b5ae24fec6c615924e2fbc8bc43ab73764"
+}

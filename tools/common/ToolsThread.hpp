@@ -175,6 +175,71 @@ namespace cen::tools
         std::atomic_bool m_terminateSignal { false };
     };
 
+    template <typename T>
+    struct ApplicationThread
+    {
+        using Tptr          = T *;
+        ApplicationThread() = default;
+        inline ~ApplicationThread() noexcept
+        {
+            release();
+        }
+
+        inline auto release()
+        {
+            if (object)
+            {
+                object->terminate();
+                if (thisThread.joinable())
+                    thisThread.join();
+                object.reset();
+            }
+        }
+
+        // Start the thread releasing the memory and closing the thread if there was a prior thread running
+        template <typename... Args>
+        inline auto startAndRelease(Args &&...args)
+        {
+            release();
+            object = std::make_unique<T>(std::forward<Args>(args)...);
+            if (object)
+            {
+                thisThread = std::thread([&] {
+                    object->run();
+                });
+            }
+        }
+
+        template <typename... Args>
+        inline auto startAndReleaseWithPromise(Args &&...args)
+        {
+            release();
+            object = std::make_unique<T>(std::forward<Args>(args)...);
+            if (object)
+            {
+                std::future<void> started = object->getStartedPromise().get_future();
+                thisThread                = std::thread([&] {
+                    object->run();
+                });
+                started.wait();
+            }
+        }
+
+        inline auto isValid() const noexcept -> bool
+        {
+            return object.operator bool();
+        }
+
+        inline auto thisObject() noexcept -> Tptr
+        {
+            return object.get();
+        }
+
+    private:
+        std::thread thisThread;
+        std::unique_ptr<T> object;
+    };
+
 } // namespace cen::tools
 
 #define DELEGATE(r, p, ...) SA::delegate<r(__VA_ARGS__)>::create<thisClass, p>(this)

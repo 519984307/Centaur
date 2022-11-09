@@ -204,7 +204,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::request(const local::BinanceAPIRequest &reque
     if (secure)
     {
         // Do proper changes to the data
-        secureRequest(session, parameters, *session.GetCurlHolder(), request.preventSignatureWhenSigned);
+        // secureRequest(session, parameters, *session.GetCurlHolder(), request.preventSignatureWhenSigned);
     }
 
     session.SetUrl(url);

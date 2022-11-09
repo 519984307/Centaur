@@ -1,19 +1,12 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.24)
 
 
 # Required libraries
 find_package(FMT REQUIRED)
 find_package(RapidJSON REQUIRED)
-find_package(cpr REQUIRED)
-find_package(libwebsockets REQUIRED)
+find_package(cpr CONFIG REQUIRED)
+find_package(libwebsockets CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
-
-message(STATUS "OpenSSL: Version ${OPENSSL_VERSION}")
-message(STATUS "OpenSSL: include dir at ${OPENSSL_INCLUDE_DIR}")
-message(STATUS "OpenSSL: libraries at ${OPENSSL_LIBRARIES} ${OPENSSL_SSL_LIBRARIES}")
-
-
-message(STATUS "LibWebSockets: libraries at ${Libwebsockets_INCLUDE_DIRS}")
 
 
 add_library(BinanceAPI SHARED
@@ -41,13 +34,13 @@ add_library(BinanceAPI SHARED
 
 
 include_directories(include PRIVATE)
-include_directories(Mongoose PRIVATE)
 
 
 target_link_libraries(BinanceAPI PRIVATE fmt::fmt)
 target_link_libraries(BinanceAPI PRIVATE cpr::cpr)
-target_link_libraries(BinanceAPI PRIVATE ${OPENSSL_LIBRARIES})
+target_link_libraries(BinanceAPI PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(BinanceAPI PRIVATE websockets)
+target_link_libraries(BinanceAPI PRIVATE rapidjson)
 
 
 target_compile_options(BinanceAPI PRIVATE
