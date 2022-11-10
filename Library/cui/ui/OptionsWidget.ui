@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CENTAUR_NAMESPACE::OptionsWidget</class>
+ <widget class="QWidget" name="CENTAUR_NAMESPACE::OptionsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="spacing">
+    <number>5</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <spacer name="horizontalSpacerLeft">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QPushButton" name="viewBtn">
+     <property name="minimumSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+color: black;
+border: 0px;
+border-radius:  5px;
+background-color: #2196f3;
+border-image: url(:/list-items/view) 0 0 0 0;
+}
+
+QPushButton:hover, QPushButton:hover:default{
+	background-color:  #339EF4;
+}
+QPushButton:pressed{
+background-color:  #68B8F7;
+}
+
+
+QPushButton:default, QPushButton:pressed:default{
+background-color: r#91D4FF;
+}
+QPushButton:disabled{
+color: #c0c0c0;
+background-color: #9D9EA4;
+}
+</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="../rcc/resources.qrc">
+       <normaloff>:/options/view</normaloff>:/options/view</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="editBtn">
+     <property name="minimumSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+color: black;
+border: 0px;
+border-radius:  5px;
+background-color: #2196f3;
+border-image: url(:/list-items/edit) 0 0 0 0;
+}
+
+QPushButton:hover, QPushButton:hover:default{
+	background-color:  #339EF4;
+}
+QPushButton:pressed{
+background-color:  #68B8F7;
+}
+
+
+QPushButton:default, QPushButton:pressed:default{
+background-color: r#91D4FF;
+}
+QPushButton:disabled{
+color: #c0c0c0;
+background-color: #9D9EA4;
+}
+
+</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="../rcc/resources.qrc">
+       <normaloff>:/options/edit</normaloff>:/options/edit</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="delBtn">
+     <property name="minimumSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+	border-radius: 5px;
+	background-color: #B00020;
+	border-image: url(:/list-items/delete) 0 0 0 0;
+}
+
+QPushButton:hover, QPushButton:hover:default{
+	background-color: #E03755;
+}
+QPushButton:pressed{
+background-color:  #CF6679;
+}
+QPushButton:default, QPushButton:pressed:default{
+background-color:  #CF6679;
+}
+</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="../rcc/resources.qrc">
+       <normaloff>:/options/delete</normaloff>:/options/delete</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="horizontalSpacerRight">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../rcc/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

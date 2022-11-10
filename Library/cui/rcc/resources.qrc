@@ -1,0 +1,28 @@
+<!--
+  ~ //
+  ~ // Created by Ricardo Romero on 15/04/22.
+  ~ // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
+  ~ //
+  -->
+
+<RCC>
+    <qresource prefix="password">
+        <file alias="edit">../res/password_48dp.svg</file>
+        <file alias="hide">../res/visibility_off_white_48dp.svg</file>
+        <file alias="show">../res/visibility_white_48dp.svg</file>
+    </qresource>
+
+    <qresource prefix="user">
+        <file alias="edit">../res/person_48dp_filled.svg</file>
+    </qresource>
+
+    <qresource prefix="search">
+        <file alias="glass">../res/search_black_48dp.svg</file>
+    </qresource>
+
+    <qresource prefix="options">
+        <file alias="view">../res/visibility_opts.svg</file>
+        <file alias="edit">../res/mode_edit_black_48dp.svg</file>
+        <file alias="delete">../res/delete_48dp.svg</file>
+    </qresource>
+</RCC>
