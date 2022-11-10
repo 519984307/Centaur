@@ -5,14 +5,13 @@
 //
 
 #include "Logger.hpp"
+#include "LogDialog.hpp"
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QTranslator>
-
 #include <fmt/chrono.h>
 #include <fmt/core.h>
-#include <fmt/format.h>
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -70,7 +69,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::terminate() noexcept
 
 void CENTAUR_NAMESPACE::CentaurLogger::process(const LogMessage &log) noexcept
 {
-    QMetaObject::invokeMethod(m_app, "onLog",
+    QMetaObject::invokeMethod(m_app->logDialog(), "onLog",
         Qt::QueuedConnection,
         Q_ARG(unsigned long long, log.date),
         Q_ARG(int, log.session),
@@ -95,7 +94,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::process(const LogMessage &log) noexcept
 
     if (err != SQLITE_OK)
     {
-        QMetaObject::invokeMethod(m_app, "onLog",
+        QMetaObject::invokeMethod(m_app->logDialog(), "onLog",
             Qt::QueuedConnection,
             Q_ARG(unsigned long long, log.date),
             Q_ARG(int, log.session),
@@ -123,8 +122,8 @@ void CENTAUR_NAMESPACE::CentaurLogger::dispatch() noexcept
 
 void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::CentaurApp *app)
 {
-    auto logFile   = g_globals->paths.installPath + "/Log/log0.db";
-    m_app          = app;
+    auto logFile = g_globals->paths.installPath + "/Log/log0.db";
+    m_app        = app;
 
     bool recoverDb = false;
 
