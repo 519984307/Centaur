@@ -13,7 +13,7 @@
 #ifndef CENTAUR_GLOBALS_HPP
 #define CENTAUR_GLOBALS_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "XMLHelper.hpp"
 #include "crc64.hpp"
 #include <QFont>
@@ -30,8 +30,26 @@ namespace CENTAUR_NAMESPACE::Ui
 
 namespace CENTAUR_NAMESPACE
 {
+    struct AESSym
+    {
+        static auto decrypt(const QString &text, const QByteArray &key) -> QString;
+        static auto encrypt(const QByteArray &data, const QByteArray &key) -> QString;
+        static auto createUniqueId(int rounds, std::size_t maxSize) -> std::string;
+    };
+
     struct Globals
     {
+
+        struct SessionData
+        {
+            QString user;
+            QString display;
+            QString email;
+            QString userTFA;
+            QImage image;
+            bool tfa;
+        } session;
+
         struct Paths
         {
             QString appPath;
@@ -42,10 +60,9 @@ namespace CENTAUR_NAMESPACE
 
         struct Icons
         {
-            QIcon upArrow { ":/img/res/img/upArrow.svg" };
-            QIcon downArrow { ":/img/res/img/downArrow.svg" };
+            QIcon upArrow { ":/img/arrow-up" };
+            QIcon downArrow { ":/img/arrow-down" };
             QIcon searchIcon { ":/svg/edit/search_gray" };
-            QIcon pluginIcon { ":/img/res/img/plugin.svg" };
             QIcon favoritesIcon { ":/svg/favorites/star" };
         } icons;
 
@@ -178,8 +195,6 @@ namespace CENTAUR_NAMESPACE
                 xmlDocumentInvalid
             };
 
-            C_NODISCARD auto loadVisualsUI(Ui::CentaurApp *ui) noexcept -> ErrorDetail;
-
             struct VisualsFont
             {
                 QString name { "Arial" };
@@ -188,9 +203,6 @@ namespace CENTAUR_NAMESPACE
                 bool italic { false };
                 qreal spacing { 0.0 };
             };
-
-        private:
-            auto parseVisuals(xercesc::DOMDocument *doc, Ui::CentaurApp *ui) -> void;
 
         } visuals;
     };
