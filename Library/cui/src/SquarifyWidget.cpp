@@ -5,10 +5,14 @@
 //
 
 #include "SquarifyWidget.hpp"
+#include <QAbstractTextDocumentLayout>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QPainter>
 #include <QResizeEvent>
+#include <QStyleOptionGraphicsItem>
+#include <QTextDocument>
 
 BEGIN_CENTAUR_NAMESPACE
 
@@ -17,6 +21,62 @@ enum class Stack
     Vertical,
     Horizontal
 };
+
+struct ItemData
+{
+    ItemData() = default;
+    ItemData(QString d, double a, double o) :
+        data { std::move(d) },
+        area { a },
+        orientation { o } { }
+    QString data;
+    double area;
+    double orientation;
+};
+namespace
+{
+
+    struct GraphicsItemSquare : public QGraphicsRectItem
+    {
+        explicit GraphicsItemSquare(QGraphicsItem *parent = nullptr) :
+            QGraphicsRectItem(parent)
+        {
+        }
+        ~GraphicsItemSquare() override = default;
+
+        void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override
+        {
+            painter->setRenderHint(QPainter::RenderHint::Antialiasing);
+
+            QGraphicsRectItem::paint(painter, option, widget);
+
+            painter->save();
+            QTextDocument doc;
+            doc.setHtml(itemData.data);
+            QRectF rc = doc.documentLayout()->frameBoundingRect(doc.rootFrame());
+            QPoint translatePoint {
+                (static_cast<int>(option->rect.width() - rc.width())) / 2,
+                (static_cast<int>(option->rect.height() - rc.height())) / 2
+            };
+            rc.moveTo(option->rect.topLeft());
+            if (option->rect.contains(rc.toRect()))
+            {
+                painter->translate(option->rect.left() + translatePoint.x(), option->rect.top() + translatePoint.y());
+                doc.drawContents(painter);
+            }
+            painter->restore();
+        }
+
+    public:
+        void setItemData(const ItemData &data) noexcept
+        {
+            itemData = data;
+        }
+
+    private:
+        ItemData itemData;
+    };
+} // namespace
 
 struct SquarifyWidget::Impl
 {
@@ -27,12 +87,12 @@ struct SquarifyWidget::Impl
     inline ~Impl() = default;
 
     void recalculate(const QRectF &rect) noexcept;
-    void squarify(QRectF &area, QList<QRectF> &rects, qreal lastAR, Stack stack, QList<double> &tree, qsizetype index);
+    void squarify(QRectF &area, QList<std::pair<QRectF, ItemData>> &rects, qreal lastAR, Stack stack, QList<ItemData> &tree, qsizetype index);
 
 public:
     QGraphicsScene *scene;
-    QList<QGraphicsRectItem *> squares;
-    QList<qreal> data;
+    QList<GraphicsItemSquare *> squares;
+    QList<ItemData> data;
     QBrush positive;
     QBrush negative;
 };
@@ -49,14 +109,18 @@ SquarifyWidget::~SquarifyWidget() = default;
 
 void SquarifyWidget::setData(const QList<std::pair<qreal, QString>> &data, const QBrush &negative, const QBrush &positive)
 {
+    _impl->data.clear();
+
+    _impl->positive = positive;
+    _impl->negative = negative;
 
     for (const auto &[value, string] : data)
-        _impl->data.push_back(std::abs(value));
+        _impl->data.emplace_back(string, std::abs(value), value > 0 ? 1 : -1);
 
     std::sort(_impl->data.begin(), _impl->data.end(),
-        [](qreal q1, qreal q2) {
+        [](const ItemData &q1, const ItemData &q2) {
             // sort descending and by the data value
-            return q1 > q2;
+            return q1.area > q2.area;
         });
 
     // Create the items if they don't exist
@@ -70,7 +134,7 @@ void SquarifyWidget::setData(const QList<std::pair<qreal, QString>> &data, const
         // Calculate difference
         auto diff = data.size() - currentItems.size();
         for (qsizetype i = 0ll; i < diff; ++i)
-            _impl->scene->addItem(new QGraphicsRectItem);
+            _impl->scene->addItem(new GraphicsItemSquare);
     }
     else if (currentItems.size() > data.size())
     {
@@ -84,11 +148,6 @@ void SquarifyWidget::setData(const QList<std::pair<qreal, QString>> &data, const
        * else is just equal sizes
        *
        */
-
-    for (auto &item : _impl->scene->items())
-    {
-        dynamic_cast<QGraphicsRectItem *>(item)->setBrush(negative);
-    }
 }
 
 void SquarifyWidget::resizeEvent(QResizeEvent *event)
@@ -109,20 +168,23 @@ void SquarifyWidget::Impl::recalculate(const QRectF &rect) noexcept
 {
     auto totalArea = rect.width() * rect.height();
 
-    auto sum = std::accumulate(data.begin(), data.end(), 0.0);
-    QList<double> map;
-    std::for_each(data.begin(), data.end(), [&totalArea, &map, &sum](qreal element) {
-        const auto area = (element * totalArea) / (sum);
-        map.push_back(area);
+    // Normalize
+    auto sum = std::accumulate(data.begin(), data.end(), 0.0, [](double ac, const ItemData &q1) {
+        return ac + q1.area;
+    });
+    QList<ItemData> map;
+    std::for_each(data.begin(), data.end(), [&totalArea, &map, &sum](const ItemData &element) {
+        const auto area = (element.area * totalArea) / (sum);
+        map.emplace_back(element.data, area, element.orientation);
     });
 
     // Calculate the first stacking
-    QList<QRectF> currentStack;
+    QList<std::pair<QRectF, ItemData>> currentStack;
     Stack stack = rect.width() > rect.height() ? Stack::Vertical : Stack::Horizontal;
 
     if (map.size() == 1)
     {
-        dynamic_cast<QGraphicsRectItem *>(scene->items()[0])->setRect(rect);
+        dynamic_cast<GraphicsItemSquare *>(scene->items()[0])->setRect(rect);
     }
     else
     {
@@ -131,7 +193,7 @@ void SquarifyWidget::Impl::recalculate(const QRectF &rect) noexcept
     }
 }
 
-void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal lastAR, Stack stack, QList<double> &tree, qsizetype index)
+void SquarifyWidget::Impl::squarify(QRectF &area, QList<std::pair<QRectF, ItemData>> &rects, qreal lastAR, Stack stack, QList<ItemData> &tree, qsizetype index)
 {
     const auto aspectRatio = [](qreal w, qreal h) {
         return std::max(w / h, h / w);
@@ -143,14 +205,6 @@ void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal la
     if (tree.empty() && rects.empty())
         return;
 
-    /*
-        if (tree.size() == 1)
-        {
-            dynamic_cast<QGraphicsRectItem *>(scene->items()[index])->setRect(area);
-            tree.clear();
-        }
-        else
-        {*/
     if (rects.empty())
     {
         QRectF rc {
@@ -162,23 +216,23 @@ void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal la
             case Stack::Vertical:
                 // Height is fixed
                 rc.setHeight(height);
-                rc.setWidth(tree.front() / height);
+                rc.setWidth(tree.front().area / height);
                 break;
             case Stack::Horizontal:
                 // Width is fixed
                 rc.setWidth(width);
-                rc.setHeight(tree.front() / width);
+                rc.setHeight(tree.front().area / width);
                 break;
         }
 
-        rects.push_back(rc);
+        rects.emplace_back(rc, tree.front());
         lastAR = aspectRatio(rc.width(), rc.height());
         tree.pop_front();
     }
     else
     {
-        auto const totalArea = std::accumulate(rects.begin(), rects.end(), 0.0, [](double ac, const QRectF &rc) {
-            return ac + (rc.width() * rc.height());
+        auto const totalArea = std::accumulate(rects.begin(), rects.end(), 0.0, [](double ac, const std::pair<QRectF, ItemData> &rc) {
+            return ac + (rc.first.width() * rc.first.height());
         });
 
         double newAspectRatio;
@@ -191,26 +245,27 @@ void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal la
                 case Stack::Vertical:
                     // New width
                     rcWidth  = (totalArea / height);
-                    rcHeight = tree.front() / rcWidth;
+                    rcHeight = tree.front().area / rcWidth;
                     break;
                 case Stack::Horizontal:
                     rcHeight = (totalArea / width);
-                    rcWidth  = tree.front() / rcHeight;
+                    rcWidth  = tree.front().area / rcHeight;
                     break;
             }
             newAspectRatio = aspectRatio(rcHeight, rcWidth);
         }
         else
-            newAspectRatio = lastAR + 1; // force to layout the rectangle
+            newAspectRatio = lastAR + 1; // force to establish the rectangle
 
         if (newAspectRatio < lastAR || qFuzzyCompare(newAspectRatio, lastAR)) // Let's try to avoid funny weird things with fp
         {
             // qDebug() << rects;
             // No worst
-            rects.push_back(QRectF {
-                QPointF {    0.0,      0.0},
-                QSizeF {rcWidth, rcHeight}
-            });
+            rects.emplace_back(QRectF {
+                                   QPointF {    0.0,      0.0},
+                                   QSizeF {rcWidth, rcHeight}
+            },
+                tree.front());
             lastAR = newAspectRatio;
             tree.pop_front();
         }
@@ -222,7 +277,7 @@ void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal la
             // Now we calculate the positions
 
             QPointF origin = area.topLeft();
-            for (auto &rect : rects)
+            for (auto &[rect, rectData] : rects)
             {
                 switch (stack)
                 {
@@ -241,9 +296,14 @@ void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal la
                         break;
                 }
                 rect.setSize({ rcWidth, rcHeight });
-                dynamic_cast<QGraphicsRectItem *>(scene->items()[index])->setRect(rect);
+                dynamic_cast<GraphicsItemSquare *>(scene->items()[index])->setRect(rect);
+                dynamic_cast<GraphicsItemSquare *>(scene->items()[index])->setItemData(rectData);
+                if (rectData.orientation > 0)
+                    dynamic_cast<GraphicsItemSquare *>(scene->items()[index])->setBrush(positive);
+                else
+                    dynamic_cast<GraphicsItemSquare *>(scene->items()[index])->setBrush(negative);
+
                 index++;
-                qDebug() << "RECT: " << rect;
             }
 
             switch (stack)
@@ -262,7 +322,6 @@ void SquarifyWidget::Impl::squarify(QRectF &area, QList<QRectF> &rects, qreal la
             rects.clear();
         }
     }
-    //  }
 
     squarify(area, rects, lastAR, stack, tree, index);
 }
