@@ -6,383 +6,153 @@
 
 // General aspects of plugins
 
+#include "../ui/ui_CentaurApp.h"
 #include "CentaurApp.hpp"
+#include "SplashDialog.hpp"
 #include <QDir>
 #include <QFile>
+#include <QMenu>
 #include <QMessageBox>
 #include <QPluginLoader>
 #include <QString>
 #include <QUrl>
 
-#include <xercesc/dom/DOMNodeFilter.hpp>
-#include <xercesc/parsers/XercesDOMParser.hpp>
-#include <xercesc/sax/HandlerBase.hpp>
-#include <xercesc/util/PlatformUtils.hpp>
+namespace
+{
+    constexpr char exchangeListButton[]     = { R"(QPushButton{
+font-size: 12px; font-weight: 600;
+color:  #cccccc; border: 0px;
+border-top-left-radius: 0px;
+border-top-right-radius: 0px;
+border-bottom-left-radius: 10px;
+border-bottom-right-radius: 10px;
+background-color: rgba(28,35,43, 0);
+text-align: center; padding:  0 2 0 2; }
+QPushButton:default{font-weight: 800;
+color:  #0d3C61; border: 0px;
+border-radius:5px;
+border: 2px solid rgba(144,203,249,100);
+background-color: #2196f3;}
+QPushButton:hover, QPushButton:hover:default{background-color:  rgb(55,61,68);}
+QPushButton:pressed{background-color: rgb(62,68,75);}
+QPushButton::on{background-color: rgb(51,57,64);}
+QPushButton:pressed:default{background-color:  rgb(51,57,64);}
+QPushButton:disabled{color: #c0c0c0;background-color: #9D9EA4;})" };
+    constexpr char exchangeSearchLineEdit[] = { R"(QLineEdit{border: 0px;
+color: black; background-color: rgb(220,220,220);
+border-radius:  0px; min-height: 25px;padding: 0 0 0 5; }
+QLineEdit:hover{ background-color: rgb(232,232,232); border: 2px solid #339ef4 }
+QLineEdit:focus{ background-color:  rgb(240,240,240); border: 2px solid #56aff6;})" };
+    constexpr char exchangeTable[]          = { R"(QTableView { color: white; background-color: rgba(46,53,59, 0); border: 0px; }
+QTableView QTableCornerButton::section { background: #5299D4; border: 0px;}
+QTableView::item { border: 0px; height: 20px; }
+QTableView::item:hover{ background-color: rgb(79,85,90); }
+QTableView::item:hover:selected{ background-color: rgb(104,109,113); font-weight: 800; }
+QTableView::item:selected{ color: white; font-weight: 600; background-color: rgb(91,97,102);}
+QHeaderView::section:checked { background-color:  #3387CD; color: white; }
+QHeaderView::section { font: normal 800 12px Roboto; padding-left: 4px; border: 0px; height: 20px; background-color: #0069c0;
+color: white; padding-left: 4px; border: 0px; }
+QHeaderView::section:hover { background-color: #5299D4; color: white; })" };
+} // namespace
 
-void CENTAUR_NAMESPACE::CentaurApp::loadPlugins() noexcept
+void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
 {
     logTrace("plugins", "CentaurApp::loadPlugins()");
 
-    try
+    m_longOperation = std::make_unique<LongOperation>();
+
+    logInfo("plugins", tr("Plugins local data loaded and parsed."));
+
+    QString pluginPath = g_globals->paths.pluginsPath;
+    QDir pluginsDir(pluginPath);
+
+    auto range = splash->getProgressRange();
+    splash->setProgressRange(0, range.second + static_cast<int>(pluginsDir.entryList(QDir::Files).size()));
+
+    for (const auto &plFile : pluginsDir.entryList(QDir::Files))
     {
-        xercesc::XMLPlatformUtils::Initialize();
-    } catch (const xercesc::XMLException &ex)
-    {
-        char *message = xercesc::XMLString::transcode(ex.getMessage());
-        qDebug() << "Error during initialization!" << message << "\n";
-        xercesc::XMLString::release(&message);
-    }
-
-    auto errorDelay = [](const int &ms) {
-        QTime dieTime = QTime::currentTime().addMSecs(ms);
-        while (QTime::currentTime() < dieTime)
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-    };
-
-    m_longOperation       = std::make_unique<LongOperation>();
-
-    const QString xmlFile = g_globals->paths.pluginsPath + "/local/plugins.xml";
-    xercesc::DOMDocument *doc { nullptr };
-    {
-        // make the unique_ptr's being release before the call to terminate
-        std::unique_ptr<xercesc::XercesDOMParser> parser = std::make_unique<xercesc::XercesDOMParser>();
-        parser->setValidationScheme(xercesc::XercesDOMParser::Val_Always);
-        parser->setDoSchema(true);
-        parser->setDoNamespaces(true);
-
-        //  std::unique_ptr<xercesc::ErrorHandler> errHandler { static_cast<xercesc::ErrorHandler *>(new xercesc::HandlerBase()) };
-        //   parser->setErrorHandler(errHandler.get());
-
-        if (!QFile::exists(xmlFile))
-        {
-            logFatal("plugins", LS("fatal-plugins-file"));
-            QMessageBox::critical(this,
-                LS("fatal-plugins-file-title-ui"),
-                LS("fatal-plugins-file-ui"));
-            errorDelay(500); // Wait for all logging messages be processed and store in the DB
-            QApplication::quit();
-            return;
-        }
-        try
-        {
-            parser->parse(xmlFile.toLatin1().data());
-            doc = parser->getDocument();
-
-        } catch (const xercesc::XMLException &ex)
-        {
-            logFatal("plugins", LS("fatal-plugins-file-invalid"));
-            QMessageBox::critical(this,
-                LS("fatal-plugins-file-title-ui"),
-                LS("fatal-plugins-file-invalid-ui"));
-            errorDelay(500); // Wait for all logging messages be processed and store in the DB
-            QApplication::quit();
-            return;
-        }
-
-        logInfo("plugins", LS("info-plugins-file-loaded"));
-
-        QString pluginPath = g_globals->paths.pluginsPath;
-        QDir pluginsDir(pluginPath);
-        for (const auto &plFile : pluginsDir.entryList(QDir::Files))
-        {
-            QString realFile = pluginsDir.absoluteFilePath(plFile);
-            // Detect if the file is a symbolic link
-            QFileInfo info(realFile);
-            if (info.isSymLink() || info.isSymbolicLink()
+        QString realFile = pluginsDir.absoluteFilePath(plFile);
+        // splash->setDisplayText(QString(tr("Looking for... %1")).arg(plFile));
+        //  Detect if the file is a symbolic link
+        QFileInfo info(realFile);
+        if (info.isSymLink() || info.isSymbolicLink()
 #ifdef Q_OS_WIN
-                || info.isShortcut()
+            || info.isShortcut()
 #endif /* Q_OS_WIN */
-            )
-            {
-                realFile = info.symLinkTarget();
-            }
+        )
+        {
+            realFile = info.symLinkTarget();
+        }
 
-            auto loader     = new QPluginLoader(realFile);
-            QObject *plugin = loader->instance();
+        auto loader     = new QPluginLoader(realFile);
+        QObject *plugin = loader->instance();
 
-            if (plugin)
-            {
-                // Add to the list
-                auto baseInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(plugin);
+        if (plugin)
+        {
+            // Add to the list
+            auto baseInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(plugin);
 
-                if (baseInterface == nullptr)
-                    logError("plugin", LS("error-file-not-plugin"));
-                else
-                {
-                    m_pluginsData.push_back(baseInterface);
-
-                    logInfo("plugin", QString(LS("info-plugin-found")).arg(plFile));
-
-                    // Init the plugin
-                    auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
-                    loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
-                    baseInterface->setPluginInterfaces(g_logger,
-                        static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig),
-                        static_cast<CENTAUR_INTERFACE_NAMESPACE::ILongOperation *>(m_longOperation.get()));
-
-                    // Generate the plugin data
-                    m_configurationInterface[baseInterface->getPluginUUID().to_string().c_str()] = pluginConfig;
-
-                    if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
-                    {
-                        logInfo("plugin", QString(LS("info-plugin-iexchange")).arg(plFile));
-                        if (!initExchangePlugin(exInterface))
-                        {
-                            loader->unload();
-                            logWarn("plugin", QString(LS("warning-iexchange-plugin-unloaded")).arg(plFile));
-                        }
-                    }
-                    else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
-                    {
-                        logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
-                        // Init the plugin
-                        stInterface->initialization(m_ui->statusBar);
-                    }
-                    else if (auto cvInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::ICandleView *>(plugin); cvInterface)
-                    {
-                        logInfo("plugin", QString(LS("info-plugin-icandleview")).arg(plFile));
-                        if (!initCandleViewPlugin(cvInterface))
-                        {
-                            loader->unload();
-                        }
-                    }
-
-                    if (loader->isLoaded())
-                    {
-                        m_pluginInstances.emplace_back(loader);
-                        updatePluginsMenus(baseInterface->getPluginUUID(), doc, baseInterface);
-                    }
-                }
-            }
+            if (baseInterface == nullptr)
+                logError("plugin", tr("The file is not a plugin"));
             else
-                loader->unload();
-        }
-    }
-
-    try
-    {
-        xercesc::XMLPlatformUtils::Terminate();
-    } catch (const xercesc::XMLException &ex)
-    {
-        char *message = xercesc::XMLString::transcode(ex.getMessage());
-        qDebug() << "Error during termination!" << message << "\n";
-        xercesc::XMLString::release(&message);
-    }
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::updatePluginsMenus(const uuid &uuid, xercesc::DOMDocument *doc, CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
-{
-
-    auto pluginUuidStr = XMLStr { uuid.to_string().c_str() };
-
-    auto docElem       = doc->getDocumentElement();
-
-    if (docElem == nullptr)
-    {
-        logWarn("plugins", LS("warning-plugins-file-empty"));
-        return;
-    }
-    auto nodeList = docElem->getElementsByTagName(XMLStr { "plugin" });
-
-    // This is a recursive function intended to parse the XML File and add all the sub menus
-    auto insertToMenu = [this, &base](const auto &recursive, QMenu *parent, xercesc::DOMNode *dataNode) -> void { // NOLINT(misc-no-recursion)
-        auto typeStr = XMLStr { "type" };
-        auto dataStr = XMLStr { "data" };
-        auto nameStr = XMLStr { "name" };
-        auto sepStr  = XMLStr { "sep" };
-        auto subStr  = XMLStr { "sub" };
-        auto idStr   = XMLStr { "id" };
-
-        while (dataNode)
-        {
-            if (dataNode->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
             {
-                if (!xercesc::XMLString::equals(dataNode->getNodeName(), dataStr))
+                splash->setDisplayText(QString(tr("Initializing: %1 (%2)")).arg(baseInterface->getPluginName(), baseInterface->getPluginVersionString()));
+
+                m_pluginsData.push_back(baseInterface);
+
+                logInfo("plugin", QString(tr("Plugin found in file: ##F2FEFF#%1#")).arg(plFile));
+
+                // Init the plugin
+                auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
+
+                // tr            loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
+
+                baseInterface->setPluginInterfaces(g_logger,
+                    static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig),
+                    static_cast<CENTAUR_INTERFACE_NAMESPACE::ILongOperation *>(m_longOperation.get()));
+
+                // Generate the plugin data
+                mapConfigurationInterface(baseInterface->getPluginUUID(), pluginConfig);
+
+                if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
                 {
-                    logWarn("plugins", QString(LS("warning-plugin-data-expected")).arg(QString { StrXML { dataNode->getNodeName() } }));
-                    dataNode = dataNode->getNextSibling();
-                    continue;
-                }
-
-                auto dataElem = dynamic_cast<xercesc::DOMElement *>(dataNode);
-
-                auto type     = dataElem->getAttributeNode(typeStr);
-                auto name     = dataElem->getAttributeNode(nameStr);
-                auto id       = dataElem->getAttributeNode(idStr);
-
-                if (type != nullptr)
-                {
-                    if (xercesc::XMLString::equals(type->getNodeValue(), sepStr))
-                        parent->addSeparator();
-                    else if (xercesc::XMLString::equals(type->getNodeValue(), subStr))
+                    logInfo("plugin", QString(tr("IExchange plugin found in file: ##F2FEFF#%1#")).arg(plFile));
+                    if (!initExchangePlugin(exInterface))
                     {
-                        if (name == nullptr || xercesc::XMLString::stringLen(name->getNodeValue()) == 0)
-                        {
-                            logWarn("plugins", QString(LS("warning-plugin-name-expected")).arg(base->getPluginName()));
-                            dataNode = dataNode->getNextSibling();
-                            continue;
-                        }
-
-                        auto newMenu = new QMenu(QString { StrXML { name->getNodeValue() } }, this);
-                        auto fc      = dataElem->getFirstChild();
-                        recursive(recursive, newMenu, fc);
-                        parent->addMenu(newMenu);
+                        loader->unload();
+                        logWarn("plugin", QString(tr("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded")).arg(plFile));
                     }
                 }
-                else
+                else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                 {
-
-                    if (name == nullptr || xercesc::XMLString::stringLen(name->getNodeValue()) == 0)
+                    logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
+                    // Init the plugin
+                    // stInterface->initialization(ui()->statusBar);
+                }
+                else if (auto cvInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::ICandleView *>(plugin); cvInterface)
+                {
+                    logInfo("plugin", QString(LS("info-plugin-icandleview")).arg(plFile));
+                    if (!initCandleViewPlugin(cvInterface))
                     {
-                        logWarn("plugins", QString(LS("warning-plugin-name-expected")).arg(base->getPluginName()));
-                        dataNode = dataNode->getNextSibling();
-                        continue;
-                    }
-
-                    if (id == nullptr || xercesc::XMLString::stringLen(id->getNodeValue()) == 0)
-                    {
-                        logWarn("plugins", QString(LS("warning-plugin-id-expected")).arg(base->getPluginName()));
-                        dataNode = dataNode->getNextSibling();
-                        continue;
-                    }
-
-                    else
-                    {
-
-                        auto menuAction = new QAction(QString { StrXML { name->getNodeValue() } });
-                        parent->addAction(menuAction);
-                        const StrXML idValue { id->getNodeValue() };
-                        auto res = base->addMenuAction(menuAction, CENTAUR_NAMESPACE::uuid { std::string { idValue } });
-                        if (!res)
-                            menuAction->setDisabled(true);
+                        loader->unload();
                     }
                 }
-            }
 
-            dataNode = dataNode->getNextSibling();
+                if (loader->isLoaded())
+                {
+                    mapPluginInstance(loader);
+                }
+            }
         }
-    };
+        else
+            loader->unload();
 
-    auto uuidStr = XMLStr { "uuid" };
-    auto menuStr = XMLStr { "menu" };
-    auto nameStr = XMLStr { "name" };
-
-    for (auto i = 0ull; i < nodeList->getLength(); ++i)
-    {
-        auto node = nodeList->item(i);
-
-        if (node->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
-        {
-            auto attributes = node->getAttributes();
-            if (attributes == nullptr || attributes->getLength() == 0ull)
-                continue;
-
-            auto attribute = attributes->getNamedItem(uuidStr);
-            if (attribute == nullptr)
-                continue;
-
-            if (!xercesc::XMLString::equals(attribute->getNodeValue(), pluginUuidStr))
-                continue;
-
-            if (!node->hasChildNodes())
-                continue;
-
-            auto nodeChildren = (dynamic_cast<xercesc::DOMElement *>(node))->getElementsByTagName(menuStr);
-            if (nodeChildren->getLength() == 0)
-            {
-                logInfo("plugins", QString(LS("info-plugin-no-menus")).arg(base->getPluginName()));
-                continue;
-            }
-
-            // This will only use the first menu item, everything else will be ignored
-            auto menuItem       = nodeChildren->item(0);
-
-            auto menuAttributes = menuItem->getAttributes();
-            if (menuAttributes == nullptr || menuAttributes->getLength() == 0ull)
-                continue;
-
-            auto menuNameAttribute = menuAttributes->getNamedItem(nameStr);
-
-            if (menuNameAttribute == nullptr || xercesc::XMLString::stringLen(menuNameAttribute->getNodeValue()) == 0)
-            {
-                logWarn("plugins", QString(LS("warning-plugin-no-menu-name")).arg(base->getPluginName()));
-                continue;
-            }
-
-            auto mainMenu = new QMenu(QString { StrXML { menuNameAttribute->getNodeValue() } }, this);
-
-            insertToMenu(insertToMenu, mainMenu, menuItem->getFirstChild());
-
-            m_ui->menuBar->insertMenu(m_ui->menuView->menuAction(), mainMenu);
-        }
+        splash->step();
     }
 }
 
 void CENTAUR_NAMESPACE::CentaurApp::loadPluginLocalData(const CENTAUR_NAMESPACE::uuid &uuid, xercesc::DOMDocument *doc, PluginConfiguration *config) noexcept
 {
-    auto pluginUuidStr = XMLStr { uuid.to_string().c_str() };
-
-    auto docElem       = doc->getDocumentElement();
-
-    if (docElem == nullptr)
-    {
-        logWarn("plugins", LS("warning-plugins-file-empty"));
-        return;
-    }
-
-    auto nodeList = docElem->getElementsByTagName(XMLStr { "plugin" });
-
-    auto uuidStr  = XMLStr { "uuid" };
-    auto localStr = XMLStr { "local" };
-
-    for (auto i = 0ull; i < nodeList->getLength(); ++i)
-    {
-        auto node = nodeList->item(i);
-
-        if (node->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
-        {
-            auto attributes = node->getAttributes();
-            if (attributes == nullptr || attributes->getLength() == 0ull)
-                continue;
-
-            auto attribute = attributes->getNamedItem(uuidStr);
-            if (attribute == nullptr)
-                continue;
-
-            if (!xercesc::XMLString::equals(attribute->getNodeValue(), pluginUuidStr))
-                continue;
-
-            if (!node->hasChildNodes())
-                continue;
-
-            auto nodeChildrenLocals = (dynamic_cast<xercesc::DOMElement *>(node))->getElementsByTagName(localStr);
-
-            if (nodeChildrenLocals->getLength() == 0)
-                continue;
-
-            auto nodeChildren = nodeChildrenLocals->item(0)->getChildNodes(); // Only one element will be parsed
-            for (auto idx = 0ull; idx < nodeChildren->getLength(); ++idx)
-            {
-                auto localChildren = nodeChildren->item(idx);
-                if (localChildren->getNodeType() == xercesc::DOMNode::NodeType::ELEMENT_NODE)
-                {
-                    StrXML localNodeName { localChildren->getNodeName() };
-                    auto localNodeChildren = localChildren->getChildNodes();
-                    for (auto jdx = 0ull; jdx < localNodeChildren->getLength(); ++jdx)
-                    {
-                        auto localNodeChild = localNodeChildren->item(jdx);
-                        if (localNodeChild->getNodeType() == xercesc::DOMNode::NodeType::TEXT_NODE)
-                        {
-                            auto value = const_cast<XMLCh *>(localNodeChild->getNodeValue());
-                            xercesc::XMLString::trim(value);
-                            config->addValue(std::string { localNodeName }, std::string { StrXML { value } });
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
@@ -393,78 +163,105 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
 
     if (!exchange->initialization())
     {
-        logError("plugins", LS("error-iexchange-plugin-init"));
+        logError("plugins", tr("Failed to initialize an IExchange-plugin"));
         return false;
     }
 
-    auto list                                                        = populateExchangeSymbolList(exchange, uuid.to_string().c_str());
+    auto list = populateExchangeSymbolList(exchange, uuid.to_string().c_str());
 
-    m_exchangeList[QString::fromStdString(uuid.to_string().c_str())] = ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first };
+    mapExchangePlugin(uuid, ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first });
 
     // clang-format off
     connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
     connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString,QString,quint64,QMap<qreal,QPair<qreal,qreal> >,QMap<qreal,QPair<qreal,qreal> >)), this, SLOT(onOrderbookUpdate(QString, QString, quint64, QMap<qreal,QPair<qreal,qreal> >,QMap<qreal,QPair<qreal,qreal> >)));
     // clang-format on
 
+    mapExchangePluginViewMenus(uuid, exchange->dynamicWatchListMenuItems());
+
     return true;
 }
 
-CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
+CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
 {
     logTrace("plugins", "CentaurApp::populateExchangeSymbolList");
 
-    auto widget             = new QWidget();
     const auto [name, icon] = exchange->getSymbolListName();
 
+    QPushButton *button;
+    // Add the button
     if (icon != nullptr)
-        m_ui->tabSymbols->addTab(widget, *icon, name);
+        button = new QPushButton(*icon, name, ui()->scrollAreaWidgetContents);
     else
-        m_ui->tabSymbols->addTab(widget, name);
+        button = new QPushButton(name, ui()->scrollAreaWidgetContents);
+    button->setMinimumSize(QSize(0, 30));
+    button->setCheckable(true);
+    button->setAutoExclusive(true);
+    button->setStyleSheet(exchangeListButton);
+    button->setIconSize(QSize { 16, 16 });
+    ui()->exchangesButtonsLayout->addWidget(button);
 
+    auto widget         = new QWidget();
     auto verticalLayout = new QVBoxLayout(widget);
     verticalLayout->setSpacing(2);
     verticalLayout->setContentsMargins(2, 2, 2, 2);
 
-    auto editCtrl = new QLineEdit(widget);
-    editCtrl->setFont(m_ui->editWatchListFilter->font());
-    editCtrl->setPlaceholderText(LS("ui-docks-search"));
+    auto editCtrl = new SearchLineEdit(widget);
+    editCtrl->setPlaceholderText(tr("Search..."));
     editCtrl->setClearButtonEnabled(true);
-    editCtrl->addAction(g_globals->icons.searchIcon, QLineEdit::LeadingPosition);
-    editCtrl->setStyleSheet(m_ui->editWatchListFilter->styleSheet());
+    editCtrl->setStyleSheet(exchangeSearchLineEdit);
     verticalLayout->addWidget(editCtrl);
 
-    auto symbolsList    = new CenListCtrl(widget);
-    auto itemModel      = new QStandardItemModel(0, 1, widget);
-    auto sortProxyModel = new QSortFilterProxyModel(widget);
-    symbolsList->setStyleSheet(m_ui->listWatchList->horizontalHeader()->styleSheet());
+    auto symbolsList = new OptionsTableWidget(widget);
+    symbolsList->setStyleSheet(exchangeTable);
+    symbolsList->initialize(editCtrl, 1, -1, -1, nullptr);
 
-    sortProxyModel->setSourceModel(itemModel);
-    symbolsList->setModel(sortProxyModel);
-    symbolsList->setObjectName(uuidString);
+    symbolsList->sortByColumn(0, Qt::AscendingOrder);
+    symbolsList->getModel()->setHorizontalHeaderLabels({ tr("Symbols") });
+    symbolsList->verticalHeader()->setDefaultAlignment(Qt::AlignCenter);
+    symbolsList->horizontalHeader()->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
 
-    sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    connect(editCtrl, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
-    connect(symbolsList, &CenListCtrl::snAddToWatchList, this, &CentaurApp::onAddToWatchList);
-
-    symbolsList->verticalHeader()->setFont(g_globals->fonts.symbolsDock.headerFont);
+    symbolsList->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
     symbolsList->setEditTriggers(QAbstractItemView::NoEditTriggers);
     symbolsList->setGridStyle(Qt::NoPen);
     symbolsList->setSortingEnabled(true);
     symbolsList->sortByColumn(0, Qt::AscendingOrder);
     symbolsList->verticalHeader()->setVisible(false);
 
-    itemModel->setHorizontalHeaderLabels({ LS("ui-docks-symbol") });
-    itemModel->horizontalHeaderItem(0)->setFont(g_globals->fonts.symbolsDock.headerFont);
-    itemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
     verticalLayout->addWidget(symbolsList);
+
+    ui()->stackedWidget->addWidget(widget);
+
+    connect(button, &QPushButton::clicked, this, [&, widget = widget](bool clicked) {
+        if (clicked)
+            ui()->stackedWidget->setCurrentWidget(widget);
+    });
+
+    connect(symbolsList, &OptionsTableWidget::customContextMenuRequested, this, [&, symbolsList, exchange](const QPoint &pos) {
+        // Show the context menu
+        QModelIndex index = symbolsList->indexAt(pos).siblingAtColumn(0);
+        auto itemData     = index.data(Qt::DisplayRole).toString();
+
+        if (!itemData.isEmpty())
+        {
+            QMenu contextMenu("Context menu", this);
+
+            QAction action(QString(tr("Add '%1' to the watchlist")).arg(itemData), this);
+            contextMenu.addAction(&action);
+
+            connect(&action, &QAction::triggered, this,
+                [&]() { onAddToWatchList(itemData, exchange->getPluginUUID().to_qstring(true), true); });
+
+            contextMenu.exec(symbolsList->mapToGlobal(pos));
+        }
+    });
 
     auto symbols = exchange->getSymbolList();
 
     for (const auto &[sym, icon] : symbols)
     {
+
         auto item  = new QStandardItem(sym);
-        int curRow = itemModel->rowCount();
+        int curRow = symbolsList->getRowCount();
         item->setFont(g_globals->fonts.symbolsDock.tableFont);
         item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
@@ -475,7 +272,7 @@ CENTAUR_NAMESPACE::CenListCtrl *CENTAUR_NAMESPACE::CentaurApp::populateExchangeS
         else
             item->setIcon(*icon);
 
-        itemModel->insertRow(curRow, item);
+        symbolsList->insertRowWithOptions(curRow, { item }, false);
     }
 
     logInfo("plugins", "Exchange list populated");
@@ -492,13 +289,11 @@ bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView)
     {
         auto meta = obj->metaObject();
 
-
         if (meta->indexOfSignal(QMetaObject::normalizedSignature("snRealTimeCandleUpdate(const cen::uuid &, quint64, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &)")) == -1)
         {
             logError("plugins", QString(LS("error-candle-plugin-signature-update")).arg(candleView->getPluginName()));
             return false;
         }
-
 
         // clang-format off
         connect(obj,
