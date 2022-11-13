@@ -84,21 +84,24 @@ void OptionsTableWidget::init(int filterColumn) noexcept
 
         proxy->setFilterFixedString(str);
 
-        // This fixes a bug where the QWidget is deleted when the filter is applied
-        for (int r = 0; r < proxy->rowCount(); ++r)
+        if (m_optionsColumn != -1)
         {
-            auto widget = this->indexWidget(proxy->index(r, m_optionsColumn));
-
-            if (widget == nullptr)
+            // This fixes a bug where the QWidget is deleted when the filter is applied
+            for (int r = 0; r < proxy->rowCount(); ++r)
             {
-                auto opts = new OptionsWidget(m_buttons);
+                auto widget = this->indexWidget(proxy->index(r, m_optionsColumn));
 
-                auto item = m_itemModel->itemFromIndex(proxy->mapToSource(proxy->index(r, localEditableColumn)));
-                this->setIndexWidget(proxy->index(r, m_optionsColumn), opts);
+                if (widget == nullptr)
+                {
+                    auto opts = new OptionsWidget(m_buttons);
 
-                connect(opts->editButton(), &QPushButton::released, this, [=, this]() { editButtonPressed(item); });
-                connect(opts->deleteButton(), &QPushButton::released, this, [=, this]() { deleteButtonPressed(item); });
-                connect(opts->viewButton(), &QPushButton::released, this, [=, this]() { viewButtonPressed(item); });
+                    auto item = m_itemModel->itemFromIndex(proxy->mapToSource(proxy->index(r, localEditableColumn)));
+                    this->setIndexWidget(proxy->index(r, m_optionsColumn), opts);
+
+                    connect(opts->editButton(), &QPushButton::released, this, [=, this]() { editButtonPressed(item); });
+                    connect(opts->deleteButton(), &QPushButton::released, this, [=, this]() { deleteButtonPressed(item); });
+                    connect(opts->viewButton(), &QPushButton::released, this, [=, this]() { viewButtonPressed(item); });
+                }
             }
         }
     });
@@ -168,7 +171,7 @@ QModelIndex OptionsTableWidget::getRemovedItem()
     m_removedItem       = nullptr;
     if (temp)
     {
-        return temp->index();
+        return getItemIndexFromSource(temp);
     }
     else
         return {};
@@ -256,9 +259,9 @@ QSortFilterProxyModel *OptionsTableWidget::getProxyModel() noexcept
     return qobject_cast<QSortFilterProxyModel *>(this->model());
 }
 
-void OptionsTableWidget::removeItemRow(const QModelIndex &modelIndex) noexcept
+bool OptionsTableWidget::removeItemRow(const QModelIndex &modelIndex) noexcept
 {
-    m_itemModel->removeRow(modelIndex.row());
+    return m_itemModel->removeRow(modelIndex.row());
 }
 
 void OptionsTableWidget::setButtons(int btns) noexcept

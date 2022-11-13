@@ -50,7 +50,7 @@ public:
     void insertRowWithOptions(int row, const QList<QStandardItem *> &items, bool immediateEdit);
     [[nodiscard]] int getRowCount() const noexcept;
     QSortFilterProxyModel *getProxyModel() noexcept;
-    void removeItemRow(const QModelIndex &modelIndex) noexcept;
+    bool removeItemRow(const QModelIndex &modelIndex) noexcept;
     /// \brief Once consumed. It will return an invalid model index
     QModelIndex getRemovedItem();
 
