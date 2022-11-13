@@ -14,7 +14,7 @@
 #define CENTAUR_STATUSDIALOG_HPP
 
 #include "BinanceAPI.hpp"
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_StatusDialog.h"
 
 namespace CENTAUR_NAMESPACE

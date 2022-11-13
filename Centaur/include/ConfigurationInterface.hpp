@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CONFIGURATIONINTERFACE_HPP
 #define CENTAUR_CONFIGURATIONINTERFACE_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "CentaurPlugin.hpp"
 
 #include <unordered_map>

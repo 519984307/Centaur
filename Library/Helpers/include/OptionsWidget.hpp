@@ -13,7 +13,7 @@
 #ifndef CENTAUR_OPTIONSWIDGET_HPP
 #define CENTAUR_OPTIONSWIDGET_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSpacerItem>

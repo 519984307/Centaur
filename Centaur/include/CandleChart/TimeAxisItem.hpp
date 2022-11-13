@@ -13,7 +13,7 @@
 #ifndef CENTAUR_TIMEAXISITEM_HPP
 #define CENTAUR_TIMEAXISITEM_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <CentaurPlugin.hpp>
 #include <QFont>
 #include <QGraphicsRectItem>

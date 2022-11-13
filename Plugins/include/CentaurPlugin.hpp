@@ -13,8 +13,8 @@
 #ifndef CENTAUR_CENTAURPLUGIN_HPP
 #define CENTAUR_CENTAURPLUGIN_HPP
 
-#include "../../Centaur.hpp"
 #include "../../Library/uuid/include/uuid.hpp"
+#include "Centaur.hpp"
 #include <CentaurInterface.hpp>
 
 #define CENTAUR_PLUGIN_VERSION_CODE(x, y, z) \
@@ -145,16 +145,16 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \return A vector containing the names of the symbols link to an icon
         C_NODISCARD virtual StringIconVector getSymbolList() const noexcept = 0;
 
-        /// \brief addSymbol Add a symbol to watchlist
+        /// \brief addSymbolToWatchlist Add a symbol to watchlist
         /// \param name Name of the symbol
         /// \param item Keep track of this variable and link it to the symbol and pass
         /// it with updateSymbol. NEVER CHANGE IT'S VALUE \return True on success;
         /// false on error
-        C_NODISCARD virtual bool addSymbol(const QString &name, int item) noexcept = 0;
+        C_NODISCARD virtual bool addSymbolToWatchlist(const QString &name, int item) noexcept = 0;
 
-        /// \brief removeSymbol The symbol was removed from the watchlist in the UI
+        /// \brief removeSymbolFromWatchlist The symbol was removed from the watchlist in the UI
         /// \param name Name of the symbol deleted
-        virtual void removeSymbol(const QString &name) noexcept = 0;
+        virtual void removeSymbolFromWatchlist(const QString &name) noexcept = 0;
 
         /// \brief updateOrderbook Tell the interface to send the orderbook data to the user interface
         /// \param symbol Symbol data to send
@@ -174,21 +174,22 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \return Base from symbol.
         C_NODISCARD virtual QString getBaseFromSymbol(const QString &symbol) noexcept = 0;
 
-        /// \brief When the user makes a right click on the watchlist. This list is used to populate the popup menu
-        /// \return A list with the name and an associated uuid. This uuid will be used to call setDynamicWatchListMenuAction to assign the menu an action
-        C_NODISCARD virtual QList<QPair<QString, uuid>> dynamicWatchListMenuItems() noexcept = 0;
+        /// \brief When the user makes a right click in the view button on the watchlist. This list is used to populate the popup menu
+        /// \return A list with the actions associated to the popup
+        /// \remarks This function is guaranteed to be called only once
+        /// \remarks The actual symbol name will be set in the QAction data
+        C_NODISCARD virtual QList<QAction *> dynamicWatchListMenuItems() noexcept = 0;
 
-        /// \brief Assign a menu action to the popup menu in the dynamic watchlist
-        /// \param action The menu action. This is created by the UI and passed to the plugin to connect with a slot
-        /// \param symbolName The name of the symbol that the user clicked on
-        /// \param id This uuid is the id retrieved from dynamicWatchListMenuItems and repassed to this function
-        /// \return return true if the menu was implemented and the
-        C_NODISCARD virtual bool setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const uuid &id) noexcept = 0;
+        /// \brief Retrieve the 24hr ticker price for the watchlist
+        /// \return A list with the name and the percentage in % of 24hr change
+        /// \remarks The Information is used to create the Squarify Tremap.
+        /// \remarks This function will be called in very remove/insertion to the watchlist.
+        C_NODISCARD virtual QList<std::pair<qreal, QString>> getWatchlist24hrPriceChange() noexcept = 0;
 
         /**
          *
     signals:
-         \brief Emit to the UI to update the the ticker
+         \brief Emit to the UI to update the ticker
          receivedTime will be used to calculate the latency
         void sgTickerUpdate(const QString &symbol, const int &symbolId, const quint64 &receivedTime, const double &price);
 

@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CANDLECHARTINFOWIDGET_HPP
 #define CENTAUR_CANDLECHARTINFOWIDGET_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 
 #include "CandleChart/CandleItem.hpp"
 #include "CandleChart/PriceAxisItem.hpp"

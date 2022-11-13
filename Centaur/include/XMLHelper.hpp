@@ -13,7 +13,7 @@
 #ifndef CENTAUR_XMLHELPER_HPP
 #define CENTAUR_XMLHELPER_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLString.hpp>
 

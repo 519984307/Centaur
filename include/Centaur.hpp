@@ -19,15 +19,11 @@
 #define CENTAUR_STR(x)    CENTAUR_DO_STR(x)
 #define CENTAUR_DO_STR(x) #x
 
-#define CENTAUR_JOIN(a, b)   CENTAUR_JOIN_(a, b)
-#define CENTAUR_JOIN_(a, b)  CENTAUR_JOIN_2(a, b)
-#define CENTAUR_JOIN_2(a, b) a##b
-
 #if defined(__clang__) || defined(__GNUC__)
 
 #define CENTAUR_PRAGMA(x)      _Pragma(CENTAUR_STR(x))
 #define CENTAUR_WARN_PRAGMA(x) CENTAUR_PRAGMA(GCC diagnostic x)
-#define CENTAUR_WARN_OFF(x)    CENTAUR_WARN_PRAGMA(ignored CENTAUR_STR(CENTAUR_JOIN(-W, x)))
+#define CENTAUR_WARN_OFF(x)    CENTAUR_WARN_PRAGMA(ignored x)
 #define CENTAUR_WARN_PUSH()    CENTAUR_WARN_PRAGMA(push)
 #define CENTAUR_WARN_POP()     CENTAUR_WARN_PRAGMA(pop)
 #endif
@@ -36,6 +32,16 @@
 #ifndef CENTAUR_NAMESPACE
 #define CENTAUR_NAMESPACE cen
 #endif /*CENTAUR_NAMESPACE*/
+
+#ifndef BEGIN_CENTAUR_NAMESPACE
+#define BEGIN_CENTAUR_NAMESPACE \
+    namespace CENTAUR_NAMESPACE \
+    {
+#endif /*BEGIN_CENTAUR_NAMESPACE*/
+
+#ifndef END_CENTAUR_NAMESPACE
+#define END_CENTAUR_NAMESPACE }
+#endif /*END_CENTAUR_NAMESPACE*/
 
 #ifndef C_NODISCARD
 #if defined(__clang__) || defined(__GNU__) || defined(MSVC)

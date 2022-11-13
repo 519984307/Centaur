@@ -13,7 +13,7 @@
 #ifndef CENTAUR_NETWORKADDRESSDIALOG_HPP
 #define CENTAUR_NETWORKADDRESSDIALOG_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_NetworkAddress.h"
 #include "BinanceAPI.hpp"
 #include "CentaurInterface.hpp"

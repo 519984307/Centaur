@@ -13,7 +13,7 @@
 #ifndef CENTAUR_FEESDIALOG_HPP
 #define CENTAUR_FEESDIALOG_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_FeesDialog.h"
 #include "BinanceAPI.hpp"
 #include "CentaurInterface.hpp"

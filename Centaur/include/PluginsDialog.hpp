@@ -7,39 +7,35 @@
 #ifndef CENTAUR_PLUGINSDIALOG_HPP
 #define CENTAUR_PLUGINSDIALOG_HPP
 
-#include "CentaurPlugin.hpp"
-#include "CentaurUIState.hpp"
+#include "Centaur.hpp"
 #include <QDialog>
 
-namespace CENTAUR_NAMESPACE
+BEGIN_CENTAUR_NAMESPACE
+
+namespace Ui
 {
-    QT_BEGIN_NAMESPACE
-    namespace Ui
-    {
-        class PluginsDialog;
-    }
-    QT_END_NAMESPACE
+    class PluginsDialog;
+}
+class PluginsDialog : public QDialog
+{
+public:
+    explicit PluginsDialog(QWidget *parent = nullptr);
+    ~PluginsDialog() override;
 
-    class PluginsDialog final : public QDialog
-    {
-        Q_OBJECT
+protected slots:
+    void onAccept() noexcept;
 
-    public:
-        explicit PluginsDialog(QWidget *parent = nullptr);
-        ~PluginsDialog() override;
+protected:
+    void restoreInterface() noexcept;
 
-    private:
-        void loadInterfaceState() noexcept;
-        void saveInterfaceState() noexcept;
+private:
+    struct Impl;
+    std::unique_ptr<Impl> _impl;
 
-    protected:
-        void accept() override;
+protected:
+    Ui::PluginsDialog *ui();
+};
 
-    private:
-        PluginsDialogInterfaceState m_state;
-        std::unique_ptr<Ui::PluginsDialog> m_ui;
-        std::map<std::pair<uint32_t, uint16_t>, QString> m_localData;
-    };
-} // namespace CENTAUR_NAMESPACE
+END_CENTAUR_NAMESPACE
 
 #endif // CENTAUR_PLUGINSDIALOG_HPP

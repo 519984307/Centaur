@@ -13,7 +13,7 @@
 #ifndef CENTAUR_ASSETDETAILDIALOG_HPP
 #define CENTAUR_ASSETDETAILDIALOG_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_AssetDetailDialog.h"
 #include "BinanceAPI.hpp"
 #include "CentaurInterface.hpp"

@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CANDLEITEM_HPP
 #define CENTAUR_CANDLEITEM_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <QGraphicsItem>
 
 namespace CENTAUR_NAMESPACE

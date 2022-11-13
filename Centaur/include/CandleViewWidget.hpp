@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CANDLEVIEWWIDGET_HPP
 #define CENTAUR_CANDLEVIEWWIDGET_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_CandleViewWidget.h"
 #include "CandleChart/CandleChartWidget.hpp"
 #include "CentaurPlugin.hpp"

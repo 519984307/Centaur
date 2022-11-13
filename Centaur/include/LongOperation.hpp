@@ -13,7 +13,7 @@
 #ifndef CENTAUR_LONGOPERATION_HPP
 #define CENTAUR_LONGOPERATION_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_LenghtyDialog.h"
 #include "CentaurGlobal.hpp"
 #include "CentaurInterface.hpp"

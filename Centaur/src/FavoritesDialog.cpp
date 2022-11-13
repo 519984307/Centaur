@@ -14,10 +14,8 @@
 namespace CENTAUR_NAMESPACE
 {
 #if defined(__clang__) || defined(__GNUC__)
-    // clang-format off
-CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF(weak-vtables)
-    // clang-format on
+    CENTAUR_WARN_PUSH()
+    CENTAUR_WARN_OFF("-Wweak-vtables")
 #endif /*__clang__*/
     class FavoritesSQLModel final : public QSqlTableModel
     {

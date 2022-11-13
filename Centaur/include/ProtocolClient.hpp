@@ -13,7 +13,7 @@
 #ifndef CENTAUR_PROTOCOLCLIENT_HPP
 #define CENTAUR_PROTOCOLCLIENT_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "CentaurGlobal.hpp"
 #include "Protocol.hpp"
 #include <QTreeWidgetItem>

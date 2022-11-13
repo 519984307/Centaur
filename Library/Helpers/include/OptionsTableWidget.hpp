@@ -13,7 +13,7 @@
 #ifndef CENTAUR_OPTIONSTABLEWIDGET_HPP
 #define CENTAUR_OPTIONSTABLEWIDGET_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "OptionsWidget.hpp"
 #include <QAction>
 #include <QLineEdit>

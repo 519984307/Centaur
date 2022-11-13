@@ -13,7 +13,7 @@
 #ifndef CENTAUR_PRICEAXISITEM_HPP
 #define CENTAUR_PRICEAXISITEM_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <QBrush>
 #include <QFont>
 #include <QGraphicsRectItem>

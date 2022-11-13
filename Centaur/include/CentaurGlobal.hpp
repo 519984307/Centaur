@@ -13,7 +13,7 @@
 #ifndef CENTAUR_APPLICATION_GLOBALS_HPP
 #define CENTAUR_APPLICATION_GLOBALS_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 
 #define CENTAUR_MAJOR_VERSION 0
 #define CENTAUR_MINOR_VERSION 3
@@ -25,14 +25,14 @@
 #if defined(__clang__) || defined(__GNUC__)
 // clang-format off
 CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF(zero-as-null-pointer-constant)
-CENTAUR_WARN_OFF(extra-semi-stmt)
-CENTAUR_WARN_OFF(shadow)
-CENTAUR_WARN_OFF(ambiguous-reversed-operator)
-CENTAUR_WARN_OFF(suggest-override)
-CENTAUR_WARN_OFF(suggest-destructor-override)
-CENTAUR_WARN_OFF(reserved-id-macro)
-CENTAUR_WARN_OFF(deprecated-declarations)
+CENTAUR_WARN_OFF("-Wzero-as-null-pointer-constant")
+CENTAUR_WARN_OFF("-Wextra-semi-stmt")
+CENTAUR_WARN_OFF("-Wshadow")
+CENTAUR_WARN_OFF("-Wambiguous-reversed-operator")
+CENTAUR_WARN_OFF("-Wsuggest-override")
+CENTAUR_WARN_OFF("-Wsuggest-destructor-override")
+CENTAUR_WARN_OFF("-Wreserved-id-macro")
+CENTAUR_WARN_OFF("-Wdeprecated-declarations")
 // clang-format on
 #endif /*__clang__*/
 #include <rapidjson/document.h>
@@ -63,7 +63,7 @@ CENTAUR_WARN_POP()
 #if defined(__clang__) || defined(__GNUC__)
 CENTAUR_WARN_PUSH()
 // clang-format off
-CENTAUR_WARN_OFF(elaborated-enum-base)
+CENTAUR_WARN_OFF("-Welaborated-enum-base")
 // clang-format on
 #endif
 
@@ -77,18 +77,18 @@ CENTAUR_WARN_POP()
 #if defined(__clang__) || defined(__GNUC__)
 // clang-format off
 CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF(reserved-identifier)
-CENTAUR_WARN_OFF(quoted-include-in-framework-header)
-CENTAUR_WARN_OFF(double-promotion)
-CENTAUR_WARN_OFF(float-equal)
-CENTAUR_WARN_OFF(documentation-unknown-command)
-CENTAUR_WARN_OFF(inconsistent-missing-destructor-override)
-CENTAUR_WARN_OFF(weak-vtables)
-CENTAUR_WARN_OFF(suggest-destructor-override)
+CENTAUR_WARN_OFF("-Wreserved-identifier")
+CENTAUR_WARN_OFF("-Wquoted-include-in-framework-header")
+CENTAUR_WARN_OFF("-Wdouble-promotion")
+CENTAUR_WARN_OFF("-Wfloat-equal")
+CENTAUR_WARN_OFF("-Wdocumentation-unknown-command")
+CENTAUR_WARN_OFF("-Winconsistent-missing-destructor-override")
+CENTAUR_WARN_OFF("-Wweak-vtables")
+CENTAUR_WARN_OFF("-Wsuggest-destructor-override")
 // clang-format on
 #endif /*__clang__*/
-//#include <qwt_plot_curve.h>
-//#include <qwt_scale_engine.h>
+// #include <qwt_plot_curve.h>
+// #include <qwt_scale_engine.h>
 #if defined(__clang__) || defined(__GNUC__)
 CENTAUR_WARN_POP()
 #endif /*__clang__*/

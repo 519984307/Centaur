@@ -13,7 +13,7 @@
 #ifndef CENTAUR_PROTOCOL_HPP
 #define CENTAUR_PROTOCOL_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <concepts>
 #include <map>
 #include <string>
@@ -252,8 +252,9 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     public:
         template <typename T>
             requires std::derived_from<Field<typename Field<typename T::field_type>::field_type>,
-                T> auto
-            addField(T *f) -> void
+                T>
+        auto
+        addField(T *f) -> void
         {
             m_types.push_back({ f });
         }

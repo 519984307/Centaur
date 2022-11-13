@@ -13,7 +13,7 @@
 #ifndef CENTAUR_FAVORITESDIALOG_HPP
 #define CENTAUR_FAVORITESDIALOG_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "../ui/ui_FavoritesDialog.h"
 #include "CentaurGlobal.hpp"
 #include "CentaurUIState.hpp"

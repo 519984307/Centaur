@@ -11,7 +11,7 @@
 /// SOURCE CODE CAN BE FOUND IN:
 /// https://gist.github.com/iwanders/8e1cb7b92af2ccf8d1a73450d771f483
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <cstdint>
 #include <type_traits>
 

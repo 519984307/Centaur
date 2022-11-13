@@ -9,7 +9,7 @@
 #ifndef CENTAUR_CANDLECHARTSCENE_HPP
 #define CENTAUR_CANDLECHARTSCENE_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include "CandleChart/PriceAxisItem.hpp"
 #include "CandleChart/TimeAxisItem.hpp"
 #include <QElapsedTimer>
