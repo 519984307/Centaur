@@ -4,30 +4,56 @@
 // Copyright (c) 2021 Ricardo Romero.  All rights reserved.
 //
 
-// You may need to build the project (run Qt uic code generator) to get "ui_PluginsDialog.h" resolved
-
 #include "PluginsDialog.hpp"
 #include "../ui/ui_PluginsDialog.h"
 #include "CentaurApp.hpp"
 #include "CentaurPlugin.hpp"
-#include "Globals.hpp"
 #include <QMessageBox>
+#include <QPainter>
+#include <QSettings>
 #include <QSqlError>
 #include <QSqlQueryModel>
-#include <fmt/core.h>
+#include <QStyledItemDelegate>
 
-namespace CENTAUR_NAMESPACE
+BEGIN_CENTAUR_NAMESPACE
+
+namespace
 {
-#if defined(__clang__) || defined(__GNUC__)
-    // clang-format off
-CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF(weak-vtables)
-    // clang-format on
-#endif /*__clang__*/
+    class DelegateItem : public QStyledItemDelegate
+    {
+    public:
+        explicit DelegateItem(QObject *parent = nullptr) :
+            QStyledItemDelegate { parent }
+        {
+        }
+
+        void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+        {
+            QStyleOptionViewItem options { option };
+            initStyleOption(&options, index);
+
+            if (index.column() == 1 || index.column() == 4)
+                options.displayAlignment = Qt::AlignRight | Qt::AlignVCenter;
+
+            if (index.column() == 5)
+                options.displayAlignment = Qt::AlignHCenter | Qt::AlignVCenter;
+
+            if (option.state & QStyle::State_Selected)
+                QStyledItemDelegate::paint(painter, options, index);
+            else
+            {
+                painter->save();
+                options.widget->style()->drawControl(QStyle::CE_ItemViewItem, &options, painter);
+
+                painter->restore();
+            }
+        }
+    };
+
     class PluginsSQLModel final : public QSqlQueryModel
     {
     public:
-        inline explicit PluginsSQLModel(QObject *parent) :
+        explicit PluginsSQLModel(QObject *parent) :
             QSqlQueryModel(parent) { }
 
         C_NODISCARD inline QVariant data(const QModelIndex &index, int role) const override
@@ -52,13 +78,13 @@ CENTAUR_WARN_OFF(weak-vtables)
                             QString strPlid { loadedPlugins->getPluginUUID().to_string().c_str() };
                             if (strPlid == plid.data())
                             {
-                                value.setValue(LS("ui-dialog-loaded"));
+                                value.setValue(tr("Loaded"));
                                 loaded = true;
                                 break;
                             }
                         }
                         if (!loaded)
-                            value.setValue(LS("ui-dialog-not-loaded"));
+                            value.setValue(tr("Not loaded"));
                     }
                 }
             }
@@ -69,17 +95,17 @@ CENTAUR_WARN_OFF(weak-vtables)
                     case Qt::DecorationRole:
                         if (index.column() == 0)
                         {
-                            value.setValue(g_globals->icons.pluginIcon);
+                            value.setValue(QIcon(":/img/extension"));
                         }
                         break;
                     case Qt::BackgroundRole:
                         {
                             auto plid = this->index(index.row(), 5);
                             QString ld { plid.data(Qt::DisplayRole).toString() };
-                            if (ld == LS("ui-dialog-loaded"))
-                                value.setValue(QColor(0, 255, 0, 35));
+                            if (ld == tr("Loaded"))
+                                value.setValue(QColor(0, 255, 0, 25));
                             else
-                                value.setValue(QColor(255, 0, 0, 35));
+                                value.setValue(QColor(255, 0, 0, 25));
                         }
                         break;
                     default:;
@@ -89,87 +115,83 @@ CENTAUR_WARN_OFF(weak-vtables)
             return value;
         }
     };
-#if defined(__clang__) || defined(__GNUC__)
-    CENTAUR_WARN_POP()
-#endif /*__clang__*/
-} // namespace CENTAUR_NAMESPACE
+} // namespace
 
-CENTAUR_NAMESPACE::PluginsDialog::PluginsDialog(QWidget *parent) :
-    QDialog(parent),
-    m_ui(new Ui::PluginsDialog)
+struct PluginsDialog::Impl
 {
-    m_ui->setupUi(this);
+    inline Impl() :
+        ui { new Ui::PluginsDialog } { }
+    inline ~Impl() = default;
 
-    loadInterfaceState();
+    std::unique_ptr<Ui::PluginsDialog> ui;
+};
+
+PluginsDialog::PluginsDialog(QWidget *parent) :
+    QDialog { parent },
+    _impl { new Impl }
+{
+    ui()->setupUi(this);
+    connect(ui()->acceptButton, &QPushButton::released, this, &PluginsDialog::onAccept);
+
+    restoreInterface();
+
+    ui()->pluginsTable->setItemDelegate(new DelegateItem);
 
     auto model = new PluginsSQLModel(this);
     model->setQuery("SELECT name,version,manufacturer,uuid,centaur_uuid,id FROM plugins;");
-    model->setHeaderData(0, Qt::Horizontal, LS("ui-dialog-plginfo-name"));
-    model->setHeaderData(1, Qt::Horizontal, LS("ui-dialog-plginfo-version"));
-    model->setHeaderData(2, Qt::Horizontal, LS("ui-dialog-plginfo-manufacturer"));
-    model->setHeaderData(3, Qt::Horizontal, LS("ui-dialog-plginfo-id"));
-    model->setHeaderData(4, Qt::Horizontal, LS("ui-dialog-plginfo-centaur"));
-    model->setHeaderData(5, Qt::Horizontal, LS("ui-dialog-plginfo-loaded"));
+    model->setHeaderData(0, Qt::Horizontal, tr("Name"));
+    model->setHeaderData(1, Qt::Horizontal, tr("Version"));
+    model->setHeaderData(2, Qt::Horizontal, tr("Manufacturer"));
+    model->setHeaderData(3, Qt::Horizontal, tr("Identification"));
+    model->setHeaderData(4, Qt::Horizontal, tr("Centaur version"));
+    model->setHeaderData(5, Qt::Horizontal, tr("Loaded?"));
 
     if (model->lastError().isValid())
     {
-        logError("app", QString(LS("error-plugin-db-select")).arg(model->lastError().text()));
+        logError("app", QString(tr("Could not select the data from the plugins DB. %1")).arg(model->lastError().text()));
     }
     else
     {
-        m_ui->pluginsTable->setModel(model);
-
-        m_ui->pluginsTable->setColumnWidth(0, m_state.datacols.name);
-        m_ui->pluginsTable->setColumnWidth(1, m_state.datacols.version);
-        m_ui->pluginsTable->setColumnWidth(2, m_state.datacols.manu);
-        m_ui->pluginsTable->setColumnWidth(3, m_state.datacols.plid);
-        m_ui->pluginsTable->setColumnWidth(4, m_state.datacols.cver);
-        m_ui->pluginsTable->setColumnWidth(5, m_state.datacols.lded);
+        ui()->pluginsTable->setModel(model);
     }
 
-    m_ui->pluginsTable->setIconSize({ 16, 16 });
+    ui()->pluginsTable->setIconSize({ 16, 16 });
 }
 
-CENTAUR_NAMESPACE::PluginsDialog::~PluginsDialog() = default;
+PluginsDialog::~PluginsDialog() = default;
 
-void CENTAUR_NAMESPACE::PluginsDialog::saveInterfaceState() noexcept
+Ui::PluginsDialog *PluginsDialog::ui()
+{
+    return _impl->ui.get();
+}
+
+void PluginsDialog::onAccept() noexcept
 {
     QSettings settings("CentaurProject", "Centaur");
-
-    settings.beginGroup("pluginsDialog");
+    settings.beginGroup("PluginsDialog");
     settings.setValue("geometry", saveGeometry());
     settings.endGroup();
 
-    settings.beginGroup("listState");
-    settings.setValue("c0", m_ui->pluginsTable->columnWidth(0));
-    settings.setValue("c1", m_ui->pluginsTable->columnWidth(1));
-    settings.setValue("c2", m_ui->pluginsTable->columnWidth(2));
-    settings.setValue("c3", m_ui->pluginsTable->columnWidth(3));
-    settings.setValue("c4", m_ui->pluginsTable->columnWidth(4));
-    settings.setValue("c5", m_ui->pluginsTable->columnWidth(5));
+    settings.beginGroup("pluginsInfoTable");
+    settings.setValue("geometry", ui()->pluginsTable->saveGeometry());
+    settings.setValue("h-geometry", ui()->pluginsTable->horizontalHeader()->saveGeometry());
+    settings.setValue("state", ui()->pluginsTable->horizontalHeader()->saveState());
     settings.endGroup();
+    accept();
 }
 
-void CENTAUR_NAMESPACE::PluginsDialog::loadInterfaceState() noexcept
+void PluginsDialog::restoreInterface() noexcept
 {
     QSettings settings("CentaurProject", "Centaur");
-
-    settings.beginGroup("pluginsDialog");
+    settings.beginGroup("PluginsDialog");
     restoreGeometry(settings.value("geometry").toByteArray());
     settings.endGroup();
 
-    settings.beginGroup("listState");
-    m_state.datacols.name    = settings.value("c0", m_state.datacols.name).toInt();
-    m_state.datacols.version = settings.value("c1", m_state.datacols.version).toInt();
-    m_state.datacols.manu    = settings.value("c2", m_state.datacols.manu).toInt();
-    m_state.datacols.plid    = settings.value("c3", m_state.datacols.plid).toInt();
-    m_state.datacols.cver    = settings.value("c4", m_state.datacols.cver).toInt();
-    m_state.datacols.lded    = settings.value("c5", m_state.datacols.lded).toInt();
+    settings.beginGroup("pluginsInfoTable");
+    ui()->pluginsTable->restoreGeometry(settings.value("geometry").toByteArray());
+    ui()->pluginsTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    ui()->pluginsTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 }
 
-void CENTAUR_NAMESPACE::PluginsDialog::accept()
-{
-    saveInterfaceState();
-    QDialog::accept();
-}
+END_CENTAUR_NAMESPACE

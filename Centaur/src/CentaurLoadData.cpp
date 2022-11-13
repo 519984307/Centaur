@@ -4,6 +4,7 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 
+#include "../ui/ui_CentaurApp.h"
 #include "CentaurApp.hpp"
 #include <QMessageBox>
 #include <xercesc/util/PlatformUtils.hpp>
@@ -41,8 +42,6 @@ void CENTAUR_NAMESPACE::CentaurApp::loadConfigurationData() noexcept
 
     // Load all strings
     loadLocaleData();
-    // Load visuals elements for the user interface
-    loadVisualsUI();
 
     try
     {
@@ -81,26 +80,6 @@ void CENTAUR_NAMESPACE::CentaurApp::loadLocaleData() noexcept
         case Globals::Locale::ErrorDetail::langError:
             logFatal("app", "Locale file inner lang is missing or does not match the spected");
             QMessageBox::critical(this, "Error", "Locale file inner lang is missing or does not match the spected");
-            delayAndExit(100);
-    }
-}
-
-void cen::CentaurApp::loadVisualsUI() noexcept
-{
-    auto res = g_globals->visuals.loadVisualsUI(m_ui.get());
-
-    switch (res)
-    {
-        case Globals::VisualsUI::ErrorDetail::noError:
-            logTrace("app", "Visual file loaded");
-            break;
-        case Globals::VisualsUI::ErrorDetail::visualsFileError:
-            logFatal("app", "Failed to locate the local visuals information file");
-            QMessageBox::critical(this, "Error", "Failed to locate the visuals information file");
-            delayAndExit(100);
-        case Globals::VisualsUI::ErrorDetail::xmlDocumentInvalid:
-            logFatal("app", "Could not load the visuals data file");
-            QMessageBox::critical(this, "Error", "The local visuals information file is not valid");
             delayAndExit(100);
     }
 }

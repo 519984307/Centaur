@@ -15,20 +15,6 @@
 
 namespace CENTAUR_NAMESPACE
 {
-
-    struct PluginsDialogInterfaceState
-    {
-        struct DataCols
-        {
-            int name { 80 };
-            int version { 80 };
-            int manu { 80 };
-            int plid { 80 };
-            int cver { 80 };
-            int lded { 120 };
-        } datacols;
-    };
-
     struct FavoritesDialogInterfaceState
     {
         struct DataCols
