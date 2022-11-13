@@ -11,7 +11,9 @@
     "zlib",
     "xerces-c",
     "re2",
-    "catch2"
+    "catch2",
+    "libqrencode",
+    "cryptopp"
   ],
   "overrides": [
     {
