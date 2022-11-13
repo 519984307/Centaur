@@ -15,7 +15,7 @@ BEGIN_CENTAUR_NAMESPACE
 struct ChevronButton::Impl
 {
     Impl() :
-        chevron(":/sidebar/left_chevron") { }
+        chevron(":/button/left_chevron") { }
 
     QIcon chevron;
     qreal angle { 0.0 };
