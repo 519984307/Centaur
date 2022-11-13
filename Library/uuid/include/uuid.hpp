@@ -13,7 +13,7 @@
 #ifndef CENTAUR_UUID_HPP
 #define CENTAUR_UUID_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 #include <array>
 #include <concepts>
 #include <random>
@@ -22,6 +22,7 @@
 
 #ifdef QT_VERSION
 #include <QString>
+#include <QUuid>
 #define QT_INCLUDED
 #endif /*QT_VERSION*/
 
@@ -67,6 +68,18 @@ namespace CENTAUR_NAMESPACE
         /// \brief Returns the string bytes
         /// \return A lower case of the uuid string
         C_NODISCARD auto to_string(bool brackets = true, bool upper = false) const -> std::string;
+
+#ifdef QT_INCLUDED
+        C_NODISCARD auto to_qstring(bool brackets = true, bool upper = false) const -> QString
+        {
+            return QString::fromStdString(to_string(brackets, upper));
+        }
+        C_NODISCARD auto to_quuid(bool upper = false) const -> QUuid
+        {
+            // Brackets are mandatory according to QUuid documentation
+            return QUuid::fromString(to_qstring(true, upper));
+        }
+#endif
 
         /// \brief Generates a random UUID
         /// \return A random UUID
