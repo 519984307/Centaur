@@ -43,11 +43,9 @@ namespace
             painter->translate(options.rect.left() + iconSize.width(), options.rect.top());
             QRect clip(0, 0, options.rect.width() + iconSize.width(), options.rect.height());
 
-            // doc.drawContents(painter, clip);
-
             painter->setClipRect(clip);
             QAbstractTextDocumentLayout::PaintContext ctx;
-            
+
             ctx.clip = clip;
             doc.documentLayout()->draw(painter, ctx);
 
