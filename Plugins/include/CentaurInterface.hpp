@@ -13,7 +13,7 @@
 #ifndef CENTAUR_CENTAURINTERFACE_HPP
 #define CENTAUR_CENTAURINTERFACE_HPP
 
-#include "../../Centaur.hpp"
+#include "Centaur.hpp"
 
 #ifndef DONT_INCLUDE_QT
 #include <QIcon>
