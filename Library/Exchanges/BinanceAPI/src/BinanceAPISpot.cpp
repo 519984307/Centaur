@@ -38,55 +38,56 @@ namespace
 #endif /*defined(__clang__) || defined(__GNUC__)*/
 
     using namespace BINAPI_NAMESPACE::local;
-    const std::array<BinanceAPIRequest, 44> g_spotRequests {
+    const std::array<BinanceAPIRequest, 45> g_spotRequests {
         {
-            // Wallet Endpoints
-            { 1, "/sapi/v1/system/status", HTTPRequest::GET, false, loadSchema(schemas::SPOT::system_status), loadSchema(schemas::sapi_error), true, false },
-            { 10, "/sapi/v1/capital/config/getall", HTTPRequest::GET, false, loadSchema(schemas::SPOT::all_coins_information), loadSchema(schemas::sapi_error), true, false },
-            { 2400, "/sapi/v1/accountSnapshot", HTTPRequest::GET, false, loadSchema(schemas::SPOT::snapshot_spot), loadSchema(schemas::sapi_error), true, false },
-            { 2400, "/sapi/v1/accountSnapshot", HTTPRequest::GET, false, loadSchema(schemas::SPOT::snapshot_margin), loadSchema(schemas::sapi_error), true, false },
-            { 2400, "/sapi/v1/accountSnapshot", HTTPRequest::GET, false, loadSchema(schemas::SPOT::snapshot_futures), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/account/disableFastWithdrawSwitch", HTTPRequest::POST, false, loadSchema(schemas::SPOT::disable_fast_withdraw_switch), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/account/enableFastWithdrawSwitch", HTTPRequest::POST, false, loadSchema(schemas::SPOT::enable_fast_withdraw_switch), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/capital/withdraw/apply", HTTPRequest::POST, false, loadSchema(schemas::SPOT::withdraw), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/capital/deposit/hisrec", HTTPRequest::GET, false, loadSchema(schemas::SPOT::deposit_history), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/capital/withdraw/history", HTTPRequest::GET, false, loadSchema(schemas::SPOT::withdraw_history), loadSchema(schemas::sapi_error), true, false },
-            { 10, "/sapi/v1/capital/deposit/address", HTTPRequest::GET, false, loadSchema(schemas::SPOT::deposit_address), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/account/status", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_status), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/account/apiTradingStatus", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_api_trading_status), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/dribblet", HTTPRequest::GET, false, loadSchema(schemas::SPOT::dustlog), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/dust-btc", HTTPRequest::POST, false, loadSchema(schemas::SPOT::assets_convert_to_bnb), loadSchema(schemas::sapi_error), true, false },
-            { 10, "/sapi/v1/asset/dust", HTTPRequest::POST, false, loadSchema(schemas::SPOT::dust_transfer), loadSchema(schemas::sapi_error), true, false },
-            { 10, "/sapi/v1/asset/assetDividend", HTTPRequest::GET, false, loadSchema(schemas::SPOT::asset_dividend_record), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/assetDetail", HTTPRequest::GET, false, loadSchema(schemas::SPOT::asset_detail), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/tradeFee", HTTPRequest::GET, false, loadSchema(schemas::SPOT::trade_fee), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/transfer", HTTPRequest::POST, false, loadSchema(schemas::SPOT::user_universal_transfer), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/transfer", HTTPRequest::GET, false, loadSchema(schemas::SPOT::query_user_universal_transfer), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/asset/get-funding-asset", HTTPRequest::POST, false, loadSchema(schemas::SPOT::funding_wallet), loadSchema(schemas::sapi_error), true, false },
-            { 1, "/sapi/v1/account/apiRestrictions", HTTPRequest::GET, false, loadSchema(schemas::SPOT::get_api_key_permissions), loadSchema(schemas::sapi_error), true, false },
-            // Market Data Endpoints
-            { 1, "/api/v3/ping", HTTPRequest::GET, false, loadSchema(schemas::SPOT::test_connectivity), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/time", HTTPRequest::GET, false, loadSchema(schemas::SPOT::check_server_time), loadSchema(schemas::api_error), false, false },
-            { 10, "/api/v3/exchangeInfo", HTTPRequest::GET, false, loadSchema(schemas::SPOT::exchange_info), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
-            { 5, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
-            { 10, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
-            { 50, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/trades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::recent_trade_list), loadSchema(schemas::api_error), false, false },
-            { 5, "/api/v3/historicalTrades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::old_trade_lookup), loadSchema(schemas::api_error), false, true },
-            { 1, "/api/v3/aggTrades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::compressed_aggregate_trades_list), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/klines", HTTPRequest::GET, false, loadSchema(schemas::SPOT::candlestick_data), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/avgPrice", HTTPRequest::GET, false, loadSchema(schemas::SPOT::current_average_price), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics), loadSchema(schemas::api_error), false, false },
-            { 20, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics), loadSchema(schemas::api_error), false, false },
-            { 40, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/ticker/price", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_price_ticker), loadSchema(schemas::api_error), false, false },
-            { 2, "/api/v3/ticker/price", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_price_ticker_multiple), loadSchema(schemas::api_error), false, false },
-            { 1, "/api/v3/ticker/bookTicker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_order_book_ticker), loadSchema(schemas::api_error), false, false },
-            { 2, "/api/v3/ticker/bookTicker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_order_book_ticker_multiple), loadSchema(schemas::api_error), false, false },
-            { 2, "/api/v3/ticker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::rolling_window_price_change_statistics), loadSchema(schemas::api_error), false, false },
-            { 100, "/api/v3/ticker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::rolling_window_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
-        }
+         // Wallet Endpoints
+         { 1, "/sapi/v1/system/status", HTTPRequest::GET, false, loadSchema(schemas::SPOT::system_status), loadSchema(schemas::sapi_error), true, false },
+         { 10, "/sapi/v1/capital/config/getall", HTTPRequest::GET, false, loadSchema(schemas::SPOT::all_coins_information), loadSchema(schemas::sapi_error), true, false },
+         { 2400, "/sapi/v1/accountSnapshot", HTTPRequest::GET, false, loadSchema(schemas::SPOT::snapshot_spot), loadSchema(schemas::sapi_error), true, false },
+         { 2400, "/sapi/v1/accountSnapshot", HTTPRequest::GET, false, loadSchema(schemas::SPOT::snapshot_margin), loadSchema(schemas::sapi_error), true, false },
+         { 2400, "/sapi/v1/accountSnapshot", HTTPRequest::GET, false, loadSchema(schemas::SPOT::snapshot_futures), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/account/disableFastWithdrawSwitch", HTTPRequest::POST, false, loadSchema(schemas::SPOT::disable_fast_withdraw_switch), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/account/enableFastWithdrawSwitch", HTTPRequest::POST, false, loadSchema(schemas::SPOT::enable_fast_withdraw_switch), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/capital/withdraw/apply", HTTPRequest::POST, false, loadSchema(schemas::SPOT::withdraw), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/capital/deposit/hisrec", HTTPRequest::GET, false, loadSchema(schemas::SPOT::deposit_history), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/capital/withdraw/history", HTTPRequest::GET, false, loadSchema(schemas::SPOT::withdraw_history), loadSchema(schemas::sapi_error), true, false },
+         { 10, "/sapi/v1/capital/deposit/address", HTTPRequest::GET, false, loadSchema(schemas::SPOT::deposit_address), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/account/status", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_status), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/account/apiTradingStatus", HTTPRequest::GET, false, loadSchema(schemas::SPOT::account_api_trading_status), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/dribblet", HTTPRequest::GET, false, loadSchema(schemas::SPOT::dustlog), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/dust-btc", HTTPRequest::POST, false, loadSchema(schemas::SPOT::assets_convert_to_bnb), loadSchema(schemas::sapi_error), true, false },
+         { 10, "/sapi/v1/asset/dust", HTTPRequest::POST, false, loadSchema(schemas::SPOT::dust_transfer), loadSchema(schemas::sapi_error), true, false },
+         { 10, "/sapi/v1/asset/assetDividend", HTTPRequest::GET, false, loadSchema(schemas::SPOT::asset_dividend_record), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/assetDetail", HTTPRequest::GET, false, loadSchema(schemas::SPOT::asset_detail), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/tradeFee", HTTPRequest::GET, false, loadSchema(schemas::SPOT::trade_fee), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/transfer", HTTPRequest::POST, false, loadSchema(schemas::SPOT::user_universal_transfer), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/transfer", HTTPRequest::GET, false, loadSchema(schemas::SPOT::query_user_universal_transfer), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/asset/get-funding-asset", HTTPRequest::POST, false, loadSchema(schemas::SPOT::funding_wallet), loadSchema(schemas::sapi_error), true, false },
+         { 1, "/sapi/v1/account/apiRestrictions", HTTPRequest::GET, false, loadSchema(schemas::SPOT::get_api_key_permissions), loadSchema(schemas::sapi_error), true, false },
+         // Market Data Endpoints
+         { 1, "/api/v3/ping", HTTPRequest::GET, false, loadSchema(schemas::SPOT::test_connectivity), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/time", HTTPRequest::GET, false, loadSchema(schemas::SPOT::check_server_time), loadSchema(schemas::api_error), false, false },
+         { 10, "/api/v3/exchangeInfo", HTTPRequest::GET, false, loadSchema(schemas::SPOT::exchange_info), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
+         { 5, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
+         { 10, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
+         { 50, "/api/v3/depth", HTTPRequest::GET, false, loadSchema(schemas::SPOT::order_book), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/trades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::recent_trade_list), loadSchema(schemas::api_error), false, false },
+         { 5, "/api/v3/historicalTrades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::old_trade_lookup), loadSchema(schemas::api_error), false, true },
+         { 1, "/api/v3/aggTrades", HTTPRequest::GET, false, loadSchema(schemas::SPOT::compressed_aggregate_trades_list), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/klines", HTTPRequest::GET, false, loadSchema(schemas::SPOT::candlestick_data), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/avgPrice", HTTPRequest::GET, false, loadSchema(schemas::SPOT::current_average_price), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
+         { 20, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
+         { 40, "/api/v3/ticker/24hr", HTTPRequest::GET, false, loadSchema(schemas::SPOT::ticker_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/ticker/price", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_price_ticker), loadSchema(schemas::api_error), false, false },
+         { 2, "/api/v3/ticker/price", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_price_ticker_multiple), loadSchema(schemas::api_error), false, false },
+         { 1, "/api/v3/ticker/bookTicker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_order_book_ticker), loadSchema(schemas::api_error), false, false },
+         { 2, "/api/v3/ticker/bookTicker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::symbol_order_book_ticker_multiple), loadSchema(schemas::api_error), false, false },
+         { 2, "/api/v3/ticker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::rolling_window_price_change_statistics), loadSchema(schemas::api_error), false, false },
+         { 100, "/api/v3/ticker", HTTPRequest::GET, false, loadSchema(schemas::SPOT::rolling_window_price_change_statistics_multiple), loadSchema(schemas::api_error), false, false },
+         }
     };
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -133,6 +134,7 @@ namespace
         CANDLESTICK,
         CURRENT_AVERAGE_PRICE,
         TICKER_PRICE_CHANGE_STATISTICS_1,
+        TICKER_PRICE_CHANGE_STATISTICS_1_MULTIPLE,
         TICKER_PRICE_CHANGE_STATISTICS_20,
         TICKER_PRICE_CHANGE_STATISTICS_40,
         SYMBOL_PRICE_TICKER_1,
@@ -174,8 +176,10 @@ auto binapi::BinanceAPISpot::getExchangeStatus() -> bool
 auto binapi::BinanceAPISpot::getAllCoinsInformation() -> binapi::AllCoinsInformation
 {
     auto doc = apiRequest(g_spotRequests[ALL_COINS_INFORMATION],
-        { { "recvWindow", fmt::to_string(getRecvWindow()) },
-            { "timestamp", fmt::to_string(getTime()) } },
+        {
+            {"recvWindow", fmt::to_string(getRecvWindow())},
+            { "timestamp",       fmt::to_string(getTime())}
+    },
         true);
     std::unordered_map<sym_t, SPOT::CoinInformation> info;
 
@@ -256,10 +260,10 @@ auto binapi::BinanceAPISpot::getDailyAccountSnapshotSpot(uint64_t limit, uint64_
     assert(limit <= 30);
 
     eparams params = {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "limit", fmt::to_string(limit) },
-        { "type", "SPOT" }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {     "limit",           fmt::to_string(limit)},
+        {      "type",                          "SPOT"}
     };
 
     if (startTime > 0)
@@ -296,10 +300,10 @@ auto binapi::BinanceAPISpot::getDailyAccountSnapshotMargin(uint64_t limit, uint6
     assert(limit <= 30);
 
     eparams params = {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "limit", fmt::to_string(limit) },
-        { "type", "MARGIN" }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {     "limit",           fmt::to_string(limit)},
+        {      "type",                        "MARGIN"}
     };
 
     if (startTime > 0)
@@ -346,10 +350,10 @@ auto binapi::BinanceAPISpot::getDailyAccountSnapshotFutures(uint64_t limit, uint
     assert(limit <= 30);
 
     eparams params = {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "limit", fmt::to_string(limit) },
-        { "type", "FUTURES" }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {     "limit",           fmt::to_string(limit)},
+        {      "type",                       "FUTURES"}
     };
 
     if (startTime > 0)
@@ -406,14 +410,14 @@ auto binapi::BinanceAPISpot::enableFastWithdrawSwitch() -> void
 auto binapi::BinanceAPISpot::withdraw(binapi::v_asset_t coin, binapi::v_address_t address, std::string_view network, binapi::currency_t amount, std::string_view orderId, std::string_view addressTag, bool transactionFeeFlag, std::string_view name, binapi::SPOT::WalletType wType) -> std::string
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "coin", VIEW_INIT(coin) },
-        { "address", VIEW_INIT(address) },
-        { "amount", fmt::to_string(amount) },
-        { "network", VIEW_INIT(network) },
-        { "transactionFeeFlag", fmt::to_string(transactionFeeFlag) },
-        { "walletType", fmt::to_string(static_cast<int>(wType)) },
+        {        "recvWindow",         fmt::to_string(getRecvWindow())},
+        {         "timestamp",               fmt::to_string(getTime())},
+        {              "coin",                         VIEW_INIT(coin)},
+        {           "address",                      VIEW_INIT(address)},
+        {            "amount",                  fmt::to_string(amount)},
+        {           "network",                      VIEW_INIT(network)},
+        {"transactionFeeFlag",      fmt::to_string(transactionFeeFlag)},
+        {        "walletType", fmt::to_string(static_cast<int>(wType))},
     };
 
     if (!orderId.empty())
@@ -442,11 +446,11 @@ auto binapi::BinanceAPISpot::withdraw(binapi::v_asset_t coin, binapi::v_address_
 auto binapi::BinanceAPISpot::depositHistory(binapi::v_asset_t coin, uint64_t limit, uint64_t offset, uint64_t startTime, uint64_t endTime, binapi::SPOT::TransactionDepositHistoryStatus status) -> std::vector<SPOT::DepositHistory>
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "coin", VIEW_INIT(coin) },
-        { "limit", fmt::to_string(limit) },
-        { "offset", fmt::to_string(offset) }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {      "coin",                 VIEW_INIT(coin)},
+        {     "limit",           fmt::to_string(limit)},
+        {    "offset",          fmt::to_string(offset)}
     };
     if (startTime)
         parameters.emplace_back("startTime", fmt::to_string(startTime));
@@ -500,10 +504,10 @@ auto binapi::BinanceAPISpot::depositHistory(binapi::v_asset_t coin, uint64_t lim
 auto binapi::BinanceAPISpot::withdrawHistory(binapi::v_asset_t coin, uint64_t limit, uint64_t offset, uint64_t startTime, uint64_t endTime, binapi::SPOT::TransactionWithdrawHistoryStatus status) -> std::vector<SPOT::WithdrawHistory>
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "coin", VIEW_INIT(coin) },
-        { "limit", fmt::to_string(limit) }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {      "coin",                 VIEW_INIT(coin)},
+        {     "limit",           fmt::to_string(limit)}
     };
     if (offset)
         parameters.emplace_back("offset", fmt::to_string(offset));
@@ -629,11 +633,11 @@ auto binapi::BinanceAPISpot::withdrawHistory(binapi::v_asset_t coin, uint64_t li
 auto binapi::BinanceAPISpot::withdrawHistory(std::string_view clientOrderId, binapi::v_asset_t coin, uint64_t limit, uint64_t offset, uint64_t startTime, uint64_t endTime, binapi::SPOT::TransactionWithdrawHistoryStatus status) -> std::vector<SPOT::WithdrawHistory>
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "coin", VIEW_INIT(coin) },
-        { "limit", fmt::to_string(limit) },
-        { "withdrawOrderId", VIEW_INIT(clientOrderId) }
+        {     "recvWindow", fmt::to_string(getRecvWindow())},
+        {      "timestamp",       fmt::to_string(getTime())},
+        {           "coin",                 VIEW_INIT(coin)},
+        {          "limit",           fmt::to_string(limit)},
+        {"withdrawOrderId",        VIEW_INIT(clientOrderId)}
     };
     if (offset)
         parameters.emplace_back("offset", fmt::to_string(offset));
@@ -654,9 +658,9 @@ auto binapi::BinanceAPISpot::withdrawHistory(std::string_view clientOrderId, bin
 auto binapi::BinanceAPISpot::depositAddress(binapi::v_asset_t coin, std::string_view network) -> binapi::SPOT::DepositAddress
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "coin", VIEW_INIT(coin) }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {      "coin",                 VIEW_INIT(coin)}
     };
     if (!network.empty())
         parameters.emplace_back("network", network);
@@ -674,8 +678,8 @@ auto binapi::BinanceAPISpot::depositAddress(binapi::v_asset_t coin, std::string_
 auto binapi::BinanceAPISpot::accountStatus() -> std::string
 {
     const eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
     };
 
     auto doc = apiRequest(g_spotRequests[ACCOUNT_STATUS], parameters, true);
@@ -686,8 +690,8 @@ auto binapi::BinanceAPISpot::accountStatus() -> std::string
 auto binapi::BinanceAPISpot::accountAPITradingStatus() -> binapi::SPOT::AccountAPITradingStatus
 {
     const eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
     };
 
     auto doc = apiRequest(g_spotRequests[ACCOUNT_API_TRADING_STATUS], parameters, true);
@@ -704,8 +708,8 @@ auto binapi::BinanceAPISpot::accountAPITradingStatus() -> binapi::SPOT::AccountA
 auto binapi::BinanceAPISpot::dustLog(uint64_t startTime, uint64_t endTime) -> SPOT::DustLog
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
     };
 
     if (startTime)
@@ -749,8 +753,8 @@ auto binapi::BinanceAPISpot::dustLog(uint64_t startTime, uint64_t endTime) -> SP
 auto binapi::BinanceAPISpot::getAssetsConvertedToBNB() -> SPOT::AssetsToBNB
 {
     const eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
     };
 
     auto doc = apiRequest(g_spotRequests[ASSETS_CAN_BE_CONVERTED], parameters, true);
@@ -782,8 +786,8 @@ auto binapi::BinanceAPISpot::getAssetsConvertedToBNB() -> SPOT::AssetsToBNB
 auto binapi::BinanceAPISpot::dustTransfer(const std::vector<asset_t> &assets) -> SPOT::DustTransfer
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
     };
 
     for (const auto &asset : assets)
@@ -817,9 +821,9 @@ auto binapi::BinanceAPISpot::assetDividendRecord(binapi::v_asset_t asset, uint64
 {
     assert(limit > 500);
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "limit", fmt::to_string(limit) }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {     "limit",           fmt::to_string(limit)}
     };
 
     if (startTime > 0)
@@ -852,12 +856,12 @@ auto binapi::BinanceAPISpot::assetDividendRecord(binapi::v_asset_t asset, uint64
 auto binapi::BinanceAPISpot::assetDetail(binapi::v_asset_t asset) -> binapi::SPOT::AssetDetail
 {
     const eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "asset", VIEW_INIT(asset) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {     "asset",                VIEW_INIT(asset)},
     };
 
-    auto doc                = apiRequest(g_spotRequests[ASSET_DETAIL], parameters, true);
+    auto doc = apiRequest(g_spotRequests[ASSET_DETAIL], parameters, true);
 
     const auto &assetMember = doc.FindMember(asset.data());
     if (assetMember != doc.MemberEnd())
@@ -908,8 +912,8 @@ auto binapi::BinanceAPISpot::assetDetail(binapi::v_asset_t asset) -> binapi::SPO
 auto binapi::BinanceAPISpot::tradeFee(binapi::v_sym_t symbol) -> binapi::SpotTradingFees
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())}
     };
 
     if (!symbol.empty())
@@ -984,10 +988,10 @@ auto binapi::BinanceAPISpot::userUniversalTransfer(binapi::SPOT::UniversalTransf
 auto binapi::BinanceAPISpot::queryUserUniversalTransferHistory(binapi::SPOT::UniversalTransferType type, binapi::v_sym_t fromSymbol, binapi::v_sym_t toSymbol, int64_t current, int64_t size, uint64_t startTime, uint64_t endTime) -> std::pair<int64_t, std::vector<SPOT::UniversalTransferQuery>>
 {
     eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
-        { "current", fmt::to_string(current) },
-        { "size", fmt::to_string(size) }
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
+        {   "current",         fmt::to_string(current)},
+        {      "size",            fmt::to_string(size)}
     };
 
     if (startTime > 0)
@@ -1032,7 +1036,7 @@ auto binapi::BinanceAPISpot::queryUserUniversalTransferHistory(binapi::SPOT::Uni
 
     std::pair<int64_t, std::vector<SPOT::UniversalTransferQuery>> pisutq;
 
-    auto doc     = apiRequest(g_spotRequests[QUERY_USER_UNIVERSAL_TRANSFER], parameters, true);
+    auto doc = apiRequest(g_spotRequests[QUERY_USER_UNIVERSAL_TRANSFER], parameters, true);
 
     pisutq.first = doc["total"].GetInt64();
 
@@ -1098,10 +1102,10 @@ auto binapi::BinanceAPISpot::queryUserUniversalTransferHistory(binapi::SPOT::Uni
 auto binapi::BinanceAPISpot::fundingWallet(binapi::v_asset_t asset, bool needBtcValuation) -> std::vector<SPOT::FundingWallet>
 {
     const eparams parameters {
-        { "asset", std::string(asset) },
-        { "needBtcValuation", needBtcValuation ? "true" : "false" },
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {           "asset",                  std::string(asset)},
+        {"needBtcValuation", needBtcValuation ? "true" : "false"},
+        {      "recvWindow",     fmt::to_string(getRecvWindow())},
+        {       "timestamp",           fmt::to_string(getTime())},
     };
 
     auto doc = apiRequest(g_spotRequests[FUNDING_WALLET], parameters, true);
@@ -1127,9 +1131,9 @@ auto binapi::BinanceAPISpot::fundingWallet(binapi::v_asset_t asset, bool needBtc
 auto binapi::BinanceAPISpot::fundingWallet(bool needBtcValuation) -> std::vector<SPOT::FundingWallet>
 {
     const eparams parameters {
-        { "needBtcValuation", needBtcValuation ? "true" : "false" },
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"needBtcValuation", needBtcValuation ? "true" : "false"},
+        {      "recvWindow",     fmt::to_string(getRecvWindow())},
+        {       "timestamp",           fmt::to_string(getTime())},
     };
 
     auto doc = apiRequest(g_spotRequests[FUNDING_WALLET], parameters, true);
@@ -1155,8 +1159,8 @@ auto binapi::BinanceAPISpot::fundingWallet(bool needBtcValuation) -> std::vector
 auto binapi::BinanceAPISpot::getAPIKeyPermission() -> binapi::SPOT::APIKeyPermissions
 {
     const eparams parameters {
-        { "recvWindow", fmt::to_string(getRecvWindow()) },
-        { "timestamp", fmt::to_string(getTime()) },
+        {"recvWindow", fmt::to_string(getRecvWindow())},
+        { "timestamp",       fmt::to_string(getTime())},
     };
 
     auto doc = apiRequest(g_spotRequests[API_KEY_PERMISSION], parameters, true);
@@ -1205,8 +1209,8 @@ auto binapi::BinanceAPISpot::getExchangeInformation() -> binapi::SPOT::ExchangeI
     {
         std::string type { limit["rateLimitType"].GetString(), limit["rateLimitType"].GetStringLength() };
         std::string interval { limit["interval"].GetString(), limit["interval"].GetStringLength() };
-        uint32_t number         = limit["intervalNum"].GetUint();
-        uint32_t rateLimit      = limit["limit"].GetUint();
+        uint32_t number    = limit["intervalNum"].GetUint();
+        uint32_t rateLimit = limit["limit"].GetUint();
 
         uint32_t intervalNumber = 0;
 
@@ -1255,11 +1259,11 @@ auto binapi::BinanceAPISpot::getExchangeInformation() -> binapi::SPOT::ExchangeI
         else
             sym.status = SPOT::TradingStatus::Break;
 
-        sym.baseAsset                = { symbol["baseAsset"].GetString(), symbol["baseAsset"].GetStringLength() };
+        sym.baseAsset = { symbol["baseAsset"].GetString(), symbol["baseAsset"].GetStringLength() };
 
-        sym.baseAssetPrecision       = symbol["baseAssetPrecision"].GetInt();
+        sym.baseAssetPrecision = symbol["baseAssetPrecision"].GetInt();
 
-        sym.quoteAsset               = { symbol["quoteAsset"].GetString(), symbol["quoteAsset"].GetStringLength() };
+        sym.quoteAsset = { symbol["quoteAsset"].GetString(), symbol["quoteAsset"].GetStringLength() };
 
         sym.quotePrecision           = symbol["quotePrecision"].GetInt();
         sym.quoteAssetPrecision      = symbol["quoteAssetPrecision"].GetInt();
@@ -1378,8 +1382,8 @@ auto binapi::BinanceAPISpot::getExchangeInformation() -> binapi::SPOT::ExchangeI
 auto binapi::BinanceAPISpot::getOrderBook(binapi::v_sym_t symbol, uint32_t limit) -> binapi::SPOT::OrderBook
 {
     const eparams parameters {
-        { "symbol", VIEW_INIT(symbol) },
-        { "limit", limit == 0 ? "1" : (limit > 5000 ? "5000" : fmt::to_string(limit)) }
+        {"symbol",                                                  VIEW_INIT(symbol)},
+        { "limit", limit == 0 ? "1" : (limit > 5000 ? "5000" : fmt::to_string(limit))}
     };
 
     rapidjson::Document doc;
@@ -1417,8 +1421,8 @@ auto binapi::BinanceAPISpot::getOrderBook(binapi::v_sym_t symbol, uint32_t limit
 auto binapi::BinanceAPISpot::recentTradeList(v_sym_t symbol, uint32_t limit) -> std::vector<SPOT::RecentTrade>
 {
     const eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) },
-        { "limit", fmt::to_string(limit) }
+        {"symbol",   S_VIEW_INIT(symbol)},
+        { "limit", fmt::to_string(limit)}
     };
 
     auto doc = apiRequest(g_spotRequests[RECENT_TRADE_LIST], parameters, false);
@@ -1442,7 +1446,7 @@ auto binapi::BinanceAPISpot::recentTradeList(v_sym_t symbol, uint32_t limit) -> 
 auto binapi::BinanceAPISpot::oldTradeLookup(v_sym_t symbol, uint32_t limit, int32_t byId) -> std::vector<SPOT::OldTrade>
 {
     eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) }
+        {"symbol", S_VIEW_INIT(symbol)}
     };
     if (byId != -1)
         parameters.emplace_back("fromId", fmt::to_string(byId));
@@ -1474,8 +1478,8 @@ auto binapi::BinanceAPISpot::oldTradeLookup(v_sym_t symbol, uint32_t limit, int3
 auto binapi::BinanceAPISpot::compressedAggregateTradeList(v_sym_t symbol, int32_t id) -> std::vector<SPOT::CompressedAggregateTradeList>
 {
     const eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) },
-        { "fromId", fmt::to_string(id) }
+        {"symbol", S_VIEW_INIT(symbol)},
+        {"fromId",  fmt::to_string(id)}
     };
 
     auto doc = apiRequest(g_spotRequests[COMPRESSED_AGGREGATE_TRADE_LIST], parameters, false);
@@ -1497,8 +1501,8 @@ auto binapi::BinanceAPISpot::compressedAggregateTradeList(v_sym_t symbol, int32_
 auto binapi::BinanceAPISpot::compressedAggregateTradeList(v_sym_t symbol, uint64_t startTime, uint64_t endTime, uint64_t limit) -> std::vector<SPOT::CompressedAggregateTradeList>
 {
     eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) },
-        { "limit", fmt::to_string(limit) }
+        {"symbol",   S_VIEW_INIT(symbol)},
+        { "limit", fmt::to_string(limit)}
     };
 
     if (startTime)
@@ -1600,7 +1604,7 @@ auto binapi::BinanceAPISpot::candlestickData(v_sym_t symbol, BinanceTimeInterval
 auto binapi::BinanceAPISpot::currentAveragePrice(v_sym_t symbol) -> SPOT::AveragePrice
 {
     const eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) },
+        {"symbol", S_VIEW_INIT(symbol)},
     };
 
     auto doc = apiRequest(g_spotRequests[CURRENT_AVERAGE_PRICE], parameters, false);
@@ -1614,7 +1618,7 @@ auto binapi::BinanceAPISpot::currentAveragePrice(v_sym_t symbol) -> SPOT::Averag
 auto binapi::BinanceAPISpot::tickerPriceChangeStatistics24hr(v_sym_t symbol) -> SPOT::TickerPriceChangeStatistics
 {
     const eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) },
+        {"symbol", S_VIEW_INIT(symbol)},
     };
 
     auto doc = apiRequest(g_spotRequests[TICKER_PRICE_CHANGE_STATISTICS_1], parameters, false);
@@ -1659,12 +1663,12 @@ auto binapi::BinanceAPISpot::tickerPriceChangeStatistics24hr(const std::vector<s
     symbolList += "]";
 
     const eparams parameters {
-        { "symbols", symbolList },
+        {"symbols", symbolList},
     };
 
     const auto request = [count = symbols.size()]() {
         if (count <= 20)
-            return TICKER_PRICE_CHANGE_STATISTICS_1;
+            return TICKER_PRICE_CHANGE_STATISTICS_1_MULTIPLE;
         else if (count >= 21 && count <= 100)
             return TICKER_PRICE_CHANGE_STATISTICS_20;
         else
@@ -1703,7 +1707,7 @@ auto binapi::BinanceAPISpot::tickerPriceChangeStatistics24hr(const std::vector<s
 auto binapi::BinanceAPISpot::symbolPriceTicker(v_sym_t symbol) -> SPOT::SymbolPriceTicker
 {
     const eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) }
+        {"symbol", S_VIEW_INIT(symbol)}
     };
 
     auto doc = apiRequest(g_spotRequests[SYMBOL_PRICE_TICKER_1], parameters, false);
@@ -1730,7 +1734,7 @@ auto binapi::BinanceAPISpot::symbolPriceTicker(const std::vector<sym_t> &symbols
     symbolList += "]";
 
     const eparams parameters {
-        { "symbols", symbolList },
+        {"symbols", symbolList},
     };
 
     auto doc = apiRequest(g_spotRequests[SYMBOL_PRICE_TICKER_2], parameters, false);
@@ -1746,7 +1750,9 @@ auto binapi::BinanceAPISpot::symbolPriceTicker(const std::vector<sym_t> &symbols
 
 auto binapi::BinanceAPISpot::symbolOrderBookTicker(v_sym_t symbol) -> SPOT::SymbolOrderBookTicker
 {
-    const eparams parameters { { "symbol", S_VIEW_INIT(symbol) } };
+    const eparams parameters {
+        {"symbol", S_VIEW_INIT(symbol)}
+    };
 
     auto doc = apiRequest(g_spotRequests[SYMBOL_ORDER_BOOK_TICKER_1], parameters, false);
 
@@ -1775,7 +1781,7 @@ auto binapi::BinanceAPISpot::symbolOrderBookTicker(const std::vector<sym_t> &sym
     symbolList += "]";
 
     const eparams parameters {
-        { "symbols", symbolList },
+        {"symbols", symbolList},
     };
 
     auto doc = apiRequest(g_spotRequests[SYMBOL_ORDER_BOOK_TICKER_2], parameters, false);
@@ -1795,8 +1801,8 @@ auto binapi::BinanceAPISpot::symbolOrderBookTicker(const std::vector<sym_t> &sym
 auto binapi::BinanceAPISpot::rollingWindowPriceChangeStatistics(v_sym_t symbol, std::string_view windowSize) -> SPOT::RollingWindowPriceChangeStatistics
 {
     const eparams parameters {
-        { "symbol", S_VIEW_INIT(symbol) },
-        { "windowSize", S_VIEW_INIT(windowSize) }
+        {    "symbol",     S_VIEW_INIT(symbol)},
+        {"windowSize", S_VIEW_INIT(windowSize)}
     };
 
     auto doc = apiRequest(g_spotRequests[ROLLING_WINDOW_PRICE_CHANGE_STATISTICS_2], parameters, false);
@@ -1836,8 +1842,8 @@ auto binapi::BinanceAPISpot::rollingWindowPriceChangeStatistics(const std::vecto
     symbolList += "]";
 
     const eparams parameters {
-        { "symbols", symbolList },
-        { "windowSize", S_VIEW_INIT(windowSize) }
+        {   "symbols",              symbolList},
+        {"windowSize", S_VIEW_INIT(windowSize)}
     };
 
     const auto request = [count = symbols.size()]() {
