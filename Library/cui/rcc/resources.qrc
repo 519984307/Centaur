@@ -25,4 +25,8 @@
         <file alias="edit">../res/mode_edit_black_48dp.svg</file>
         <file alias="delete">../res/delete_48dp.svg</file>
     </qresource>
+
+    <qresource prefix="button">
+        <file alias="left_chevron">../res/chevron_left_black_48dp.svg</file>
+    </qresource>
 </RCC>

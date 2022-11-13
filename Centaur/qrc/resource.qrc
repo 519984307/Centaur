@@ -1,9 +1,29 @@
 <RCC>
-    <qresource prefix="/img">
-        <file>../res/img/downArrow.svg</file>
-        <file>../res/img/upArrow.svg</file>
-        <file>../res/img/plugin.svg</file>
+    <qresource prefix="splash">
+        <file alias="splash">../res/gradient.png</file>
     </qresource>
+
+    <qresource prefix="/img">
+        <file alias="arrow-down">../res/img/downArrow.svg</file>
+        <file alias="arrow-up">../res/img/upArrow.svg</file>
+        <file alias="extension">../res/img/plugin.svg</file>
+        <file alias="plugin">../res/img/extension_white_48dp.svg</file>
+        <file alias="terminal">../res/img/terminal_white_48dp.svg</file>
+        <file alias="server_green">../res/img/dns_green_48dp.svg</file>
+        <file alias="server_red">../res/img/dns_red_48dp.svg</file>
+        <file alias="settings">../res/img/settings_white_48dp.svg</file>
+    </qresource>
+
+    <qresource prefix="login/u_table">
+        <file alias="user">../res/img/person_48dp_filled.svg</file>
+        <file alias="psw">../res/img/password_48dp.svg</file>
+        <file alias="person">../res/img/account_circle_black_48dp.svg</file>
+        <file alias="email">../res/img/email_black_48dp.svg</file>
+        <file alias="lock">../res/img/lock_black_48dp.svg</file>
+        <file alias="pic">../res/img/portrait_black_48dp.svg</file>
+        <file alias="setting">../res/img/settings_black_48dp.svg</file>
+    </qresource>
+
 
     <qresource prefix="/svg/edit">
         <file alias="search_gray">../res/img/search_gray_48dp.svg</file>
@@ -12,5 +32,11 @@
     <qresource prefix="/svg/favorites">
         <file alias="star">../res/img/star_gold_48dp.svg</file>
     </qresource>
+
+
+    <qresource prefix="buttons">
+        <file alias="add">../res/img/add_circle_white_48dp.svg</file>
+    </qresource>
+
 </RCC>
 
