@@ -15,44 +15,87 @@
 
 #include <CentaurInterface.hpp>
 #include <CentaurPlugin.hpp>
-#include <QLabel>
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
+#pragma clang diagnostic ignored "-Wextra-semi-stmt"
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wambiguous-reversed-operator"
+#pragma clang diagnostic ignored "-Wsuggest-override"
+#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif /*__clang__*/
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/schema.h>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif /*__clang__*/
+
+#include <fstream>
 
 namespace CENTAUR_PLUGIN_NAMESPACE
 {
     class ExchangeRatePlugin : public QObject,
-                               public CENTAUR_PLUGIN_NAMESPACE::IStatus
+                               public CENTAUR_PLUGIN_NAMESPACE::IExchangeRate
     {
 
         Q_OBJECT
 
         Q_PLUGIN_METADATA(IID "com.centaur-project.plugin.ExchangeRatePlugin/1.0")
-        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IStatus)
+        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IExchangeRate CENTAUR_PLUGIN_NAMESPACE::IStatus)
 
     public:
         explicit ExchangeRatePlugin(QObject *parent = nullptr);
         ~ExchangeRatePlugin() override = default;
 
     public:
+        DisplayMode initialize() noexcept override;
+        QString text() noexcept override;
+        QPixmap image() noexcept override;
+        QFont font() noexcept override;
+        QBrush brush(DisplayRole role) noexcept override;
+        QAction *action(const QPoint &pt) noexcept override;
+
+        // IStatus
+    public:
+        QList<QString> listSupported() noexcept override;
+        qreal value(const QString &quote, const QString &base) noexcept override;
+        qreal convert(const QString &quote, const QString &base, qreal quoteQuantity) noexcept override;
+        qreal convert(const QString &quote, const QString &base, qreal quoteQuantity, QDate *date) noexcept override;
+
+    public:
         QObject *getPluginObject() noexcept override;
         QString getPluginName() noexcept override;
         QString getPluginVersionString() noexcept override;
-        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept override;
+        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
         uuid getPluginUUID() noexcept override;
-        bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
-
-    public:
-        void initialization(QStatusBar *bar) noexcept override;
 
     protected:
-        void updateExchangeRate() noexcept;
+        void loadData() noexcept;
+        void loadUserData() noexcept;
+        void acquireFromCache() noexcept;
+        void acquireFromInternet() noexcept;
 
     private:
-        QLabel *m_exchangeRate { nullptr };
+        rapidjson::Document pluginSettings;
 
     private:
+        QString m_defaultQuote;
+        QString m_defaultBase;
+        qreal m_defaultValue;
+
+        QMap<QString, QString> m_currencyData;
+        QList<QPair<QString, QString>> m_currencySupported;
+
+    private:
+        bool m_configurationLoaded { false };
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
         CENTAUR_INTERFACE_NAMESPACE::IConfiguration *m_config { nullptr };
-
         uuid m_thisUUID;
     };
 } // namespace CENTAUR_PLUGIN_NAMESPACE

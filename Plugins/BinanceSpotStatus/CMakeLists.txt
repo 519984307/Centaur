@@ -19,12 +19,14 @@ find_package(QT NAMES Qt6 COMPONENTS Gui Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui Widgets REQUIRED)
 # Required libraries
 
-
-add_library(BinanceSpotStatus SHARED
+SET(CPP_FILES
         include/BinanceStatus.hpp
         include/StatusDialog.hpp
         src/BinanceStatus.cpp
-        src/StatusDialog.cpp
+        src/StatusDialog.cpp)
+add_library(BinanceSpotStatus SHARED
+        ${CPP_FILES}
+        qrc/resources.qrc
         ui/StatusDialog.ui)
 
 
@@ -34,7 +36,8 @@ target_include_directories(BinanceSpotStatus PRIVATE
         ../../Library/Protocol/include
         ../include
         ../../Library/Helpers/include
-        ../../Library/uuid/include)
+        ../../Library/uuid/include
+        ../../include)
 
 
 target_link_libraries(BinanceSpotStatus PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
@@ -46,14 +49,11 @@ target_link_libraries(BinanceSpotStatus PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.
 target_link_libraries(BinanceSpotStatus PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 target_link_libraries(BinanceSpotStatus PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
-target_compile_options(ExchangeRate PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -fdiagnostics-color=always
-        -Wno-poison-system-directories)
+
+SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+
+set_source_files_properties(
+        ${CPP_FILES}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
 

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(BCS BinanceCS)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -23,11 +22,19 @@ find_package(QT NAMES Qt6 COMPONENTS Gui Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui Widgets REQUIRED)
 # Required libraries
 
+set(BCS BinanceCS)
 
-add_library(${BCS} SHARED
-        include/BinanceCS.hpp
+SET(SOURCE_FILES
         src/BinanceCS.cpp
         src/CandleSpotMarketWS.cpp)
+
+SET(INCLUDE_FILES
+        include/BinanceCS.hpp)
+
+add_library(${BCS} SHARED
+        ${SOURCE_FILES}
+        ${INCLUDE_FILES}
+        )
 
 
 target_include_directories(${BCS} PRIVATE
@@ -35,6 +42,7 @@ target_include_directories(${BCS} PRIVATE
         ../../Library/Exchanges/BinanceAPI/include
         ../../Library/Protocol/include
         ../include
+        ../../include/
         ../../Library/Helpers/include
         ../../Library/uuid/include)
 
@@ -48,14 +56,15 @@ target_link_libraries(${BCS} PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
 target_link_libraries(${BCS} PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 target_link_libraries(${BCS} PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
-target_compile_options(${BCS} PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -fdiagnostics-color=always
-        -Wno-poison-system-directories)
 
+SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+
+set_source_files_properties(
+        ${INCLUDE_FILES}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+set_source_files_properties(
+        ${SOURCE_FILES}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")

@@ -6,6 +6,7 @@
 
 #include "Logger.hpp"
 #include "LogDialog.hpp"
+#include <QApplication>
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>

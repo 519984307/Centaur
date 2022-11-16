@@ -45,7 +45,7 @@ QString cen::plugin::BinanceCS::getPluginVersionString() noexcept
     return g_ExchangeRateVersionString;
 }
 
-void cen::plugin::BinanceCS::setPluginInterfaces(cen::interface::ILogger *logger, cen::interface::IConfiguration *config, C_UNUSED cen::interface::ILongOperation *lOper) noexcept
+void cen::plugin::BinanceCS::setPluginInterfaces(cen::interface::ILogger *logger, cen::interface::IConfiguration *config) noexcept
 {
     m_logger = logger;
     m_config = config;
@@ -54,11 +54,6 @@ void cen::plugin::BinanceCS::setPluginInterfaces(cen::interface::ILogger *logger
 cen::uuid cen::plugin::BinanceCS::getPluginUUID() noexcept
 {
     return uuid(g_uuidString);
-}
-
-bool cen::plugin::BinanceCS::addMenuAction(C_UNUSED QAction *action, C_UNUSED const uuid &menuId) noexcept
-{
-    return false;
 }
 
 BINAPI_NAMESPACE::BinanceTimeIntervals cen::plugin::BinanceCS::mapIntervalFromUIToAPI(cen::plugin::ICandleView::TimeFrame tf)
@@ -98,6 +93,18 @@ QList<cen::plugin::PluginInformation> cen::plugin::BinanceCS::supportedExchanges
     return m_supportedExchanges;
 }
 
+QList<cen::plugin::ICandleView::TimeFrame> cen::plugin::BinanceCS::supportedTimeFrames() noexcept
+{
+    // Supported TimeFrame by SPOT and Futures
+    return {
+        TimeFrame::Minutes_1, TimeFrame::Minutes_3, TimeFrame::Minutes_5, TimeFrame::Minutes_15, TimeFrame::Minutes_30, TimeFrame::nullTime,
+        TimeFrame::Hours_1, TimeFrame::Hours_2, TimeFrame::Hours_4, TimeFrame::Hours_6, TimeFrame::Hours_8, TimeFrame::Hours_12, TimeFrame::nullTime,
+        TimeFrame::Days_1, TimeFrame::Days_3, TimeFrame::nullTime,
+        TimeFrame::Weeks_1, TimeFrame::nullTime,
+        TimeFrame::Months_1
+    };
+}
+
 void cen::plugin::BinanceCS::acquire(const PluginInformation &pi, const QString &symbol, cen::plugin::ICandleView::TimeFrame frame, const uuid &id) noexcept
 {
     // Verify PluginInformation
@@ -130,7 +137,7 @@ void cen::plugin::BinanceCS::acquire(const PluginInformation &pi, const QString 
 
 void cen::plugin::BinanceCS::disengage(const uuid &id, uint64_t lastTimeframeStart, uint64_t lastTimeframeEnd) noexcept
 {
-    logTrace("BinanceCS", "BinanceCS::removeSymbol()");
+    logTrace("BinanceCS", "BinanceCS::removeSymbolFromWatchlist()");
 
     auto iter = m_symbolsHandled.find(id);
     if (iter == m_symbolsHandled.end())
@@ -171,18 +178,6 @@ void cen::plugin::BinanceCS::resetStoredZoom(const uuid &id) noexcept
 {
 }
 
-QList<cen::plugin::ICandleView::TimeFrame> cen::plugin::BinanceCS::supportedTimeFrames() noexcept
-{
-    // Supported TimeFrame by SPOT and Futures
-    return {
-        TimeFrame::Minutes_1, TimeFrame::Minutes_3, TimeFrame::Minutes_5, TimeFrame::Minutes_15, TimeFrame::Minutes_30, TimeFrame::nullTime,
-        TimeFrame::Hours_1, TimeFrame::Hours_2, TimeFrame::Hours_4, TimeFrame::Hours_6, TimeFrame::Hours_8, TimeFrame::Hours_12, TimeFrame::nullTime,
-        TimeFrame::Days_1, TimeFrame::Days_3, TimeFrame::nullTime,
-        TimeFrame::Weeks_1, TimeFrame::nullTime,
-        TimeFrame::Months_1
-    };
-}
-
 QList<QPair<uint64_t, cen::plugin::ICandleView::CandleData>> cen::plugin::BinanceCS::getCandlesByPeriod(const QString &symbol, uint64_t start, uint64_t end, cen::plugin::ICandleView::TimeFrame frame) noexcept
 {
     const auto interval = BinanceCS::mapIntervalFromUIToAPI(frame);
@@ -209,12 +204,14 @@ QList<QPair<uint64_t, cen::plugin::ICandleView::CandleData>> cen::plugin::Binanc
                     continue;
                 }
 
-                cd.push_back({ candle.openTime,
-                    { .high     = candle.high,
-                        .open   = candle.open,
-                        .close  = candle.close,
-                        .low    = candle.low,
-                        .volume = candle.volume } });
+                cd.push_back({
+                    candle.openTime,
+                    {.high     = candle.high,
+                               .open   = candle.open,
+                               .close  = candle.close,
+                               .low    = candle.low,
+                               .volume = candle.volume}
+                });
             }
         }
         // Sort the data
@@ -259,7 +256,7 @@ void cen::plugin::BinanceCS::startCandleThread(const QString &symbol, BINAPI_NAM
     std::promise<void> connected;
     std::future<void> future = connected.get_future();
 
-    m_candleWS               = std::make_unique<CandleSpotMarketWS>(std::move(connected));
+    m_candleWS = std::make_unique<CandleSpotMarketWS>(std::move(connected));
     m_candleWS->initialize(this, m_logger);
 
     auto kline           = m_candleWS->subscribeKline(symbol.toStdString(), interval);

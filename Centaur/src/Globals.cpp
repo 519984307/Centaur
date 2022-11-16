@@ -59,7 +59,6 @@ namespace
     }
 } // namespace
 
-
 auto AESSym::createUniqueId(int rounds, std::size_t maxSize) -> std::string
 {
 #if defined(__clang__) || defined(__GNUC__)
@@ -102,7 +101,6 @@ auto AESSym::encrypt(const QByteArray &data, const QByteArray &key) -> QString
             newKeyData.append(key.constData(), key.size());
 
         cKey.Assign(reinterpret_cast<const crypto::SecByteBlock::value_type *>(newKeyData.data()), cKey.size());
-
     }
 
     crypto::SecByteBlock iv(crypto::AES::BLOCKSIZE);
@@ -201,6 +199,7 @@ END_CENTAUR_NAMESPACE
 
 auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noexcept -> ErrorDetail
 {
+    /*
     assert(g_globals != nullptr);
     const QString localeFile = QString("%1/Locale/%2.xml").arg(g_globals->paths.installPath, language);
     {
@@ -277,13 +276,13 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
             return ErrorDetail::xmlDocumentInvalid;
         }
     }
-
+*/
     return ErrorDetail::noError;
 }
 
 namespace
 {
-    // clang-format off
+// clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF("-Wexit-time-destructors")

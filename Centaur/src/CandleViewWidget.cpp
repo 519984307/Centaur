@@ -359,7 +359,7 @@ void cen::CandleViewWidget::onUpdateSeries() noexcept
 
 void cen::CandleViewWidget::onUpdateCandleMousePosition(uint64_t timestamp)
 {
-    auto candle              = m_ui->graphicsView->getCandleItem(timestamp);
+    auto candle = m_ui->graphicsView->getCandleItem(timestamp);
 
     const QString timeFormat = [&]() {
         const uint64_t candleTimeframe = timeFrameToMilliseconds(m_tf);
@@ -410,21 +410,21 @@ void cen::CandleViewWidget::updateLatency(quint64 event) noexcept
     // Calculate latency
     const auto ms      = static_cast<quint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     const auto latency = event > ms ? 0ull : ms - event;
+    /*
+        QPalette palette   = m_ui->labelLatency->palette();
 
-    QPalette palette   = m_ui->labelLatency->palette();
-
-    if (latency >= g_globals->params.symbolsDockParameters.latencyLowMin && latency <= g_globals->params.symbolsDockParameters.latencyLowMax)
-    {
-        palette.setColor(QPalette::ColorRole::WindowText, QColor(0, 255, 0));
-    }
-    else if (latency >= g_globals->params.symbolsDockParameters.latencyMediumMin && latency <= g_globals->params.symbolsDockParameters.latencyMediumMax)
-    {
-        palette.setColor(QPalette::ColorRole::WindowText, QColor(255, 255, 0));
-    }
-    else if (latency >= g_globals->params.symbolsDockParameters.latencyHighMin && latency <= g_globals->params.symbolsDockParameters.latencyHighMax)
-    {
-        palette.setColor(QPalette::ColorRole::WindowText, QColor(255, 0, 0));
-    }
+        if (latency >= g_globals->params.symbolsDockParameters.latencyLowMin && latency <= g_globals->params.symbolsDockParameters.latencyLowMax)
+        {
+            palette.setColor(QPalette::ColorRole::WindowText, QColor(0, 255, 0));
+        }
+        else if (latency >= g_globals->params.symbolsDockParameters.latencyMediumMin && latency <= g_globals->params.symbolsDockParameters.latencyMediumMax)
+        {
+            palette.setColor(QPalette::ColorRole::WindowText, QColor(255, 255, 0));
+        }
+        else if (latency >= g_globals->params.symbolsDockParameters.latencyHighMin && latency <= g_globals->params.symbolsDockParameters.latencyHighMax)
+        {
+            palette.setColor(QPalette::ColorRole::WindowText, QColor(255, 0, 0));
+        }*/
 }
 
 void cen::CandleViewWidget::onUpdateCandle(quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept

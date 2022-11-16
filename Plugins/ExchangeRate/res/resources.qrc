@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="icon">
+        <file alias="red">currency_exchange_red_48dp.svg</file>
+        <file alias="blue">currency_exchange_blue_48dp.svg</file>
+    </qresource>
+
+</RCC>
+

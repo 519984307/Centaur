@@ -31,7 +31,8 @@ set(INCLUDE_FILES
         include/UserLineEdit.hpp
         include/CentaurLibrary.hpp
         include/ChevronButton.hpp
-        include/AnimatedButton.hpp)
+        include/AnimatedButton.hpp
+        include/SquarifyWidget.hpp)
 
 set(SOURCE_FILES
         src/EditorDelegate.cpp
@@ -45,7 +46,8 @@ set(SOURCE_FILES
         src/UserLineEdit.cpp
         src/SearchLineEdit.cpp
         src/ChevronButton.cpp
-        src/AnimatedButton.cpp)
+        src/AnimatedButton.cpp
+        src/SquarifyWidget.cpp)
 
 set(UI_FILES
         rcc/resources.qrc

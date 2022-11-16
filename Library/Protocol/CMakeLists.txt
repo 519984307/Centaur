@@ -12,11 +12,13 @@ find_package(ZLIB REQUIRED)
 add_library(protocol SHARED
         src/protocol.cpp
         include/Protocol.hpp
-        ../../Centaur.hpp
+        ../../include/Centaur.hpp
         src/generator.cpp
         src/encryption.cpp include/ProtocolType.hpp)
 
-include_directories(include PRIVATE)
+target_include_directories(protocol PRIVATE
+        include
+        ../../include)
 
 
 target_link_libraries(protocol PRIVATE fmt::fmt)

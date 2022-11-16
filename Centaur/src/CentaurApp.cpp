@@ -5,12 +5,21 @@
 //
 
 #include "CentaurApp.hpp"
+#include "../ui/ui_CentaurApp.h"
 #include "CandleViewWidget.hpp"
+#include "DepthChartDialog.hpp"
 #include "FavoritesDialog.hpp"
-#include "HTMLDelegate.hpp"
+#include "LogDialog.hpp"
+#include "LoginDialog.hpp"
+#include "OrderbookDialog.hpp"
 #include "PluginsDialog.hpp"
+#include "SettingsDialog.hpp"
+#include "SplashDialog.hpp"
 #include <QAreaSeries>
-#include <QMdiSubWindow>
+#include <QDateTimeAxis>
+#include <QGraphicsBlurEffect>
+#include <QImageReader>
+#include <QMenu>
 #include <QMessageBox>
 #include <QResizeEvent>
 #include <QSqlDatabase>
@@ -19,97 +28,160 @@
 #include <QSqlQuery>
 #include <QSqlRecord>
 #include <QtCharts/QValueAxis>
+#include <utility>
 
-CENTAUR_NAMESPACE::CentaurApp *CENTAUR_NAMESPACE::g_app = nullptr;
-namespace CENTAUR_NAMESPACE
+/// \brief This structure hold the 'data' set to Impl::orderbookDepth and Impl::depthChart to properly
+/// handle the visualization of data
+struct OrderBookDepthInformation
 {
-    class FavoritesDBManager final
+    OrderBookDepthInformation()                                             = default;
+    ~OrderBookDepthInformation()                                            = default;
+    OrderBookDepthInformation(const OrderBookDepthInformation &)            = default;
+    OrderBookDepthInformation &operator=(const OrderBookDepthInformation &) = default;
+
+    OrderBookDepthInformation(QString sym, QString src) :
+        symbol { std::move(sym) },
+        source { std::move(src) } { }
+
+    QString symbol;
+    QString source;
+};
+Q_DECLARE_METATYPE(OrderBookDepthInformation);
+
+BEGIN_CENTAUR_NAMESPACE
+
+CentaurApp *g_app = nullptr;
+
+struct CandleViewTimeFrameActions
+{
+    explicit CandleViewTimeFrameActions(QObject *parent);
+
+public:
+    std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame, QAction *> actions;
+};
+
+struct CentaurApp::Impl
+{
+    explicit Impl(QMainWindow *parent) :
+        ui { new Ui::CentaurApp },
+        candleActions { new CandleViewTimeFrameActions(parent) },
+        orderbookDepth { new QAction(QCoreApplication::tr("Orderbook"), parent) },
+        depthChart { new QAction(QCoreApplication::tr("Depth chart"), parent) }
     {
-    public:
-        inline FavoritesDBManager()
+        ui->setupUi(parent);
+        logDialog = new LogDialog(parent);
+    }
+
+    std::unique_ptr<Ui::CentaurApp> ui;
+    std::unique_ptr<CandleViewTimeFrameActions> candleActions;
+
+    LogDialog *logDialog { nullptr };
+    QChart *last7Chart { nullptr };
+
+    QAction *orderbookDepth;
+    QAction *depthChart;
+
+    std::pair<QString, QString> currentWatchListSelection;
+
+    PluginConfigurationMap configurationInterface; /// Every PluginConfiguration mapped to the Plugin UUID
+    PluginExchangesMap exchangeList;               /// Every ExchangeInformation (IExchanges plugin and their basic information) map
+    QList<QPluginLoader *> pluginInstances;        /// All instances of the plugins
+    std::map<uuid, QList<QAction *>> exchangeMenuActions;
+    std::map<uuid, std::tuple<CENTAUR_PLUGIN_NAMESPACE::IStatus *, QToolButton *, CENTAUR_PLUGIN_NAMESPACE::IStatus::DisplayMode>> statusPlugins;
+    std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CandleViewSupport> candleViewSupport; /// Map of every ICandleView plugins with their supported timeframes and IExchange(s)
+
+    QAreaSeries *last7SevenAreaSeries { nullptr };
+    QSplineSeries *last7SevenLowSeries { nullptr };
+    QSplineSeries *last7SevenUpSeries { nullptr };
+};
+
+class FavoritesDBManager final
+{
+public:
+    inline FavoritesDBManager()
+    {
+        m_insert.prepare("INSERT INTO favorites(symbol,plugin) VALUES(:symbol, :plugin);");
+        m_delete.prepare("DELETE FROM favorites WHERE symbol = :symbol AND plugin = :plugin;");
+        m_select.prepare("SELECT symbol,plugin FROM favorites;");
+    }
+    ~FavoritesDBManager() = default;
+
+public:
+    inline void add(const QString &symbol, const QString &uuid)
+    {
+        m_insert.bindValue(":symbol", symbol);
+        m_insert.bindValue(":plugin", uuid);
+
+        if (!m_insert.exec())
         {
-            m_insert.prepare("INSERT INTO favorites(symbol,plugin) VALUES(:symbol, :plugin);");
-            m_delete.prepare("DELETE FROM favorites WHERE symbol = :symbol AND plugin = :plugin;");
-            m_select.prepare("SELECT symbol,plugin FROM favorites;");
+            logError("app", QString(QCoreApplication::tr("Could not insert the symbol to the favorites DB. %1").arg(m_insert.lastError().text())));
         }
-        ~FavoritesDBManager() = default;
+    }
 
-    public:
-        inline void add(const QString &symbol, const QString &uuid)
+    inline QList<QPair<QString, QString>> selectAll()
+    {
+        QList<QPair<QString, QString>> data;
+        if (!m_select.exec())
         {
-            m_insert.bindValue(":symbol", symbol);
-            m_insert.bindValue(":plugin", uuid);
-
-            if (!m_insert.exec())
-            {
-                logError("app", QString(LS("error-fav-db-insert").arg(m_insert.lastError().text())));
-            }
-        }
-
-        inline QList<QPair<QString, QString>> selectAll()
-        {
-            QList<QPair<QString, QString>> data;
-            if (!m_select.exec())
-            {
-                logError("app", QString(LS("error-fav-db-select").arg(m_select.lastError().text())));
-                return data;
-            }
-
-            while (m_select.next())
-            {
-                const QSqlRecord currentRecord = m_select.record();
-                data.emplaceBack(currentRecord.field("symbol").value().toString(), currentRecord.field("plugin").value().toString());
-            }
-
+            logError("app", QString(QCoreApplication::tr("Could not select the data from the favorites DB. %1").arg(m_select.lastError().text())));
             return data;
         }
 
-        inline void del(const QString &symbol, const QString &uuid)
+        while (m_select.next())
         {
-            m_delete.bindValue(":symbol", symbol);
-            m_delete.bindValue(":plugin", uuid);
-
-            if (!m_delete.exec())
-            {
-                logError("app", QString(LS("error-fav-db-delete").arg(m_delete.lastError().text())));
-            }
+            const QSqlRecord currentRecord = m_select.record();
+            data.emplaceBack(currentRecord.field("symbol").value().toString(), currentRecord.field("plugin").value().toString());
         }
 
-    private:
-        QSqlQuery m_insert;
-        QSqlQuery m_delete;
-        QSqlQuery m_select;
-        QSqlDatabase m_db;
-    };
-
-    CentaurApp::CandleViewTimeFrameActions::CandleViewTimeFrameActions(QObject *parent) :
-        aSeconds_1 { new QAction(LS("ui-docs-symbols-candleview-1s"), parent) },
-        aSeconds_5 { new QAction(LS("ui-docs-symbols-candleview-5s"), parent) },
-        aSeconds_10 { new QAction(LS("ui-docs-symbols-candleview-10s"), parent) },
-        aSeconds_30 { new QAction(LS("ui-docs-symbols-candleview-30s"), parent) },
-        aSeconds_45 { new QAction(LS("ui-docs-symbols-candleview-45s"), parent) },
-        aMinutes_1 { new QAction(LS("ui-docs-symbols-candleview-1m"), parent) },
-        aMinutes_2 { new QAction(LS("ui-docs-symbols-candleview-2m"), parent) },
-        aMinutes_3 { new QAction(LS("ui-docs-symbols-candleview-3m"), parent) },
-        aMinutes_5 { new QAction(LS("ui-docs-symbols-candleview-5m"), parent) },
-        aMinutes_10 { new QAction(LS("ui-docs-symbols-candleview-10m"), parent) },
-        aMinutes_15 { new QAction(LS("ui-docs-symbols-candleview-15m"), parent) },
-        aMinutes_30 { new QAction(LS("ui-docs-symbols-candleview-30m"), parent) },
-        aMinutes_45 { new QAction(LS("ui-docs-symbols-candleview-45m"), parent) },
-        aHours_1 { new QAction(LS("ui-docs-symbols-candleview-1h"), parent) },
-        aHours_2 { new QAction(LS("ui-docs-symbols-candleview-2h"), parent) },
-        aHours_4 { new QAction(LS("ui-docs-symbols-candleview-4h"), parent) },
-        aHours_6 { new QAction(LS("ui-docs-symbols-candleview-6h"), parent) },
-        aHours_8 { new QAction(LS("ui-docs-symbols-candleview-8h"), parent) },
-        aHours_12 { new QAction(LS("ui-docs-symbols-candleview-12h"), parent) },
-        aDays_1 { new QAction(LS("ui-docs-symbols-candleview-1d"), parent) },
-        aDays_3 { new QAction(LS("ui-docs-symbols-candleview-3d"), parent) },
-        aWeeks_1 { new QAction(LS("ui-docs-symbols-candleview-1w"), parent) },
-        aMonths_1 { new QAction(LS("ui-docs-symbols-candleview-1M"), parent) }
-    {
+        return data;
     }
 
-} // namespace CENTAUR_NAMESPACE
+    inline void del(const QString &symbol, const QString &uuid)
+    {
+        m_delete.bindValue(":symbol", symbol);
+        m_delete.bindValue(":plugin", uuid);
+
+        if (!m_delete.exec())
+        {
+            logError("app", QString(QCoreApplication::tr("Could not delete symbol from the favorites DB. %1").arg(m_delete.lastError().text())));
+        }
+    }
+
+private:
+    QSqlQuery m_insert;
+    QSqlQuery m_delete;
+    QSqlQuery m_select;
+    QSqlDatabase m_db;
+};
+
+CandleViewTimeFrameActions::CandleViewTimeFrameActions(QObject *parent) :
+    actions {
+        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1,   new QAction(QCoreApplication::tr("1 second"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5, new QAction(QCoreApplication::tr(" 5 seconds"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10, new QAction(QCoreApplication::tr("10 seconds"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30, new QAction(QCoreApplication::tr("30 seconds"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45, new QAction(QCoreApplication::tr("45 seconds"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1,   new QAction(QCoreApplication::tr("1 minute"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2,  new QAction(QCoreApplication::tr("2 minutes"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3,  new QAction(QCoreApplication::tr("3 minutes"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5,  new QAction(QCoreApplication::tr("5 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10, new QAction(QCoreApplication::tr("10 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15, new QAction(QCoreApplication::tr("15 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30, new QAction(QCoreApplication::tr("30 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45, new QAction(QCoreApplication::tr("45 minutes"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1,     new QAction(QCoreApplication::tr("1 hour"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2,    new QAction(QCoreApplication::tr("2 hours"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4,    new QAction(QCoreApplication::tr("4 hours"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6,    new QAction(QCoreApplication::tr("6 hours"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8,    new QAction(QCoreApplication::tr("8 hours"), parent)},
+        {  CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12,   new QAction(QCoreApplication::tr("12 hours"), parent)},
+        {    CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1,      new QAction(QCoreApplication::tr("1 day"), parent)},
+        {    CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3,     new QAction(QCoreApplication::tr("3 days"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1,     new QAction(QCoreApplication::tr("1 week"), parent)},
+        {  CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1,    new QAction(QCoreApplication::tr("1 month"), parent)}
+}
+{
+}
 
 namespace
 {
@@ -134,76 +206,125 @@ margin: 0 0 0 10;
 qproperty-alignment: AlignCenter;
 })"
     };
-
 } // namespace
 
-#include <QImageReader>
-CENTAUR_NAMESPACE::CentaurApp::CentaurApp(QWidget *parent) :
+CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
-    m_ui { std::make_unique<Ui::CentaurApp>() }
+    _impl { new Impl(this) }
 {
+    auto *splashScreen = new SplashDialog(this);
+    splashScreen->setDisplayText(tr("Setting up user interface"));
+    splashScreen->setProgressRange(0, 7);
+    splashScreen->setProgressPos(0);
+    splashScreen->show();
+
     START_TIME(initializationTimeStart);
 
     g_app     = this;
     g_globals = new Globals;
 
-    qRegisterMetaType<cen::uuid>("cen::uuid");
-    qRegisterMetaType<cen::plugin::ICandleView::CandleData>("cen::plugin::ICandleView::CandleData");
-    qRegisterMetaType<cen::plugin::ICandleView::TimeFrame>("cen::plugin::ICandleView::TimeFrame");
-    qRegisterMetaType<cen::plugin::ICandleView::Timestamp>("cen::plugin::ICandleView::Timestamp");
+    qRegisterMetaType<uuid>("uuid");
+    qRegisterMetaType<plugin::ICandleView::CandleData>("plugin::ICandleView::CandleData");
+    qRegisterMetaType<plugin::ICandleView::TimeFrame>("plugin::ICandleView::TimeFrame");
+    qRegisterMetaType<plugin::ICandleView::Timestamp>("plugin::ICandleView::Timestamp");
+    qRegisterMetaType<plugin::IStatus::DisplayRole>("plugin::IStatus::DisplayRole");
 
-    m_ui->setupUi(this);
     installEventFilter(this);
 
-    m_ui->bidsChart->installEventFilter(this);
-    m_ui->asksChart->installEventFilter(this);
-
+    /* TODO: THIS
+    ui()->bidsChart->installEventFilter(this);
+    ui()->asksChart->installEventFilter(this);
+*/
 #ifdef Q_OS_MAC
     CFURLRef appUrlRef       = CFBundleCopyBundleURL(CFBundleGetMainBundle());
     CFStringRef macPath      = CFURLCopyFileSystemPath(appUrlRef, kCFURLPOSIXPathStyle);
     g_globals->paths.appPath = CFStringGetCStringPtr(macPath, CFStringGetSystemEncoding());
     CFRelease(appUrlRef);
     CFRelease(macPath);
+    setWindowFlag(Qt::FramelessWindowHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+
+    g_globals->paths.pluginsPath = g_globals->paths.appPath + "/Contents/Plugins";
+
 #else
 
 #endif /*Q_OS_MAC*/
 
     g_globals->paths.installPath = "/Volumes/RicardoESSD/Projects/Centaur/local";
-    g_globals->paths.pluginsPath = g_globals->paths.installPath + "/Plugin";
-    g_globals->paths.resPath     = g_globals->paths.installPath + "/Resources";
+
+    g_globals->paths.resPath = g_globals->paths.installPath + "/Resources";
 
     // Start logging service
     startLoggingService();
-
-    // Load External XML Configuration Data
-    loadConfigurationData();
+    splashScreen->step();
 
     // Init the database internal file
     initializeDatabaseServices();
+    splashScreen->step();
 
     // Restore file
     loadInterfaceState();
+    splashScreen->step();
 
     // Start the interface
     initializeInterface();
+    splashScreen->step();
 
     // Start the server
+
+    // Start the server
+    splashScreen->setDisplayText(tr("Starting the communication server"));
     // startCommunicationsServer();
+    splashScreen->step();
 
     // Load plugins
-    loadPlugins();
+    loadPlugins(splashScreen);
+    splashScreen->step();
 
     // Load the favorites list. Since all plugins must be loaded
+    splashScreen->setDisplayText(tr("Adding favorites watchlist"));
     loadFavoritesWatchList();
+    splashScreen->step();
 
-    onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
-
+    /*
+                        onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
+                    */
     END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
-    logInfo("app", QString(LS("trace-initialize-time")).arg(initializationTime.count(), 0, 'f', 4));
+    logInfo("app", QString("%1").arg(initializationTime.count(), 0, 'f', 4));
+    splashScreen->hide();
+    delete splashScreen;
+
+    if (SettingsDialog::isFirstTimeStarted())
+    {
+        const auto res = QMessageBox::question(this, tr("User"), tr("There is no user information. Would you like to set it?"), QMessageBox::Yes | QMessageBox::No);
+        if (res == QMessageBox::No)
+        {
+            exit(EXIT_FAILURE);
+        }
+        else
+        {
+            onShowSettings();
+        }
+    }
+    else
+    {
+        LoginDialog dlg(this);
+        dlg.setNormalMode();
+#ifndef TEST_LOGIN_MODE
+        if (dlg.exec() != QDialog::Accepted)
+        {
+            exit(EXIT_FAILURE);
+        }
+#else
+        dlg.onAccept();
+#endif
+        updateUserInformationStatus();
+    }
 }
-CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
+
+CentaurApp::~CentaurApp()
 {
-    for (auto &pli : m_configurationInterface)
+    for (auto &pli : _impl->configurationInterface)
     {
         delete pli.second;
     }
@@ -221,7 +342,70 @@ CENTAUR_NAMESPACE::CentaurApp::~CentaurApp()
     delete g_globals;
 }
 
-void cen::CentaurApp::closeEvent(QCloseEvent *event)
+Ui::CentaurApp *CentaurApp::ui()
+{
+    return _impl->ui.get();
+}
+
+LogDialog *CentaurApp::logDialog() noexcept
+{
+    return _impl->logDialog;
+}
+
+void CentaurApp::mapConfigurationInterface(const uuid &id, PluginConfiguration *config)
+{
+    _impl->configurationInterface[id] = config;
+}
+
+void CentaurApp::mapExchangePlugin(const uuid &id, const ExchangeInformation &info)
+{
+    _impl->exchangeList[id] = info;
+}
+
+void CentaurApp::mapPluginInstance(QPluginLoader *loader)
+{
+    _impl->pluginInstances.push_back(loader);
+}
+
+void CentaurApp::mapExchangePluginViewMenus(const uuid &plugin, const QList<QAction *> &actions)
+{
+    _impl->exchangeMenuActions[plugin] = actions;
+}
+
+void CentaurApp::mapStatusPlugins(const uuid &plugin, CENTAUR_PLUGIN_NAMESPACE::IStatus *status, QToolButton *button, CENTAUR_PLUGIN_NAMESPACE::IStatus::DisplayMode mode)
+{
+    _impl->statusPlugins[plugin] = { status, button, mode };
+}
+
+void CentaurApp::mapCandleViewSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *candle, const CandleViewSupport &view)
+{
+    _impl->candleViewSupport[candle] = view;
+}
+
+CENTAUR_PLUGIN_NAMESPACE::ICandleView *CentaurApp::getSupportedCandleViewPlugins(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &id)
+{
+    for (auto &cvs : _impl->candleViewSupport)
+    {
+        for (auto &spexch : cvs.second.info)
+        {
+            if (spexch == id)
+                return cvs.first;
+        }
+    }
+
+    return nullptr;
+}
+
+std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> CentaurApp::getCandleViewTimeframeSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *id) const
+{
+    auto it = _impl->candleViewSupport.find(id);
+    if (it == _impl->candleViewSupport.end())
+        return std::nullopt;
+
+    return std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> { std::cref(it->second.timeframes) };
+}
+
+void CentaurApp::closeEvent(QCloseEvent *event)
 {
     if (m_server)
     {
@@ -230,7 +414,7 @@ void cen::CentaurApp::closeEvent(QCloseEvent *event)
         m_server.reset();
     }
 
-    for (const auto &plugins : m_pluginInstances)
+    for (const auto &plugins : _impl->pluginInstances)
     {
         if (plugins->isLoaded())
             plugins->unload();
@@ -241,67 +425,63 @@ void cen::CentaurApp::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
-bool CENTAUR_NAMESPACE::CentaurApp::eventFilter(QObject *obj, QEvent *event)
+bool CentaurApp::eventFilter(QObject *obj, QEvent *event)
 {
-    if (obj == m_ui->bidsChart && event->type() == QEvent::Resize && m_ui->bidsChart->chart() != nullptr)
+    /* TODO: THIS
+    if (obj == ui()->bidsChart && event->type() == QEvent::Resize && ui()->bidsChart->chart() != nullptr)
     {
         auto resize    = dynamic_cast<QResizeEvent *>(event);
-        auto bidsChart = m_ui->bidsChart->chart();
+        auto bidsChart = ui()->bidsChart->chart();
         auto size      = resize->size();
         bidsChart->setPlotArea(QRectF(70, 0, static_cast<qreal>(size.width()) - 70, static_cast<qreal>(size.height()) - 20));
     }
 
-    if (obj == m_ui->asksChart && event->type() == QEvent::Resize && m_ui->asksChart->chart() != nullptr)
+    if (obj == ui()->asksChart && event->type() == QEvent::Resize && ui()->asksChart->chart() != nullptr)
     {
         auto resize    = dynamic_cast<QResizeEvent *>(event);
-        auto asksChart = m_ui->asksChart->chart();
+        auto asksChart = ui()->asksChart->chart();
         auto size      = resize->size();
         asksChart->setPlotArea(QRectF(0, 0, static_cast<qreal>(size.width()) - 70, static_cast<qreal>(size.height()) - 20));
     }
-
+*/
     return QObject::eventFilter(obj, event);
 }
 
-void cen::CentaurApp::initializeDatabaseServices() noexcept
+void CentaurApp::initializeDatabaseServices() noexcept
 {
     auto db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(g_globals->paths.resPath + "/Local/centaur.db");
 
     if (!db.open())
     {
-        logFatal("app", LS("fatal-centaur-db"));
-        QMessageBox::critical(this, LS("error-error"), LS("fatal-centaur-db"));
+        logFatal("app", tr("The Centaur database could not be opened"));
+        QMessageBox::critical(this, tr("Error"), tr("The Centaur database could not be opened"));
         exit(EXIT_FAILURE);
     }
 
     m_sqlFavorites = new FavoritesDBManager;
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
+void CentaurApp::initializeInterface() noexcept
 {
-    logTrace("app", "CENTAUR_NAMESPACE::CentaurApp::initializeInterface()");
+    logTrace("app", "CentaurApp::initializeInterface()");
 
-    auto *aboutMenu         = new QMenu,
-         *preferencesMenu   = new QMenu,
-         *pluginsMenu       = new QMenu;
-    auto *aboutAction       = new QAction(tr("About Centaur"));
-    auto *preferencesAction = new QAction(tr("Preferences"));
-    auto *pluginsAction     = new QAction(tr("Plugins"));
+    ui()->closeButton->setButtonClass(SystemPushButton::ButtonClass::close);
+    ui()->minimizeButton->setButtonClass(SystemPushButton::ButtonClass::minimize);
+#ifdef Q_OS_MAC
+    ui()->maximizeButton->setButtonClass(SystemPushButton::ButtonClass::fullscreen);
+    ui()->maximizeButton->linkFullScreen(ui()->closeButton, ui()->minimizeButton);
+#else
+    ui()->maximizeButton->setButtonClass(SystemPushButton::ButtonClass::maximize);
+    ui()->maximizeButton->linkMaximize(ui()->closeButton, ui()->minimizeButton);
+#endif
 
-    aboutAction->setMenuRole(QAction::MenuRole::AboutQtRole);
-    preferencesAction->setMenuRole(QAction::MenuRole::PreferencesRole);
-    pluginsAction->setMenuRole(QAction::MenuRole::ApplicationSpecificRole);
-    aboutMenu->addAction(aboutAction);
-    preferencesMenu->addAction(preferencesAction);
-    pluginsMenu->addAction(pluginsAction);
-    m_ui->menuBar->addMenu(aboutMenu);
-    m_ui->menuBar->addMenu(preferencesMenu);
-    m_ui->menuBar->addMenu(pluginsMenu);
-
-    connect(pluginsAction, &QAction::triggered, this, &CentaurApp::onPlugins);
+    connect(ui()->settingsButton, &QPushButton::released, this, &CentaurApp::onShowSettings);
+    connect(ui()->pluginsViewButton, &QPushButton::released, this, &CentaurApp::onShowPlugins);
+    connect(ui()->logsViewButtton, &QPushButton::released, this, &CentaurApp::onShowLogDialog);
 
     // Connect favorites action
-    connect(m_ui->actionWatchlistFavorites,
+    connect(ui()->actionWatchlistFavorites,
         &QAction::triggered,
         this,
         [&](C_UNUSED bool triggered) {
@@ -310,215 +490,183 @@ void CENTAUR_NAMESPACE::CentaurApp::initializeInterface() noexcept
             dlg.exec();
         });
 
-    m_ui->statusBar->setStyleSheet("QStatusBar::item { border: 2px; }");
+    connect(ui()->watchlistButton, &QPushButton::clicked, this, [&](bool clicked) {
+        if (clicked)
+            ui()->stackedWidget->setCurrentWidget(ui()->watchListPage);
+    });
 
-    m_ui->tabSymbols->setTabText(m_ui->tabSymbols->indexOf(m_ui->tabWatchList), LS("ui-docks-watchlist"));
-    // Menu actions
-    connect(m_ui->actionTileWindows, &QAction::triggered, m_ui->mdiArea, &QMdiArea::tileSubWindows);
-    connect(m_ui->actionCascadeWindows, &QAction::triggered, m_ui->mdiArea, &QMdiArea::cascadeSubWindows);
+    connect(_impl->orderbookDepth, &QAction::triggered, this, [&, action = _impl->orderbookDepth](C_UNUSED bool trigger) {
+        const auto actionData = _impl->orderbookDepth->data().value<OrderBookDepthInformation>();
+        QString objectName    = QString("%1%2orderbook").arg(actionData.source, actionData.symbol);
 
-    connect(m_ui->actionAsks, &QAction::toggled, this, &CentaurApp::onActionAsksToggled);
-    connect(m_ui->actionBalances, &QAction::toggled, this, &CentaurApp::onActionBalancesToggled);
-    connect(m_ui->actionBids, &QAction::toggled, this, &CentaurApp::onActionBidsToggled);
-    connect(m_ui->actionDepth, &QAction::toggled, this, &CentaurApp::onActionDepthToggled);
-    connect(m_ui->actionLogging, &QAction::toggled, this, &CentaurApp::onActionLoggingToggled);
-    connect(m_ui->actionSymbols, &QAction::toggled, this, &CentaurApp::onActionSymbolsToggled);
+        auto *dlgExists = this->findChild<OrderbookDialog *>(objectName);
+        if (dlgExists != nullptr)
+        {
+            // Bring upfront
+            dlgExists->show();
+            dlgExists->setWindowState(Qt::WindowState::WindowActive);
+        }
+        else
+        {
+            auto *dlg = new OrderbookDialog(actionData.symbol, _impl->exchangeList[uuid(actionData.source.toStdString())].exchange, this);
+            dlg->setObjectName(objectName);
+            connect(dlg, &OrderbookDialog::closeButtonPressed, this, [&, dlg]() {
+                delete dlg;
+            });
 
-    // Connect the candle actions
-    m_candleViewTimeFrameActions = std::make_unique<CandleViewTimeFrameActions>(this);
-    connect(m_candleViewTimeFrameActions->aSeconds_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aSeconds_5, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aSeconds_10, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aSeconds_30, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aSeconds_45, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_2, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_3, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_5, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_10, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_15, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_30, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMinutes_45, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aHours_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aHours_2, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aHours_4, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aHours_6, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aHours_8, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aHours_12, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aDays_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aDays_3, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aWeeks_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1, std::get<0>(m_candleEmitter)); });
-    connect(m_candleViewTimeFrameActions->aMonths_1, &QAction::triggered, this, [&]() { onCandleView(std::get<1>(m_candleEmitter), std::get<2>(m_candleEmitter), CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1, std::get<0>(m_candleEmitter)); });
+            dlg->show();
+        }
+    });
 
-    // Remove the first index
-    m_ui->dockSymbols->setWindowTitle(LS("ui-docks-symbols"));
-    m_ui->tabSymbols->removeTab(1);
+    connect(_impl->depthChart, &QAction::triggered, this, [&, action = _impl->depthChart](C_UNUSED bool trigger) {
+        const auto actionData       = _impl->depthChart->data().value<OrderBookDepthInformation>();
+        QString orderBookObjectName = QString("%1%2orderbook").arg(actionData.source, actionData.symbol);
 
-    // Show or hide the docking windows according to the store status of the Gm_ui
-    m_ui->actionSymbols->setChecked(!m_ui->dockSymbols->isHidden());
-    m_ui->actionLogging->setChecked(!m_ui->dockLogging->isHidden());
-    m_ui->actionBalances->setChecked(!m_ui->dockBalances->isHidden());
-    m_ui->actionBids->setChecked(!m_ui->dockOrderbookBids->isHidden());
-    m_ui->actionAsks->setChecked(!m_ui->dockOrderbookAsks->isHidden());
-    m_ui->actionDepth->setChecked(!m_ui->dockDepth->isHidden());
+        auto *orderBookExists = this->findChild<OrderbookDialog *>(orderBookObjectName);
+        if (orderBookExists == nullptr)
+        {
+            QMessageBox::warning(this, tr("Warning"), tr("The orderbook has to be displayed"), QMessageBox::Ok);
+            return;
+        }
 
-    // Init the watchlist QLineEdit
-    m_ui->editWatchListFilter->setPlaceholderText(LS("ui-docks-search"));
-    m_ui->editWatchListFilter->addAction(g_globals->icons.searchIcon, QLineEdit::LeadingPosition);
-    m_watchlistItemModel = new QStandardItemModel(0, 4, m_ui->tabWatchList);
-    auto sortProxyModel  = new QSortFilterProxyModel(m_ui->tabWatchList);
-    sortProxyModel->setSourceModel(m_watchlistItemModel);
-    m_ui->listWatchList->setModel(sortProxyModel);
-    m_ui->listWatchList->setRemove();
-    m_ui->listWatchList->allowClickMessages();
-    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::snRemoveWatchList, this, &CentaurApp::onRemoveWatchList);
-    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::snSetSelection, this, &CentaurApp::onSetWatchlistSelection);
-    connect(m_ui->listWatchList, &CENTAUR_NAMESPACE::CenListCtrl::snRemoveSelection, this, &CentaurApp::onWatchlistRemoveSelection);
+        QString objectName = QString("%1%2depth").arg(actionData.source, actionData.symbol);
+        auto *dlgExists    = this->findChild<DepthChartDialog *>(objectName);
+        if (dlgExists != nullptr)
+        {
+            // Bring upfront
+            dlgExists->show();
+            dlgExists->setWindowState(Qt::WindowState::WindowActive);
+        }
+        else
+        {
+            auto *dlg = new DepthChartDialog(actionData.symbol, this);
+            dlg->setObjectName(objectName);
 
-    sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    connect(m_ui->editWatchListFilter, &QLineEdit::textChanged, sortProxyModel, &QSortFilterProxyModel::setFilterFixedString);
+            connect(orderBookExists, &OrderbookDialog::redirectOrderbook, dlg, &DepthChartDialog::onOrderBookDepth);
 
-    m_ui->listWatchList->verticalHeader()->setFont(g_globals->fonts.symbolsDock.headerFont);
-    m_ui->listWatchList->sortByColumn(0, Qt::AscendingOrder);
-    m_ui->listWatchList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+            connect(dlg, &DepthChartDialog::closeButtonPressed, this, [&, dlg, orderBookExists]() {
+                // disconnect the orderbook signal
+                disconnect(orderBookExists, &OrderbookDialog::redirectOrderbook, nullptr, nullptr);
+                delete dlg;
+            });
 
-    m_watchlistItemModel->setHorizontalHeaderLabels(
-        { LS("ui-docks-symbol"),
-            LS("ui-docks-price"),
-            LS("ui-docks-source"),
-            LS("ui-docks-latency"),
-            "UUID" });
+            dlg->show();
+        }
+    });
 
-    m_watchlistItemModel->horizontalHeaderItem(0)->setFont(g_globals->fonts.symbolsDock.headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_watchlistItemModel->horizontalHeaderItem(1)->setFont(g_globals->fonts.symbolsDock.headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_watchlistItemModel->horizontalHeaderItem(2)->setFont(g_globals->fonts.symbolsDock.headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_watchlistItemModel->horizontalHeaderItem(3)->setFont(g_globals->fonts.symbolsDock.headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(3)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    // This column, although hidden, will be used to find uuid source of all watchlist items
-    m_watchlistItemModel->horizontalHeaderItem(4)->setFont(g_globals->fonts.symbolsDock.headerFont);
-    m_watchlistItemModel->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_ui->listWatchList->setColumnHidden(4, true);
+    ui()->watchListTable->initialize(ui()->watchListSearch, 6, -1, 5, nullptr);
+    ui()->watchListTable->sortByColumn(0, Qt::AscendingOrder);
+    ui()->watchListTable->getModel()->setHorizontalHeaderLabels({ tr("Symbol"), tr("Price"), tr("Source"), tr("Latency"), tr("UUID"), tr("Options") });
+    ui()->watchListTable->verticalHeader()->setDefaultAlignment(Qt::AlignCenter);
+    ui()->watchListTable->horizontalHeader()->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
+    ui()->watchListTable->setButtons(OptionsWidget::view | OptionsWidget::del);
 
+    ui()->watchListTable->setDeletionColumnData(0);
+    connect(ui()->watchListTable, &OptionsTableWidget::viewItemPressed, this, [&](QStandardItem *item) {
+        auto index     = ui()->watchListTable->getItemIndexFromSource(item);
+        QString symbol = ui()->watchListTable->getItemIndex(index.row(), 0).data(Qt::DisplayRole).toString();
+        QString source = ui()->watchListTable->getItemIndex(index.row(), 4).data(Qt::DisplayRole).toString();
+        auto actions   = _impl->exchangeMenuActions[uuid { source.toStdString() }];
+
+        QMenu menu(this);
+
+        auto exchBase = dynamic_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(_impl->exchangeList[uuid { source.toStdString() }].exchange);
+        if (exchBase != nullptr)
+        {
+            const auto pluginInformation = pluginInformationFromBase(exchBase);
+            auto *candleView             = getSupportedCandleViewPlugins(pluginInformation);
+            if (candleView != nullptr)
+            {
+            }
+        }
+
+        OrderBookDepthInformation obdi { symbol, source };
+
+        _impl->orderbookDepth->setData(QVariant::fromValue(obdi));
+        _impl->depthChart->setData(QVariant::fromValue(obdi));
+
+        menu.addAction(_impl->orderbookDepth);
+        menu.addAction(_impl->depthChart);
+        menu.addSeparator();
+
+        for (auto &action : actions)
+        {
+            // Update the symbol name
+            action->setData(symbol);
+            menu.addAction(action);
+        }
+
+        auto top   = ui()->watchListTable->mapToGlobal(ui()->watchListTable->visualRect(index).topLeft()); // To get the top
+        auto right = ui()->watchListTable->mapToGlobal(ui()->watchListTable->frameGeometry().topRight());  // To get the right
+
+        menu.exec({ right.x(), top.y() });
+    });
+
+    connect(ui()->watchListTable, &OptionsTableWidget::deleteItemPressed, this, [&](C_UNUSED const QString &itemData) {
+        onRemoveWatchList(ui()->watchListTable->getRemovedItem());
+    });
+
+    ui()->watchListTable->setColumnHidden(4, true);
+
+    connect(ui()->watchListTable, &OptionsTableWidget::itemSelectionChanged, this,
+        [&](const QModelIndex &index) {
+            if (index.isValid())
+            {
+                const auto source    = ui()->watchListTable->getItemIndex(index.row(), 4).data().toString();
+                const QString symbol = [&]() -> QString {
+                    if (index.column() == 0)
+                        return index.data().toString();
+                    else
+                        return ui()->watchListTable->getItemIndex(index.row(), 0).data().toString();
+                }();
+                onSetWatchlistSelection(source, symbol);
+            }
+        });
+
+    // Init Last-7-day chart
+    _impl->last7Chart = new QChart;
+    _impl->last7Chart->setAnimationOptions(QChart::AllAnimations);
+    _impl->last7Chart->setBackgroundPen(Qt::NoPen);
+    _impl->last7Chart->setBackgroundBrush(Qt::NoBrush);
+    _impl->last7Chart->setTitleBrush(QColor(200, 200, 200));
+    ui()->sevenDayGraph->setChart(_impl->last7Chart);
+    ui()->sevenDayGraph->setRenderHint(QPainter::Antialiasing);
+    _impl->last7SevenLowSeries  = new QSplineSeries;
+    _impl->last7SevenUpSeries   = new QSplineSeries;
+    _impl->last7SevenAreaSeries = new QAreaSeries(_impl->last7SevenLowSeries, _impl->last7SevenUpSeries);
+    _impl->last7SevenAreaSeries->setPen(Qt::NoPen);
+    _impl->last7Chart->legend()->hide();
+
+    _impl->last7Chart->addSeries(_impl->last7SevenAreaSeries);
+
+    auto *axisX = new QDateTimeAxis;
+    axisX->setTickCount(7);
+    axisX->setFormat("MMM d");
+    axisX->setTitleVisible(false);
+    axisX->setGridLineVisible(false);
+    axisX->setLabelsColor(QColor(200, 200, 200));
+    _impl->last7Chart->addAxis(axisX, Qt::AlignBottom);
+    _impl->last7SevenAreaSeries->attachAxis(axisX);
+
+    auto *axisY = new QValueAxis;
+    axisY->setLabelFormat("$ %.2f");
+    axisY->setTitleVisible(false);
+    axisY->setGridLineVisible(false);
+    axisY->setLabelsColor(QColor(200, 200, 200));
+    _impl->last7Chart->addAxis(axisY, Qt::AlignLeft);
+    _impl->last7SevenAreaSeries->attachAxis(axisY);
+
+    _impl->last7Chart->setMargins(QMargins(0, 0, 0, 0));
+
+    /* TODO: THIS
     // Balances Tree
-    m_ui->ctrlBalances->setHeaderLabels({ LS("ui-docks-balances-name"), LS("ui-docks-balances-value") });
-    m_ui->ctrlBalances->setIconSize(QSize(28, 28));
+    ui()->ctrlBalances->setHeaderLabels({ LS("ui-docks-balances-name"), LS("ui-docks-balances-value") });
+    ui()->ctrlBalances->setIconSize(QSize(28, 28));
 
-    // Init the logging window
-    QTableWidget *logger = m_ui->logsTable;
-    logger->setHorizontalHeaderLabels({ "Date", "User", "Session", "Type", "Source", "Message" });
-    logger->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
-    logger->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    logger->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
-    logger->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignCenter);
-    logger->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
-    logger->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignCenter);
-    logger->horizontalHeaderItem(3)->setFont(QFont("Arial", 10));
-    logger->horizontalHeaderItem(3)->setTextAlignment(Qt::AlignCenter);
-    logger->horizontalHeaderItem(4)->setFont(QFont("Arial", 10));
-    logger->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignCenter);
-    logger->horizontalHeaderItem(5)->setFont(QFont("Arial", 10));
-    logger->horizontalHeaderItem(5)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-    logger->setItemDelegateForColumn(5, new HTMLDelegate);
-
-    // Orderbook asks
-    //    QString styleSheet = "::section {" // "QHeaderView::section {"
-    //                        "font-family: arial;"
-    //                       "font-size: 10px; }";
-
-    m_ui->asksTable->setHorizontalHeaderLabels({ "Price", "Amount", "Total" });
-    m_ui->asksTable->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
-    m_ui->asksTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_ui->asksTable->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
-    m_ui->asksTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
-    m_ui->asksTable->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
-    m_ui->asksTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
-
-    //   m_ui->asksTable->verticalHeader()->setStyleSheet(styleSheet);
-
-    // Orderbook bids
-    m_ui->bidsTable->setHorizontalHeaderLabels({ "Price", "Amount", "Total" });
-    m_ui->bidsTable->horizontalHeaderItem(0)->setFont(QFont("Arial", 10));
-    m_ui->bidsTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    m_ui->bidsTable->horizontalHeaderItem(1)->setFont(QFont("Arial", 10));
-    m_ui->bidsTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight);
-    m_ui->bidsTable->horizontalHeaderItem(2)->setFont(QFont("Arial", 10));
-    m_ui->bidsTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignRight);
-
-    //  m_ui->bidsTable->verticalHeader()->setStyleSheet(styleSheet);
-
-    m_ui->bidsChart->setRenderHint(QPainter::Antialiasing);
-    m_bidsDepth = new QSplineSeries;
-    m_bidsDepth->setUseOpenGL(true);
-    m_bidsDepthFill = new QSplineSeries;
-    m_bidsDepthFill->setUseOpenGL(true);
-    auto bidsAreaSeries = new QAreaSeries(m_bidsDepth, m_bidsDepthFill);
-    bidsAreaSeries->setPen(QPen(QColor(0, 255, 0), 2));
-    bidsAreaSeries->setColor(QColor(0, 255, 0, 80));
-    auto bidsChart = new QChart;
-    bidsChart->legend()->hide();
-    bidsChart->addSeries(bidsAreaSeries);
-    bidsChart->createDefaultAxes();
-    bidsChart->setBackgroundBrush(QBrush(QColor(20, 20, 20, 0)));
-    bidsChart->setPlotAreaBackgroundBrush(QBrush(QColor(0, 255, 50, 0)));
-    bidsChart->setPlotAreaBackgroundVisible(true);
-    auto yAxisBids = qobject_cast<QValueAxis *>(bidsChart->axes(Qt::Vertical).first());
-    auto xAxisBids = qobject_cast<QValueAxis *>(bidsChart->axes(Qt::Horizontal).first());
-    xAxisBids->setTickType(QValueAxis::TickType::TicksDynamic);
-    xAxisBids->setReverse(true);
-    xAxisBids->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
-    xAxisBids->setGridLineVisible(false);
-    xAxisBids->setLabelsColor(QColor(200, 200, 200));
-    yAxisBids->setTickType(QValueAxis::TickType::TicksDynamic);
-    yAxisBids->setGridLineVisible(false);
-    yAxisBids->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
-    yAxisBids->setLabelsColor(QColor(200, 200, 200));
-    bidsChart->setMargins(QMargins(0, 0, 0, 0));
-    m_ui->bidsChart->setChart(bidsChart);
-
-    m_ui->asksChart->setRenderHint(QPainter::Antialiasing);
-    m_asksDepth = new QSplineSeries;
-    m_asksDepth->setUseOpenGL(true);
-    m_asksDepthFill = new QSplineSeries;
-    m_asksDepthFill->setUseOpenGL(true);
-    auto asksAreaSeries = new QAreaSeries(m_asksDepth, m_asksDepthFill);
-    asksAreaSeries->setPen(QPen(QColor(255, 0, 0), 2));
-    asksAreaSeries->setColor(QColor(255, 0, 0, 80));
-    auto asksChart = new QChart;
-    asksChart->legend()->hide();
-    asksChart->addSeries(asksAreaSeries);
-    asksChart->createDefaultAxes();
-    asksChart->setBackgroundBrush(QBrush(QColor(20, 20, 20, 0)));
-    asksChart->setPlotAreaBackgroundBrush(QBrush(QColor(255, 50, 50, 0)));
-    asksChart->setPlotAreaBackgroundVisible(true);
-
-    auto yAxisAsksDefault = qobject_cast<QValueAxis *>(asksChart->axes(Qt::Vertical).first());
-    asksChart->removeAxis(yAxisAsksDefault);
-
-    auto yAxisAsks = new QValueAxis(this);
-    asksChart->addAxis(yAxisAsks, Qt::AlignRight);
-    asksAreaSeries->attachAxis(yAxisAsks);
-
-    auto xAxisAsks = qobject_cast<QValueAxis *>(asksChart->axes(Qt::Horizontal).first());
-    xAxisAsks->setTickType(QValueAxis::TickType::TicksDynamic);
-    xAxisAsks->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
-    xAxisAsks->setLabelsColor(QColor(200, 200, 200));
-    xAxisAsks->setGridLineVisible(false);
-    xAxisAsks->setLabelsColor(QColor(200, 200, 200));
-    yAxisAsks->setTickType(QValueAxis::TickType::TicksDynamic);
-    yAxisAsks->setGridLineVisible(false);
-    yAxisAsks->setLinePen(QPen(QBrush(QColor(80, 80, 80)), 2));
-    yAxisAsks->setLabelsColor(QColor(200, 200, 200));
-
-    asksChart->setMargins(QMargins(0, 0, 0, 0));
-
-    m_ui->asksChart->setChart(asksChart);
+     */
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
+void CentaurApp::saveInterfaceState() noexcept
 {
     logTrace("app", "CentaurApp::saveInterfaceState()");
 
@@ -530,39 +678,39 @@ void CENTAUR_NAMESPACE::CentaurApp::saveInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("watchlistListState");
-    settings.setValue("geometry", m_ui->listWatchList->saveGeometry());
-    settings.setValue("h-geometry", m_ui->listWatchList->horizontalHeader()->saveGeometry());
-    settings.setValue("state", m_ui->listWatchList->horizontalHeader()->saveState());
+    settings.setValue("geometry", ui()->watchListTable->saveGeometry());
+    settings.setValue("h-geometry", ui()->watchListTable->horizontalHeader()->saveGeometry());
+    settings.setValue("state", ui()->watchListTable->horizontalHeader()->saveState());
+    settings.endGroup();
+
+    settings.beginGroup("LogDialog");
+    settings.setValue("geometry", _impl->logDialog->saveGeometry());
     settings.endGroup();
 
     settings.beginGroup("loggingListState");
-    settings.setValue("geometry", m_ui->logsTable->saveGeometry());
-    settings.setValue("h-geometry", m_ui->logsTable->horizontalHeader()->saveGeometry());
-    settings.setValue("state", m_ui->logsTable->horizontalHeader()->saveState());
+    settings.setValue("geometry", _impl->logDialog->tableWidget()->saveGeometry());
+    settings.setValue("h-geometry", _impl->logDialog->tableWidget()->horizontalHeader()->saveGeometry());
+    settings.setValue("state", _impl->logDialog->tableWidget()->horizontalHeader()->saveState());
     settings.endGroup();
 
+    settings.beginGroup("Splitter0");
+    settings.setValue("geometry", ui()->splitter->saveGeometry());
+    settings.setValue("state", ui()->splitter->saveState());
+    settings.endGroup();
+
+    /* TODO: THIS
     settings.beginGroup("BalancesTreeState");
-    settings.setValue("geometry", m_ui->ctrlBalances->saveGeometry());
-    settings.setValue("h-geometry", m_ui->ctrlBalances->header()->saveGeometry());
-    settings.setValue("state", m_ui->ctrlBalances->header()->saveState());
+    settings.setValue("geometry", ui()->ctrlBalances->saveGeometry());
+    settings.setValue("h-geometry", ui()->ctrlBalances->header()->saveGeometry());
+    settings.setValue("state", ui()->ctrlBalances->header()->saveState());
     settings.endGroup();
 
-    settings.beginGroup("OrderbookAsksState");
-    settings.setValue("geometry", m_ui->asksTable->saveGeometry());
-    settings.setValue("h-geometry", m_ui->asksTable->horizontalHeader()->saveGeometry());
-    settings.setValue("state", m_ui->asksTable->horizontalHeader()->saveState());
-    settings.endGroup();
 
-    settings.beginGroup("OrderbookBidsState");
-    settings.setValue("geometry", m_ui->bidsTable->saveGeometry());
-    settings.setValue("h-geometry", m_ui->bidsTable->horizontalHeader()->saveGeometry());
-    settings.setValue("state", m_ui->bidsTable->horizontalHeader()->saveState());
-    settings.endGroup();
-
+*/
     logInfo("app", "UI state saved");
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
+void CentaurApp::loadInterfaceState() noexcept
 {
     logTrace("app", "CentaurApp::loadInterfaceState()");
 
@@ -574,45 +722,84 @@ void CENTAUR_NAMESPACE::CentaurApp::loadInterfaceState() noexcept
     settings.endGroup();
 
     settings.beginGroup("watchlistListState");
-    m_ui->listWatchList->restoreGeometry(settings.value("geometry").toByteArray());
-    m_ui->listWatchList->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    m_ui->listWatchList->horizontalHeader()->restoreState(settings.value("state").toByteArray());
+    ui()->watchListTable->restoreGeometry(settings.value("geometry").toByteArray());
+    ui()->watchListTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    ui()->watchListTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
-    settings.beginGroup("loggingListState");
-    m_ui->logsTable->restoreGeometry(settings.value("geometry").toByteArray());
-    m_ui->logsTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    m_ui->logsTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
+    settings.beginGroup("Splitter0");
+    ui()->splitter->restoreGeometry(settings.value("geometry").toByteArray());
+    ui()->splitter->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
+    /* TODO: THIS
     settings.beginGroup("BalancesTreeState");
-    m_ui->ctrlBalances->restoreGeometry(settings.value("geometry").toByteArray());
-    m_ui->ctrlBalances->header()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    m_ui->ctrlBalances->header()->restoreState(settings.value("state").toByteArray());
+    ui()->ctrlBalances->restoreGeometry(settings.value("geometry").toByteArray());
+    ui()->ctrlBalances->header()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    ui()->ctrlBalances->header()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
-    settings.beginGroup("OrderbookAsksState");
-    m_ui->asksTable->restoreGeometry(settings.value("geometry").toByteArray());
-    m_ui->asksTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    m_ui->asksTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-
-    settings.beginGroup("OrderbookBidsState");
-    m_ui->bidsTable->restoreGeometry(settings.value("geometry").toByteArray());
-    m_ui->bidsTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    m_ui->bidsTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-
+*/
     logInfo("app", "UI state loaded");
 }
 
-void cen::CentaurApp::loadFavoritesWatchList() noexcept
+void CentaurApp::onStatusDisplayChanged(plugin::IStatus::DisplayRole mode)
+{
+    using namespace CENTAUR_PLUGIN_NAMESPACE;
+    plugin::IStatus *sndr = qobject_cast<plugin::IStatus *>(sender());
+    if (sndr == nullptr)
+    {
+        logError("IStatus", "The IStatus sender could not be determinate");
+        return;
+    }
+
+    auto data = _impl->statusPlugins.find(sndr->getPluginUUID());
+    if (data == _impl->statusPlugins.end())
+    {
+        logError("IStatus", "The IStatus data could not be found");
+        return;
+    }
+
+    if (mode == plugin::IStatus::DisplayRole::Foreground)
+    {
+        QToolButton *button = std::get<1>(data->second);
+        button->setFont(sndr->font());
+        button->setText(sndr->text());
+
+        constexpr static char stylesheet[] = { R"(QToolButton{border-radius: 0px; border: 0px; }
+QToolButton:hover{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 0  rgb(58,58,58), stop: 1 rgb(68,68,68)); border-radius: 0px;}
+QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 1  rgb(85,85,85), stop: 0 rgb(95,95,95)); border-radius: 0px;})" };
+
+        const auto foregroundBrush = sndr->brush(IStatus::DisplayRole::Foreground);
+        const auto backgroundBrush = sndr->brush(IStatus::DisplayRole::Background);
+
+        QPalette palette = button->palette();
+        if (foregroundBrush != Qt::NoBrush)
+        {
+            palette.setBrush(QPalette::ColorRole::ButtonText, sndr->brush(IStatus::DisplayRole::Foreground));
+        }
+        if (backgroundBrush != Qt::NoBrush)
+        {
+            button->setStyleSheet("");
+            button->setAutoFillBackground(true);
+            palette.setBrush(QPalette::ColorRole::Button, sndr->brush(IStatus::DisplayRole::Background));
+        }
+        else
+        {
+            button->setStyleSheet(stylesheet);
+            button->setAutoFillBackground(false);
+        }
+        button->setPalette(palette);
+    }
+}
+
+void CentaurApp::loadFavoritesWatchList() noexcept
 {
     auto data = m_sqlFavorites->selectAll();
 
     if (data.isEmpty())
     {
-        logInfo("app", LS("info-fav-db-empty"));
+        logInfo("app", tr("No favorites in the list"));
         return;
     }
 
@@ -620,13 +807,13 @@ void cen::CentaurApp::loadFavoritesWatchList() noexcept
     {
         if (sym.isEmpty())
         {
-            logWarn("app", LS("warning-fav-symbol-empty"));
+            logWarn("app", tr("The symbol name in the favorites DB is empty"));
             continue;
         }
 
         if (plid.isEmpty())
         {
-            logWarn("app", LS("warning-fav-uuid-empty"));
+            logWarn("app", tr("The symbol id in the favorites DB is empty"));
             continue;
         }
 
@@ -635,17 +822,17 @@ void cen::CentaurApp::loadFavoritesWatchList() noexcept
     }
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::startLoggingService() noexcept
+void CentaurApp::startLoggingService() noexcept
 {
     g_logger = new CentaurLogger;
     // Init the logger
-    m_loggerThread = std::make_unique<std::thread>(&CENTAUR_NAMESPACE::CentaurLogger::run, g_logger);
+    m_loggerThread = std::make_unique<std::thread>(&CentaurLogger::run, g_logger);
     try
     {
         g_logger->setApplication(this);
         g_logger->setUser("root");
         g_logger->setSession(0);
-        logInfo("app", QString("TraderSys ") + QString(CENTAUR_NAMESPACE::CentaurVersionString));
+        logInfo("app", QString("TraderSys ") + QString(CentaurVersionString));
     } catch (const std::runtime_error &ex)
     {
         QMessageBox::critical(this,
@@ -655,54 +842,25 @@ void CENTAUR_NAMESPACE::CentaurApp::startLoggingService() noexcept
     }
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::startCommunicationsServer() noexcept
+void CentaurApp::startCommunicationsServer() noexcept
 {
-    m_serverStatus = new QLabel("Server", m_ui->statusBar);
-    m_ui->statusBar->addPermanentWidget(m_serverStatus, 0);
+    /*
+    m_serverStatus = new QLabel("Server", ui()->statusBar);
+    ui()->statusBar->addPermanentWidget(m_serverStatus, 0);
     m_server = std::make_unique<ProtocolServer>(this);
     if (m_server->isListening())
         m_serverStatus->setStyleSheet(g_statusGreen);
     else
-        m_serverStatus->setStyleSheet(g_statusRed);
+        m_serverStatus->setStyleSheet(g_statusRed);*/
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onActionSymbolsToggled(bool status)
-{
-    status ? m_ui->dockSymbols->show() : m_ui->dockSymbols->hide();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionLoggingToggled(bool status)
-{
-    status ? m_ui->dockLogging->show() : m_ui->dockLogging->hide();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionBalancesToggled(bool status)
-{
-    status ? m_ui->dockBalances->show() : m_ui->dockBalances->hide();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionAsksToggled(bool status)
-{
-    status ? m_ui->dockOrderbookAsks->show() : m_ui->dockOrderbookAsks->hide();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionBidsToggled(bool status)
-{
-    status ? m_ui->dockOrderbookBids->show() : m_ui->dockOrderbookBids->hide();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onActionDepthToggled(bool status)
-{
-    status ? m_ui->dockDepth->show() : m_ui->dockDepth->hide();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept
+void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept
 {
     logTrace("watchlist", "CentaurApp::onAddToWatchList()");
 
-    auto interface = m_exchangeList.find(sender);
+    auto interface = _impl->exchangeList.find(uuid { sender.toStdString() });
 
-    if (interface == m_exchangeList.end())
+    if (interface == _impl->exchangeList.end())
     {
         logError("watchlist", QString(tr("The sender '%1' is not registered.")).arg(sender));
         return;
@@ -713,105 +871,147 @@ void CENTAUR_NAMESPACE::CentaurApp::onAddToWatchList(const QString &symbol, cons
     // Generate a unique-id
     const int id = ++m_sessionIds;
 
-    if (watchInterface->addSymbol(symbol, id))
+    if (watchInterface->addSymbolToWatchlist(symbol, id))
     {
         auto itemSymbol  = new QStandardItem(symbol);
         auto itemPrice   = new QStandardItem("$ 0.00");
         auto itemSource  = new QStandardItem(interface->second.listName);
         auto itemLatency = new QStandardItem("0");
         auto itemUUID    = new QStandardItem(interface->second.uuid.to_string().c_str());
-        int curRow       = m_watchlistItemModel->rowCount();
-        itemSymbol->setFont(g_globals->fonts.symbolsDock.tableFont);
+
+        itemSymbol->setData(id, Qt::UserRole + 1); // To find the item
+        itemPrice->setData(0., Qt::UserRole + 1);  // To compare to previous values
+
         itemSymbol->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemPrice->setFont(g_globals->fonts.symbolsDock.tableFont);
-        itemPrice->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemSource->setFont(g_globals->fonts.symbolsDock.tableFont);
+        itemPrice->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         itemSource->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemLatency->setFont(g_globals->fonts.symbolsDock.tableFont);
-        itemLatency->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        m_watchlistItemModel->insertRow(curRow, { itemSymbol, itemPrice, itemSource, itemLatency, itemUUID });
-        m_watchlistItems[id] = { itemSymbol, 0. };
+        itemLatency->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+        ui()->watchListTable->insertRowWithOptions(
+            ui()->watchListTable->getRowCount(),
+            { itemSymbol, itemPrice, itemSource, itemLatency, itemUUID, new QStandardItem() },
+            false);
 
         // Add to the database
         if (addToDatabase)
             addFavoritesWatchListDB(symbol, sender);
+
+        QLinearGradient gr_p({ 0, 0 }, { 1, 1 });
+        gr_p.setCoordinateMode(QGradient::CoordinateMode::ObjectMode);
+        gr_p.setColorAt(0, QColor(1, 166, 7));
+        gr_p.setColorAt(0.5, QColor(26, 175, 32));
+        gr_p.setColorAt(1, QColor(1, 133, 6));
+
+        QLinearGradient gr_n({ 0, 0 }, { 1, 1 });
+        gr_n.setCoordinateMode(QGradient::CoordinateMode::ObjectMode);
+        gr_n.setColorAt(0, QColor(167, 29, 7));
+        gr_n.setColorAt(0.5, QColor(176, 52, 32));
+        gr_n.setColorAt(1, QColor(134, 23, 6));
+
+        auto dataList = watchInterface->getWatchlist24hrPriceChange();
+
+        std::transform(dataList.begin(), dataList.end(), dataList.begin(), [](const std::pair<qreal, QString> &data) -> std::pair<qreal, QString> {
+            return { data.first, QString(R"(<font size="12"><b>%1</b></font><br>%2 %)").arg(data.second).arg(data.first, 'f', '4') };
+        });
+
+        ui()->widget->setData(dataList, gr_n, gr_p);
     }
     else
     {
         logError("watchlist", QString("Symbol %1 was not added to the watchlist").arg(symbol));
     }
 }
-void CENTAUR_NAMESPACE::CentaurApp::onTickerUpdate(const QString &symbol, int id, quint64 receivedTime, double price) noexcept
+void CentaurApp::onTickerUpdate(const QString &symbol, int id, quint64 receivedTime, double price) noexcept
 {
-    // Find the item in the Watchlist items
-    auto itemIter         = m_watchlistItems.find(id);
-    auto &itemInformation = itemIter->second;
+    QString source;
+    QStandardItem *item = nullptr;
+    for (int r = 0; r < ui()->watchListTable->getRowCount(); ++r)
+    {
+        item = ui()->watchListTable->getModel()->item(r, 0);
 
-    if (itemIter == m_watchlistItems.end())
+        if (item->data() == id)
+        {
+            source = ui()->watchListTable->getModel()->item(r, 4)->text();
+            break;
+        }
+    }
+    if (item == nullptr)
     {
         logError("wlTickerUpdate", QString("Watchlist item for the symbol '%1' was not found").arg(symbol));
         return;
     }
 
-    const double previousPrice = [&]() -> double {
-        double p                      = itemInformation.previousPrice;
-        itemInformation.previousPrice = price; // Update the price
-        return p;
-    }();
+    const int itemRow = ui()->watchListTable->getItemIndexFromSource(item).row();
 
-    auto item         = itemInformation.listItem;
-    const int itemRow = item->row();
+    if (itemRow == -1)
+    {
+        // Item is not visible
+        return;
+    }
 
-    // Get the latency item
-    auto itemLatency = m_watchlistItemModel->item(itemRow, 3);
-    // Get the price item
-    auto itemPrice = m_watchlistItemModel->item(itemRow, 1);
+    const double previousPrice = ui()->watchListTable->getItemData(itemRow, 1, Qt::UserRole + 1).toReal();
+
     if (price > previousPrice)
     {
         item->setIcon(g_globals->icons.upArrow);
-        itemPrice->setData(QBrush(g_globals->colors.symbolsDockColors.priceUp), Qt::ForegroundRole);
+        ui()->watchListTable->setItemData(itemRow, 1, Qt::ForegroundRole, QBrush(QColor(0, 255, 0)));
     }
     else if (price < previousPrice)
     {
         item->setIcon(g_globals->icons.downArrow);
-        itemPrice->setData(QBrush(g_globals->colors.symbolsDockColors.priceDown), Qt::ForegroundRole);
+        ui()->watchListTable->setItemData(itemRow, 1, Qt::ForegroundRole, QBrush(QColor(255, 129, 112)));
     }
     else
     {
         item->setIcon(g_globals->icons.downArrow);
-        itemPrice->setData(QBrush(g_globals->colors.symbolsDockColors.priceNeutral), Qt::ForegroundRole);
+        ui()->watchListTable->setItemData(itemRow, 1, Qt::ForegroundRole, QBrush(QColor(238, 238, 238)));
     }
-    itemPrice->setText("$ " + QLocale(QLocale::English).toString(price, 'f', 5));
+
+    ui()->watchListTable->setItemText(itemRow, 1, "$ " + QLocale(QLocale::English).toString(price, 'f', 2));
+    ui()->watchListTable->setItemData(itemRow, 1, Qt::UserRole + 1, price); // Store the current since it will become the previous in the next call
 
     // Calculate latency
     const auto ms      = static_cast<quint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     const auto latency = receivedTime > ms ? 0ull : ms - receivedTime;
 
-    if (latency >= g_globals->params.symbolsDockParameters.latencyLowMin && latency <= g_globals->params.symbolsDockParameters.latencyLowMax)
+    if (latency <= 85)
     {
-        itemLatency->setData(QBrush(g_globals->colors.symbolsDockColors.latencyLow), Qt::ForegroundRole);
+        ui()->watchListTable->setItemData(itemRow, 3, Qt::ForegroundRole, QBrush(QColor(0, 255, 0)));
     }
-    else if (latency >= g_globals->params.symbolsDockParameters.latencyMediumMin && latency <= g_globals->params.symbolsDockParameters.latencyMediumMax)
+    else if (latency >= 86 && latency <= 185)
     {
-        itemLatency->setData(QBrush(g_globals->colors.symbolsDockColors.latencyMedium), Qt::ForegroundRole);
+        ui()->watchListTable->setItemData(itemRow, 3, Qt::ForegroundRole, QBrush(QColor(255, 215, 0)));
     }
-    else if (latency >= g_globals->params.symbolsDockParameters.latencyHighMin && latency <= g_globals->params.symbolsDockParameters.latencyHighMax)
+    else if (latency >= 186 && latency <= 10000000)
     {
-        itemLatency->setData(QBrush(g_globals->colors.symbolsDockColors.latencyHigh), Qt::ForegroundRole);
+        ui()->watchListTable->setItemData(itemRow, 3, Qt::ForegroundRole, QBrush(QColor(255, 129, 112)));
     }
-    itemLatency->setText(QString("%1 ms").arg(latency));
+    ui()->watchListTable->setItemText(itemRow, 3, QString("%1 ms").arg(latency));
+
+    // Determinate if the OrderBook dialog is being shown
+    QString orderBookObjectName = QString("%1%2orderbook").arg(source, symbol);
+    auto *orderbookDlg          = this->findChild<OrderbookDialog *>(orderBookObjectName);
+    if (orderbookDlg != nullptr)
+        orderbookDlg->setPrice(price);
+
+    QString depthCharDepthObjectName = QString("%1%2depth").arg(source, symbol);
+    auto *depthDlg                   = this->findChild<DepthChartDialog *>(depthCharDepthObjectName);
+    if (depthDlg != nullptr)
+        depthDlg->setPrice(price);
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onRemoveWatchList(int row) noexcept
+void CentaurApp::onRemoveWatchList(const QModelIndex &index) noexcept
 {
     logTrace("watchlist", "CentaurApp::onRemoveWatchList");
-    /// Retrieve the IExchange from the row based on the 4 column which has the PluginUUID Source
-    auto index         = m_watchlistItemModel->item(row, 0);
-    QString itemSymbol = index->text();
-    QString itemSource = m_watchlistItemModel->item(row, 4)->text();
+    /// Retrieve the IExchange from the row based on the 5 column which has the PluginUUID Source
 
-    auto interfaceIter = m_exchangeList.find(itemSource);
-    if (interfaceIter == m_exchangeList.end())
+    ui()->watchListTable->getItemText(index.row(), 0);
+
+    QString itemSymbol = ui()->watchListTable->getItemText(index.row(), 0);
+    QString itemSource = ui()->watchListTable->getItemText(index.row(), 4);
+
+    auto interfaceIter = _impl->exchangeList.find(uuid(itemSource.toStdString()));
+    if (interfaceIter == _impl->exchangeList.end())
     {
         QString message = QString(tr("Failed to locate the symbol interface."));
         logError("wlRemove", message);
@@ -826,366 +1026,181 @@ void CENTAUR_NAMESPACE::CentaurApp::onRemoveWatchList(int row) noexcept
     // Call the plugin to inform that it must not send data of the symbol anymore
     auto &exchInfo = interfaceIter->second;
 
-    exchInfo.exchange->removeSymbol(itemSymbol);
+    exchInfo.exchange->removeSymbolFromWatchlist(itemSymbol);
 
     // Remove the row
-    if (!m_watchlistItemModel->removeRow(row))
+    if (!ui()->watchListTable->removeItemRow(index))
         logError("watchlist", QString(tr("%1 was not removed from the UI list")).arg(itemSymbol));
     else
+    {
         logInfo("watchlist", QString(tr("%1 was removed from the UI list")).arg(itemSymbol));
-
-    // Find the item id
-    int id { -1 };
-    for (auto &m_watchlistItem : m_watchlistItems)
-    {
-        if (m_watchlistItem.second.listItem == index)
-        {
-            id = m_watchlistItem.first;
-            logDebug("watchlist", QString("QStandardItem found with id %1").arg(id));
-            break;
-        }
+        m_sqlFavorites->del(itemSymbol, itemSource);
     }
-    // Remove the data associated
-    if (id >= 0)
-    {
-        m_watchlistItems.erase(id);
-        logInfo("watchlist", QString(tr("%1 from %2 removed from the watchlist")).arg(itemSymbol, itemSource));
-        // Remove from the favorites DB
-        removeFavoritesWatchListDB(itemSymbol, itemSource);
-
-        if (m_watchlistItems.empty())
-        {
-            // Clear all the data
-            clearOrderbookListsAndDepth();
-        }
-    }
-    else
-        logError("watchlist", "could not locate the item to remove");
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept
+void CentaurApp::onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept
 {
-    auto itemIter = m_exchangeList.find(source);
-    if (itemIter == m_exchangeList.end())
+    std::pair<QString, QString> selection = { source, symbol };
+
+    if (_impl->currentWatchListSelection == selection)
+        return;
+
+    auto itemIter = _impl->exchangeList.find(uuid(source.toStdString()));
+    if (itemIter == _impl->exchangeList.end())
     {
         logError("wlOrderbookSend", QString("Watchlist item for the symbol %1 was not found").arg(symbol));
         return;
     }
 
-    const auto &[curSource, curSymbol] = m_currentViewOrderbookSymbol;
+    const auto &exchInfo = itemIter->second;
 
-    if (curSource == source && curSymbol == symbol)
+    plotSevenDaysChart(symbol, exchInfo.exchange->get7dayData(symbol));
+    _impl->currentWatchListSelection = selection;
+}
+
+void CentaurApp::plotSevenDaysChart(const QString &symbol, const QList<std::pair<quint64, qreal>> &values) noexcept
+{
+    // Prepare the data
+    if (values.size() < 7)
     {
-        logInfo("wlOrderbookSend", "Symbol data is already being received");
+        logWarn("7plot", "items less than 7");
         return;
     }
 
-    auto &interface = itemIter->second.exchange;
-    interface->updateOrderbook(symbol);
-    clearOrderbookListsAndDepth();
-    m_currentViewOrderbookSymbol = { source, symbol };
-    m_ui->bidsSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
-    m_ui->asksSymbol->setText(QString("%1 - %2").arg(symbol, itemIter->second.listName));
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onWatchlistRemoveSelection() noexcept
-{
-    auto &[source, symbol] = m_currentViewOrderbookSymbol;
-    if (source.isEmpty() || symbol.isEmpty())
-        return;
-
-    auto itemIter = m_exchangeList.find(source);
-    if (itemIter == m_exchangeList.end())
+    if (values.size() > 7)
     {
-        logError("wlOrderbookStop", QString("Watchlist item for the symbol %1 was not found").arg(symbol));
-        return;
+        logWarn("7plot", "list is larger than 7; data will be truncated");
     }
-    auto &interface = itemIter->second.exchange;
-    interface->stopOrderbook(symbol);
-    clearOrderbookListsAndDepth();
-}
 
-void CENTAUR_NAMESPACE::CentaurApp::onOrderbookUpdate(const QString &source, const QString &symbol, quint64 receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks) noexcept
-{
-    const auto &[curSource, curSymbol] = m_currentViewOrderbookSymbol;
+    _impl->last7SevenLowSeries->clear();
+    _impl->last7SevenUpSeries->clear();
 
-    if (curSource != source || curSymbol != symbol)
-        return;
+    const auto yMinPrice = std::min_element(values.begin(), values.end(),
+        [](const std::pair<quint64, qreal> &p1, const std::pair<quint64, qreal> &p2) {
+            return p1.second < p2.second;
+        })->second;
+    const auto yMaxPrice = std::max_element(values.begin(), values.end(),
+        [](const std::pair<quint64, qreal> &p1, const std::pair<quint64, qreal> &p2) {
+            return p1.second < p2.second;
+        })->second;
 
-    auto insertTable = [](const QString &text, QTableWidget *ui, int row, int col, int type) {
-        QTableWidgetItem *item = ui->item(row, col);
-        if (item == nullptr)
+    const auto yMinTime = std::min_element(values.begin(), values.end(),
+        [](const std::pair<quint64, qreal> &p1, const std::pair<quint64, qreal> &p2) {
+            return p1.first < p2.first;
+        })->first;
+    const auto yMaxTime = std::max_element(values.begin(), values.end(),
+        [](const std::pair<quint64, qreal> &p1, const std::pair<quint64, qreal> &p2) {
+            return p1.first < p2.first;
+        })->first;
+
+    // Leave a space in the Y axis
+    const auto minPos = yMinPrice - ((yMaxPrice - yMinPrice) / 2);
+
+    qreal averageChange = 0.0;
+    for (qsizetype i = values.size() - 7; i < values.size(); ++i) // If list size > 7 the -7 will truncate it to only the last 7
+    {
+        const auto &[time, price] = values[i];
+
+        *_impl->last7SevenLowSeries << QPointF { static_cast<qreal>(time), minPos };
+        *_impl->last7SevenUpSeries << QPointF { static_cast<qreal>(time), price };
+
+        if (i > 0)
         {
-            item = new QTableWidgetItem(text);
-
-            item->setFont(QFont("Arial", 10));
-
-            switch (col)
-            {
-                case 1:
-                    item->setTextAlignment(Qt::AlignCenter);
-                    break;
-                case 2:
-                    item->setTextAlignment(Qt::AlignRight);
-                    break;
-                case 0:
-                default:
-                    item->setTextAlignment(Qt::AlignLeft);
-                    if (type == 1)
-                        item->setForeground(QBrush(QColor(0xFFA7AC)));
-                    else
-                        item->setForeground(QBrush(QColor(0x9CFFB4)));
-                    break;
-            }
-            item->setTextAlignment(Qt::AlignVCenter);
-            ui->setItem(row, col, item);
+            averageChange += price - values[i - 1].second;
         }
-
-        // Quite an expensive function
-        item->setText(text);
-    };
-
-    int nRowIndex = -1;
-
-    m_ui->asksTable->setRowCount(static_cast<int>(asks.size()));
-    nRowIndex = 0;
-    for (auto iter = asks.begin(); iter != asks.end(); ++iter)
-    {
-
-        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.key(), 'f', 5)), m_ui->asksTable, nRowIndex, 0, 1);
-        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().first, 'f', 5)), m_ui->asksTable, nRowIndex, 1, 1);
-        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().second, 'f', 5)), m_ui->asksTable, nRowIndex, 2, 1);
-        ++nRowIndex;
     }
 
-    m_ui->bidsTable->setRowCount(static_cast<int>(bids.size()));
-    nRowIndex = 0;
-    for (auto iter = bids.begin(); iter != bids.end(); ++iter)
+    averageChange /= 6;
+
+    if (averageChange > 0)
     {
-        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.key(), 'f', 5)), m_ui->bidsTable, nRowIndex, 0, 0);
-        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().first, 'f', 5)), m_ui->bidsTable, nRowIndex, 1, 0);
-        insertTable(QString("$ %1").arg(QLocale(QLocale::English).toString(iter.value().second, 'f', 5)), m_ui->bidsTable, nRowIndex, 2, 0);
-        ++nRowIndex;
+        QLinearGradient gr_p({ 0.5, 0 }, { 0.5, 1 });
+        gr_p.setCoordinateMode(QGradient::CoordinateMode::ObjectMode);
+        gr_p.setColorAt(0, QColor(1, 166, 7, 255));
+        gr_p.setColorAt(.8, QColor(1, 133, 6, 128));
+        _impl->last7SevenAreaSeries->setBrush(gr_p);
+    }
+    else
+    {
+        QLinearGradient gr_n({ 0.5, 0 }, { 0.5, 1 });
+        gr_n.setCoordinateMode(QGradient::CoordinateMode::ObjectMode);
+        gr_n.setColorAt(0, QColor(167, 29, 7, 255));
+        gr_n.setColorAt(.8, QColor(167, 29, 7, 128));
+        _impl->last7SevenAreaSeries->setBrush(gr_n);
     }
 
-    // Calculate latency
-    const auto ms      = static_cast<quint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    const auto latency = receivedTime > ms ? 0ull : ms - receivedTime;
+    _impl->last7Chart->setTitle(QString(tr("%1 7-days")).arg(symbol));
 
-    auto changeColor = [](QLabel *ctr, const QColor &color) {
-        QPalette pal = ctr->palette();
-        pal.setColor(ctr->foregroundRole(), color);
-        ctr->setPalette(pal);
-    };
-
-    if (latency >= g_globals->params.orderBookParameters.asksSide.latencyLowMin <= g_globals->params.orderBookParameters.asksSide.latencyLowMax)
-    {
-        changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyLow);
-    }
-    else if (latency >= g_globals->params.orderBookParameters.asksSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.asksSide.latencyMediumMax)
-    {
-        changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyMedium);
-    }
-    else if (latency >= g_globals->params.orderBookParameters.asksSide.latencyHighMin && latency <= g_globals->params.orderBookParameters.asksSide.latencyHighMax)
-    {
-        changeColor(m_ui->asksLatency, g_globals->colors.orderBookDockColors.asksSide.latencyHigh);
-    }
-
-    if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyLowMin <= g_globals->params.orderBookParameters.bidsSide.latencyLowMax)
-    {
-        changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyLow);
-    }
-    else if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyMediumMin && latency <= g_globals->params.orderBookParameters.bidsSide.latencyMediumMax)
-    {
-        changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyMedium);
-    }
-    else if (latency >= g_globals->params.orderBookParameters.bidsSide.latencyHighMin && latency <= g_globals->params.orderBookParameters.bidsSide.latencyHighMax)
-    {
-        changeColor(m_ui->bidsLatency, g_globals->colors.orderBookDockColors.bidsSide.latencyHigh);
-    }
-
-    m_ui->asksLatency->setText(QString("%1 ms").arg(latency));
-    m_ui->bidsLatency->setText(QString("%1 ms").arg(latency));
-
-    if (m_ui->dockDepth->isVisible())
-    {
-        plotDepth(asks, bids);
-    }
+    auto *xAxis = qobject_cast<QDateTimeAxis *>(_impl->last7Chart->axes(Qt::Horizontal).first());
+    xAxis->setRange(
+        QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(yMinTime)),
+        QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(yMaxTime)));
+    _impl->last7Chart->axes(Qt::Vertical).first()->setRange(minPos, yMaxPrice);
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::plotDepth(const QMap<qreal, QPair<qreal, qreal>> &asks, const QMap<qreal, QPair<qreal, qreal>> &bids) noexcept
+void CentaurApp::onShowPlugins() noexcept
 {
-    auto yAxisBids = qobject_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Vertical).first());
-    auto xAxisBids = qobject_cast<QValueAxis *>(m_ui->bidsChart->chart()->axes(Qt::Horizontal).first());
-    auto yAxisAsks = qobject_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Vertical).first());
-    auto xAxisAsks = qobject_cast<QValueAxis *>(m_ui->asksChart->chart()->axes(Qt::Horizontal).first());
+    QGraphicsBlurEffect blur;
+    setGraphicsEffect(&blur);
 
-    m_ui->asksChart->setUpdatesEnabled(false);
-    m_ui->bidsChart->setUpdatesEnabled(false);
-
-    /*
-    yAxisBids->setUpdatesEnabled(false);
-    xAxisBids->setUpdatesEnabled(false);
-    xAxisAsks->setUpdatesEnabled(false);
-    yAxisAsks->setUpdatesEnabled(false);
-    m_ui->bidsChart->setUpdatesEnabled(false);
-    m_ui->asksChart->setUpdatesEnabled(false);
-    m_bidsDepthFill->setUpdatesEnabled(false);
-    m_bidsDepth->setUpdatesEnabled(false);
-    m_asksDepthFill->setUpdatesEnabled(false);
-    m_asksDepth->setUpdatesEnabled(false);
-*/
-
-    auto generatePoints = [](const QMap<qreal, QPair<qreal, qreal>> &data, QList<QPointF> &prices, QList<QPointF> &fill) {
-        double prevQuant = 0.0;
-        for (auto iter = data.begin(); iter != data.end(); ++iter)
-        {
-            // const auto &obprices = iter.key();
-            // auto quantity        = iter.value().first;
-            /*
-            if (!quantity.isEmpty() && !quantity[0].isDigit())
-            {
-                quantity = quantity.remove(-0, 1).mid(0);
-                quantity.replace(",", "");
-            }*/
-
-            //  const auto &price = obprices.toDouble();
-
-            const auto quant = iter.value().first + prevQuant;
-
-            prices.append({ iter.key(), quant });
-            fill.append({ iter.key(), 0.0 });
-
-            // increments.push_back(quant);
-            // prices.push_back(price);
-
-            prevQuant = quant;
-        }
-    };
-
-    using minMaxType    = std::pair<std::tuple<double, double, double>, std::tuple<double, double, double>>;
-    auto generateMinMax = [](const QList<QPointF> &points) -> minMaxType {
-        const double minY   = points.first().y(),
-                     maxY   = points.last().y() * 1.1;
-        const double stepsY = (maxY - minY) / 10.0;
-
-        const double minX   = points.first().x(),
-                     maxX   = points.last().x();
-        const double stepsX = (maxX - minX) / 5.0;
-
-        return {
-            {minX, maxX, stepsX},
-            {minY, maxY, stepsY}
-        };
-    };
-
-    QList<QPointF> bidsPoints, bidsFill, asksPoints, asksFill;
-
-    generatePoints(asks, asksPoints, asksFill);
-    generatePoints(bids, bidsPoints, bidsFill);
-
-    if (asksPoints.isEmpty() || bidsPoints.isEmpty())
-    {
-        // No need to continue
-        return;
-    }
-
-    auto [rangeAsksX, rangeAsksY] = generateMinMax(asksPoints);
-    auto [rangeBidsX, rangeBidsY] = generateMinMax(bidsPoints);
-
-    auto &[asksMinX, asksMaxX, asksStepsX] = rangeAsksX;
-    auto &[asksMinY, asksMaxY, asksStepsY] = rangeAsksY;
-
-    auto &[bidsMinX, bidsMaxX, bidsStepsX] = rangeBidsX;
-    auto &[bidsMinY, bidsMaxY, bidsStepsY] = rangeBidsY;
-
-    // yAxisBids->setRange(bidsMinY, bidsMaxY);
-    yAxisBids->setMin(bidsMinY);
-    yAxisBids->setMax(bidsMaxY);
-    yAxisBids->setTickInterval(bidsStepsY);
-    // xAxisBids->setRange(bidsMinX, bidsMaxX);
-    xAxisBids->setMin(bidsMinX);
-    xAxisBids->setMax(bidsMaxX);
-    xAxisBids->setTickInterval(bidsStepsX);
-
-    m_bidsDepthFill->clear();
-    m_bidsDepth->clear();
-
-    m_bidsDepthFill->append(bidsFill);
-    m_bidsDepth->append(bidsPoints);
-
-    // yAxisAsks->setRange(asksMinY, asksMaxY);
-    yAxisAsks->setMin(asksMinY);
-    yAxisAsks->setMax(asksMaxY);
-    yAxisAsks->setTickInterval(asksStepsY);
-    // xAxisAsks->setRange(asksMinX, asksMaxX);
-    xAxisAsks->setMin(asksMinX);
-    xAxisAsks->setMax(asksMaxX);
-    xAxisAsks->setTickInterval(asksStepsX);
-
-    m_asksDepthFill->clear();
-    m_asksDepth->clear();
-
-    m_asksDepthFill->append(asksFill);
-    m_asksDepth->append(asksPoints);
-
-    /*
-    yAxisBids->blockSignals(false);
-    xAxisBids->blockSignals(false);
-    xAxisAsks->blockSignals(false);
-    yAxisAsks->blockSignals(false);
-    m_ui->bidsChart->blockSignals(false);
-    m_ui->asksChart->blockSignals(false);
-    m_bidsDepthFill->blockSignals(false);
-    m_bidsDepth->blockSignals(false);
-    m_asksDepthFill->blockSignals(false);
-    m_asksDepth->blockSignals(false);*/
-
-    m_ui->asksChart->setUpdatesEnabled(true);
-    m_ui->bidsChart->setUpdatesEnabled(true);
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::clearOrderbookListsAndDepth() noexcept
-{
-    m_currentViewOrderbookSymbol = { "", "" };
-    m_ui->bidsSymbol->setText("");
-    m_ui->asksSymbol->setText("");
-    m_ui->bidsLatency->setText("");
-    m_ui->asksLatency->setText("");
-    m_ui->asksTable->setRowCount(0);
-    m_ui->bidsTable->setRowCount(0);
-
-    m_bidsDepthFill->clear();
-    m_bidsDepth->clear();
-
-    m_asksDepthFill->clear();
-    m_asksDepth->clear();
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::onPlugins() noexcept
-{
-    CENTAUR_NAMESPACE::PluginsDialog dlg(this);
+    PluginsDialog dlg(this);
     dlg.exec();
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
+void CentaurApp::onShowLogDialog() noexcept
+{
+    // Just show the dialog
+    if (!_impl->logDialog->isVisible())
+        _impl->logDialog->show();
+}
+
+void CentaurApp::onShowSettings() noexcept
+{
+    SettingsDialog dlg(this);
+
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        updateUserInformationStatus();
+    }
+}
+
+void CentaurApp::updateUserInformationStatus() noexcept
+{
+    if (!g_globals->session.image.isNull())
+    {
+        QPixmap displayedImage = QPixmap::fromImage(g_globals->session.image.scaled({ 48, 48 }));
+        QBitmap map(48, 48);
+        map.fill(Qt::color0);
+        QPainter painter(&map);
+        painter.setBrush(Qt::color1);
+        painter.setRenderHint(QPainter::RenderHint::Antialiasing);
+        painter.drawRoundedRect(0, 0, 48, 48, 24, 24);
+        displayedImage.setMask(map);
+
+        ui()->userImage->setPixmap(displayedImage);
+    }
+
+    QString userDataString = QString("%1 (%2)").arg(g_globals->session.display, g_globals->session.email);
+    ui()->userData->setText(userDataString);
+}
+
+void CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
 {
     m_sqlFavorites->add(symbol, sender);
 }
 
-void CENTAUR_NAMESPACE::CentaurApp::removeFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
+CENTAUR_PLUGIN_NAMESPACE::IExchange *CentaurApp::exchangeFromWatchlistRow(int row) noexcept
 {
-    m_sqlFavorites->del(symbol, sender);
+    // TODO: THIS
+    // const QString itemSource = m_watchlistItemModel->item(row, 4)->text();
+    // return exchangeFromWatchlistRow(itemSource);
+
+    return nullptr;
 }
 
-CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFromWatchlistRow(int row) noexcept
+CENTAUR_PLUGIN_NAMESPACE::IExchange *CentaurApp::exchangeFromWatchlistRow(const QString &sender) noexcept
 {
-    const QString itemSource = m_watchlistItemModel->item(row, 4)->text();
-    return exchangeFromWatchlistRow(itemSource);
-}
-
-CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFromWatchlistRow(const QString &sender) noexcept
-{
+    /*
     auto interface = m_exchangeList.find(sender);
 
     if (interface == m_exchangeList.end())
@@ -1194,40 +1209,42 @@ CENTAUR_PLUGIN_NAMESPACE::IExchange *CENTAUR_NAMESPACE::CentaurApp::exchangeFrom
         return nullptr;
     }
 
-    return interface->second.exchange;
+    return interface->second.exchange;*/
+    return nullptr;
 }
 
-void cen::CentaurApp::onCandleView(const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf, const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter) noexcept
-{
-    auto subWindow = new QMdiSubWindow;
+void CentaurApp::onCandleView(const QString &symbol, plugin::ICandleView *view, plugin::ICandleView::TimeFrame tf, const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter) noexcept
+{ /* TODO: THIS
+     auto subWindow = new QMdiSubWindow;
 
-    bool unique = false;
-    uuid uid { uuid::generate() };
+     bool unique = false;
+     uuid uid { uuid::generate() };
 
-    while (!unique)
-    {
-        if (m_candleViewDisplay.contains(uid))
-            uid = uuid::generate();
-        else
-        {
-            m_candleViewDisplay[uid] = { subWindow, symbol, view, tf };
-            unique                   = true;
-        }
-    }
+     while (!unique)
+     {
+         if (m_candleViewDisplay.contains(uid))
+             uid = uuid::generate();
+         else
+         {
+             m_candleViewDisplay[uid] = { subWindow, symbol, view, tf };
+             unique                   = true;
+         }
+     }
 
-    subWindow->setWidget(new CandleViewWidget(emitter, uid, symbol, view, tf, subWindow));
+     subWindow->setWidget(new CandleViewWidget(emitter, uid, symbol, view, tf, subWindow));
 
-    subWindow->setAttribute(Qt::WA_DeleteOnClose);
-    m_ui->mdiArea->addSubWindow(subWindow);
-    subWindow->show();
+     subWindow->setAttribute(Qt::WA_DeleteOnClose);
+     ui()->mdiArea->addSubWindow(subWindow);
+     subWindow->show();
+     */
 }
 
-void cen::CentaurApp::onRealTimeCandleUpdate(const cen::uuid &id, quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
+void CentaurApp::onRealTimeCandleUpdate(const uuid &id, quint64 eventTime, plugin::ICandleView::Timestamp ts, const plugin::ICandleView::CandleData &cd) noexcept
 {
     auto iter = m_candleViewDisplay.find(id);
     if (iter == m_candleViewDisplay.end())
     {
-        logError("onRealTimeCandleUpdate", LS("error-no-candle-view"));
+        logError("onRealTimeCandleUpdate", tr("Can not find the CandleView"));
         return;
     }
     auto &info  = iter->second;
@@ -1237,6 +1254,8 @@ void cen::CentaurApp::onRealTimeCandleUpdate(const cen::uuid &id, quint64 eventT
         "onUpdateCandle",
         Qt::QueuedConnection,
         Q_ARG(quint64, eventTime),
-        Q_ARG(cen::plugin::ICandleView::Timestamp, ts),
-        Q_ARG(cen::plugin::ICandleView::CandleData, cd));
+        Q_ARG(plugin::ICandleView::Timestamp, ts),
+        Q_ARG(plugin::ICandleView::CandleData, cd));
 }
+
+END_CENTAUR_NAMESPACE

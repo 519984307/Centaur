@@ -87,12 +87,15 @@ protected slots:
     void editorLostFocusLocal(const QModelIndex &index) noexcept;
     void editorFunctionKeyPressedLocal(const QModelIndex &index) noexcept;
     void viewButtonPressed(QStandardItem *item) noexcept;
+    void onModelSelectionChanged(const QModelIndex &current, const QModelIndex &previous);
 
 signals:
     void editorEditingCancelled(const QModelIndex &index);
     void editorFunctionKeyPressed(const QModelIndex &index);
     void editorLostFocus(const QModelIndex &index);
     void itemHasChanged(QStandardItem *item);
+    void itemSelectionChanged(const QModelIndex &index);
+
     /// \brief itemDeleteButton does not remove the item from the table. removeItemRow to actually remove the item from the table
     /// To acquire the item use getRemovedItem
     void deleteItemPressed(const QString &itemData);
@@ -102,6 +105,9 @@ signals:
 protected:
     void editButtonPressed(QStandardItem *item) noexcept;
     void deleteButtonPressed(QStandardItem *item) noexcept;
+
+protected:
+    void focusOutEvent(QFocusEvent *event) override;
 
 private:
     EditableMode m_mode;
@@ -114,6 +120,7 @@ private:
     int m_buttons;
     bool m_allowDeletion;
     QStandardItemModel *m_itemModel;
+    QItemSelectionModel *m_selectionModel;
     QStandardItem *m_removedItem { nullptr };
 };
 

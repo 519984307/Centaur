@@ -18,7 +18,7 @@
     assert(server != nullptr);                                                  \
     if (!server->isClientSocket(QString::fromStdString(msg->uuid()), m_socket)) \
     {                                                                           \
-        logWarn(LOG_NAME, LS("warning-client-uuid"));                           \
+        logWarn(LOG_NAME, tr("A client sent the wrong identification string")); \
         return;                                                                 \
     }
 
@@ -27,7 +27,6 @@
     response.responseId() = msg->responseId();                                                                \
     response.status()     = static_cast<int>(cen::protocol::message::Protocol_BalancesResponse::Status::sts); \
     sendData(&response);
-
 
 namespace
 {
@@ -243,31 +242,31 @@ void cen::ProtocolClient::sendIncomingConnection(const QString &id) noexcept
 auto cen::ProtocolClient::onBalanceAsset(cen::protocol::message::Protocol_BalancesAsset *asset) noexcept -> void
 {
     VERIFY_CLIENT_UUID(asset);
-
-    // Verify the list of asset id's
-    if (m_balancesItems.contains(QString::fromStdString(asset->assetId())))
-    {
-        MAKE_BALANCE_RESPONSE(asset, repeatedHandle);
-    }
-    else
-    {
-        auto tree = g_app->getBalancesTree();
-
-        auto item = new QTreeWidgetItem(tree, { QString::fromStdString(asset->asset()), QString::fromStdString(asset->total()) });
-
-        item->setForeground(1, QBrush(QColor(158, 231, 255)));
-        if (!asset->assetIcon().empty())
+    /*
+        // Verify the list of asset id's
+        if (m_balancesItems.contains(QString::fromStdString(asset->assetId())))
         {
-            QPixmap pm;
-            g_globals->symIcons.find(32, QString::fromStdString(asset->assetIcon()), &pm, 0);
-            if (!pm.isNull())
-                item->setIcon(0, pm);
+            MAKE_BALANCE_RESPONSE(asset, repeatedHandle);
         }
+        else
+        {
+            auto tree = g_app->getBalancesTree();
 
-        m_balancesItems.insert(QString::fromStdString(asset->assetId()), { item, true });
-        logInfo(LOG_NAME, QString(LS("info-asset-received")).arg(QString::fromStdString(asset->asset())));
-        MAKE_BALANCE_RESPONSE(asset, allOk);
-    }
+            auto item = new QTreeWidgetItem(tree, { QString::fromStdString(asset->asset()), QString::fromStdString(asset->total()) });
+
+            item->setForeground(1, QBrush(QColor(158, 231, 255)));
+            if (!asset->assetIcon().empty())
+            {
+                QPixmap pm;
+                g_globals->symIcons.find(32, QString::fromStdString(asset->assetIcon()), &pm, 0);
+                if (!pm.isNull())
+                    item->setIcon(0, pm);
+            }
+
+            m_balancesItems.insert(QString::fromStdString(asset->assetId()), { item, true });
+            logInfo(LOG_NAME, QString(LS("info-asset-received")).arg(QString::fromStdString(asset->asset())));
+            MAKE_BALANCE_RESPONSE(asset, allOk);
+        }*/
 }
 
 auto cen::ProtocolClient::onBalanceAssetItem(cen::protocol::message::Protocol_BalancesAssetItem *assetItem) noexcept -> void
@@ -354,11 +353,11 @@ auto cen::ProtocolClient::onReceiveIcon(cen::protocol::message::Protocol_Icon *i
     logInfo(LOG_NAME, QString(LS("info-client-icon")).arg(format, id));
 }
 
-
 auto cen::ProtocolClient::onBalanceTotalUpdate(cen::protocol::message::Protocol_BalanceTotalUpdate *update) noexcept -> void
 {
     VERIFY_CLIENT_UUID(update);
 
+    /*
     QString id { QString::fromStdString(update->assetId()) };
     QString display { QString::fromStdString(update->display()) };
 
@@ -380,5 +379,5 @@ auto cen::ProtocolClient::onBalanceTotalUpdate(cen::protocol::message::Protocol_
             g_app->getTotalLabel()->setStyleSheet(g_totalRed);
 
         g_app->getTotalLabel()->setText(QString("$ %1").arg(QLocale(QLocale::English).toString(total, 'f', 5)));
-    }
+    }*/
 }

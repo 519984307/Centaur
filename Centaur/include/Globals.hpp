@@ -14,7 +14,6 @@
 #define CENTAUR_GLOBALS_HPP
 
 #include "Centaur.hpp"
-#include "XMLHelper.hpp"
 #include "crc64.hpp"
 #include <QFont>
 #include <QIcon>
@@ -80,93 +79,6 @@ namespace CENTAUR_NAMESPACE
             bool find(int size, const QString &symbol, QPixmap *px, int format = 0);
 
         } symIcons;
-
-        struct Fonts
-        {
-            struct SymbolsDock
-            {
-                QFont headerFont;
-                QFont tableFont;
-            } symbolsDock;
-            struct OrderBookDock
-            {
-                struct AsksSide
-                {
-                    QFont tableFont;
-                    QFont headerFont;
-                } asksSide;
-                struct BidsSide
-                {
-                    QFont tableFont;
-                    QFont headerFont;
-                } bidsSide;
-            } orderBookDock;
-        } fonts;
-
-        struct Colors
-        {
-            struct SymbolsDock
-            {
-                QColor latencyLow;
-                QColor latencyMedium;
-                QColor latencyHigh;
-                QColor priceUp;
-                QColor priceDown;
-                QColor priceNeutral;
-            } symbolsDockColors;
-
-            struct OrderBookDock
-            {
-                struct AsksSide
-                {
-                    QColor latencyLow;
-                    QColor latencyMedium;
-                    QColor latencyHigh;
-                } asksSide;
-
-                struct BidsSide
-                {
-                    QColor latencyLow;
-                    QColor latencyMedium;
-                    QColor latencyHigh;
-                } bidsSide;
-            } orderBookDockColors;
-        } colors;
-
-        struct Parameters
-        {
-            struct SymbolsDock
-            {
-                uint64_t latencyLowMin;
-                uint64_t latencyLowMax;
-                uint64_t latencyMediumMin;
-                uint64_t latencyMediumMax;
-                uint64_t latencyHighMin;
-                uint64_t latencyHighMax;
-            } symbolsDockParameters;
-
-            struct OrderBookDock
-            {
-                struct AsksSide
-                {
-                    uint64_t latencyLowMin;
-                    uint64_t latencyLowMax;
-                    uint64_t latencyMediumMin;
-                    uint64_t latencyMediumMax;
-                    uint64_t latencyHighMin;
-                    uint64_t latencyHighMax;
-                } asksSide;
-                struct BidsSide
-                {
-                    uint64_t latencyLowMin;
-                    uint64_t latencyLowMax;
-                    uint64_t latencyMediumMin;
-                    uint64_t latencyMediumMax;
-                    uint64_t latencyHighMin;
-                    uint64_t latencyHighMax;
-                } bidsSide;
-            } orderBookParameters;
-        } params;
 
         struct Locale
         {

@@ -8,12 +8,14 @@
 #include "CentaurInterface.hpp"
 #include "CentaurPlugin.hpp"
 #include "Protocol.hpp"
-
+#include <QApplication>
+#include <QFile>
+#include <QMessageBox>
 #include <QObject>
+#include <QTextStream>
 
 #ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wold-style-cast"
+#pragma clang diagnostic push #pragma clang diagnostic ignored "-Wold-style-cast"
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wdeprecated-volatile"
 #pragma clang diagnostic ignored "-Wweak-vtables"
@@ -40,27 +42,6 @@
 #pragma clang diagnostic pop
 #endif /*__clang__*/
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
-#pragma clang diagnostic ignored "-Wextra-semi-stmt"
-#pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wambiguous-reversed-operator"
-#pragma clang diagnostic ignored "-Wsuggest-override"
-#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif /*__clang__*/
-
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
-#include <rapidjson/prettywriter.h>
-#include <rapidjson/schema.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif /*__clang__*/
-
 /// UUID v5 Hashed String: CentaurProject-ExchangeRate-0.2.0
 
 namespace
@@ -69,74 +50,6 @@ namespace
     constexpr char g_ExchangeRateVersionString[] = "0.2.0";
     constexpr char g_uuidString[]                = "{f77ecf55-8162-5570-a9dc-3a79c6757c72}";
 
-    constexpr char g_schema[]                    = R"({
-"$schema": "http://json-schema.org/draft-07/schema",
-"$id": "http://richardqpc.com/binapi/currency_exchange.schema.json",
-"type": "object",
-"title": "The root schema",
-"required": [
-  "Realtime Currency Exchange Rate"
-],
-"properties": {
-  "Realtime Currency Exchange Rate": {
-    "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate",
-    "type": "object",
-    "title": "The Realtime Currency Exchange Rate schema",
-    "required": [
-      "5. Exchange Rate"
-    ],
-    "properties": {
-      "1. From_Currency Code": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/1.%20From_Currency%20Code",
-        "type": "string",
-        "title": "The 1. From_Currency Code schema"
-      },
-      "2. From_Currency Name": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/2.%20From_Currency%20Name",
-        "type": "string",
-        "title": "The 2. From_Currency Name schema"
-      },
-      "3. To_Currency Code": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/3.%20To_Currency%20Code",
-        "type": "string",
-        "title": "The 3. To_Currency Code schema"
-      },
-      "4. To_Currency Name": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/4.%20To_Currency%20Name",
-        "type": "string",
-        "title": "The 4. To_Currency Name schema"
-      },
-      "5. Exchange Rate": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/5.%20Exchange%20Rate",
-        "type": "string",
-        "title": "The 5. Exchange Rate schema"
-      },
-      "6. Last Refreshed": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/6.%20Last%20Refreshed",
-        "type": "string",
-        "title": "The 6. Last Refreshed schema"
-      },
-      "7. Time Zone": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/7.%20Time%20Zone",
-        "type": "string",
-        "title": "The 7. Time Zone schema"
-      },
-      "8. Bid Price": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/8.%20Bid%20Price",
-        "type": "string",
-        "title": "The 8. Bid Price schema"
-      },
-      "9. Ask Price": {
-        "$id": "#/properties/Realtime%20Currency%20Exchange%20Rate/properties/9.%20Ask%20Price",
-        "type": "string",
-        "title": "The 9. Ask Price schema"
-      }
-    },
-    "additionalProperties": true
-  }
-},
-"additionalProperties": true
-})";
 } // namespace
 
 CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::ExchangeRatePlugin(QObject *parent) :
@@ -149,137 +62,311 @@ QObject *CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginObject() noexcep
 {
     return qobject_cast<QObject *>(this);
 }
+
 QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginName() noexcept
 {
     return g_ExchangeRateName;
 }
+
 QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginVersionString() noexcept
 {
     return g_ExchangeRateVersionString;
 }
-void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, [[maybe_unused]] CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept
+
+void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept
 {
     m_logger = logger;
     m_config = config;
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::setPluginInterfaces");
 }
+
 CENTAUR_NAMESPACE::uuid CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginUUID() noexcept
 {
     return m_thisUUID;
 }
 
-void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::initialization(QStatusBar *bar) noexcept
+cen::plugin::IStatus::DisplayMode cen::plugin::ExchangeRatePlugin::initialize() noexcept
 {
-    logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::initialization");
+    std::ifstream input(m_config->getConfigurationFileName());
+    rapidjson::IStreamWrapper isw(input);
 
-    m_exchangeRate = new QLabel("                ", bar);
-    m_exchangeRate->setStyleSheet(R"(QLabel{color: rgb(158, 231, 255); min-width: 85px;})");
-    bar->addPermanentWidget(m_exchangeRate, 0);
+    if (pluginSettings.ParseStream(isw).HasParseError())
+    {
+        QString str = QString(tr("%1 at %2")).arg(rapidjson::GetParseError_En(pluginSettings.GetParseError())).arg(pluginSettings.GetErrorOffset());
+        logError("ExchangeRatePlugin", QString("Response contain JSON errors. %1").arg(str));
+        return DisplayMode::OnlyIcon;
+    }
 
-    updateExchangeRate();
+    m_configurationLoaded = true;
+    loadData();
+
+    return DisplayMode::TextIcon;
 }
 
-bool CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::addMenuAction(C_UNUSED QAction *action, C_UNUSED const uuid &menuId) noexcept
+QString cen::plugin::ExchangeRatePlugin::text() noexcept
 {
-    return false;
+    return QString("%1/%2: $ %3").arg(m_defaultBase, m_defaultQuote, QLocale(QLocale::English).toString(m_defaultValue, 'f', 5));
 }
 
-void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::updateExchangeRate() noexcept
+QPixmap cen::plugin::ExchangeRatePlugin::image() noexcept
 {
-    logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::updateExchangeRate");
+    if (!m_configurationLoaded)
+        return QPixmap(":/icon/red");
+    else
+        return QPixmap(":/icon/blue");
+}
 
-    std::string base, quote, key;
+QFont cen::plugin::ExchangeRatePlugin::font() noexcept
+{
+    // return the default font
+    return QApplication::font();
+}
 
-    bool baseError, quoteError, keyError;
-    base  = m_config->getValue("base", &baseError);
-    quote = m_config->getValue("quote", &quoteError);
-    key   = m_config->getValue("apiKey", &keyError);
-
-    if (!baseError || !quoteError || !keyError)
+QBrush cen::plugin::ExchangeRatePlugin::brush(cen::plugin::IStatus::DisplayRole role) noexcept
+{
+    switch (role)
     {
-        logError("ExchangeRatePlugin", QString("Configuration data is incomplete."));
-        return;
+        case DisplayRole::Icon: C_FALLTHROUGH;
+        case DisplayRole::Text: C_FALLTHROUGH;
+        case DisplayRole::Font: C_FALLTHROUGH;
+        case DisplayRole::Background:
+            return Qt::NoBrush;
+        case DisplayRole::Foreground:
+            return { QColor(158, 231, 255) };
+    }
+}
+
+QAction *cen::plugin::ExchangeRatePlugin::action(const QPoint &pt) noexcept
+{
+    return nullptr;
+}
+
+QList<QString> cen::plugin::ExchangeRatePlugin::listSupported() noexcept
+{
+    return QList<QString>();
+}
+
+qreal cen::plugin::ExchangeRatePlugin::value(const QString &quote, const QString &base) noexcept
+{
+    return convert(quote, base, 1.0, nullptr);
+}
+
+qreal cen::plugin::ExchangeRatePlugin::convert(const QString &quote, const QString &base, qreal quoteQuantity) noexcept
+{
+    return convert(quote, base, quoteQuantity, nullptr);
+}
+
+qreal cen::plugin::ExchangeRatePlugin::convert(const QString &quote, const QString &base, qreal quoteQuantity, QDate *date) noexcept
+{
+
+    QString parameters = QString("from=%1&to=%2&amount=%3").arg(quote, base).arg(quoteQuantity, 0, 'f');
+    QString dateString;
+    if (date != nullptr)
+    {
+        dateString = date->toString("yyyy-MM-dd");
+        parameters += QString("&date=%1").arg(dateString);
     }
 
-    CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
-    try
+    cpr::Url url { QString("https://api.exchangerate.host/convert?%1").arg(parameters).toStdString() };
+
+    cpr::Session session;
+    session.SetUrl(url);
+    session.SetUserAgent("CPP_interface_api/curl-openssl/7.70.0/Richard");
+
+    cpr::Response apiCall;
+    apiCall = session.Get();
+
+#ifndef NDEBUG
+    qDebug() << "CurrencySettingsWidget::acquireFromInternet Elapsed time: " << apiCall.elapsed;
+#endif // NDEBUG
+
+    // CURL Checking
+    if (apiCall.error.code != cpr::ErrorCode::OK)
     {
-        ec.loadPublicKey(m_config->getPluginPublicKeyPath());
-    } catch (const std::exception &ex)
-    {
-        logError("ExchangeRatePlugin", QString { "RSA Key could not be opened. %1" }.arg(ex.what()));
-        return;
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. Data was not acquire\n%1")).arg(QString::fromStdString(apiCall.error.message)));
+        return -1;
     }
 
-    auto decryptedKey = ec.decryptPublic(key, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
-
-    // API_KEY: KJX64L888HD5U5T9
-    if (decryptedKey.empty())
+    // HTTP Error checking
+    if (apiCall.status_code != 200)
     {
-        logError("ExchangeRatePlugin", "Error deciphering the https://www.alphavantage.co/query API Key ");
-        return;
-    }
-
-    cpr::Response exchange = cpr::Get(cpr::Url { "https://www.alphavantage.co/query" },
-        cpr::Parameters { { "function", "CURRENCY_EXCHANGE_RATE" },
-            { "apikey", decryptedKey },
-            { "from_currency", base },
-            { "to_currency", quote } });
-
-    if (exchange.error.code != cpr::ErrorCode::OK)
-    {
-        logError("ExchangeRatePlugin", exchange.error.message.c_str());
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. Data was not acquire\n%1")).arg(QString::fromStdString(apiCall.reason)));
+        return -1;
     }
 
     rapidjson::Document jsonDoc;
-
-    if (jsonDoc.Parse(exchange.text.c_str()).HasParseError())
+    jsonDoc.Parse(apiCall.text.c_str());
+    if (jsonDoc.HasParseError())
     {
-        QString str = QString(tr("%1 at %2")).arg(rapidjson::GetParseError_En(jsonDoc.GetParseError())).arg(jsonDoc.GetErrorOffset());
-        logError("ExchangeRatePlugin", QString("Response contain JSON errors. %1").arg(str));
+        QString errorFormat = QString("%1. At offset: %2").arg(rapidjson::GetParseError_En(jsonDoc.GetParseError())).arg(jsonDoc.GetErrorOffset());
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEx. The data had errors\n%1")).arg(errorFormat));
+        return -1;
+    }
+
+    if (date != nullptr)
+    {
+        auto itHistorical = jsonDoc.FindMember("historical");
+        if (itHistorical != jsonDoc.MemberEnd() && itHistorical->value.GetBool())
+        {
+            auto itHistoricalDate = jsonDoc.FindMember("date");
+            if (itHistoricalDate == jsonDoc.MemberEnd())
+                return std::numeric_limits<qreal>::infinity();
+            if (QString(itHistoricalDate->value.GetString()) != dateString)
+                return std::numeric_limits<qreal>::infinity();
+        }
+        else
+            return std::numeric_limits<qreal>::infinity();
+    }
+
+    auto itResult = jsonDoc.FindMember("result");
+    if (itResult != jsonDoc.MemberEnd())
+        return itResult->value.GetDouble();
+    return -1;
+}
+
+void cen::plugin::ExchangeRatePlugin::acquireFromInternet() noexcept
+{
+    logDebug("ExchangeRatePlugin", "ExchangeRatePlugin::acquireFromInternet()");
+
+    cpr::Url url { "https://api.exchangerate.host/symbols" };
+
+    cpr::Session session;
+    session.SetUrl(url);
+    session.SetUserAgent("CPP_interface_api/curl-openssl/7.70.0/RichardCentaur");
+
+    cpr::Response apiCall;
+    apiCall = session.Get();
+
+    logDebug("ExchangeRatePlugin", QString("CurrencySettingsWidget::acquireFromInternet Elapsed time: %1").arg(apiCall.elapsed));
+
+    // CURL Checking
+    if (apiCall.error.code != cpr::ErrorCode::OK)
+    {
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. Data was not acquire\n%1")).arg(QString::fromStdString(apiCall.error.message)));
         return;
     }
 
-    rapidjson::Document schemaDoc;
-    if (schemaDoc.Parse(g_schema).HasParseError())
+    // HTTP Error checking
+    if (apiCall.status_code != 200)
     {
-        QString str = QString(tr("%1 at %2")).arg(rapidjson::GetParseError_En(jsonDoc.GetParseError())).arg(jsonDoc.GetErrorOffset());
-        logError("ExchangeRatePlugin", QString("The internal JSON schema is ill-formed. %1").arg(str));
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. Data was not acquire\n%1")).arg(QString::fromStdString(apiCall.reason)));
         return;
     }
 
-    rapidjson::SchemaDocument sd(schemaDoc);
-    rapidjson::SchemaValidator sv { sd };
-
-    if (!jsonDoc.Accept(sv))
+    rapidjson::Document jsonDoc;
+    jsonDoc.Parse(apiCall.text.c_str());
+    if (jsonDoc.HasParseError())
     {
-        rapidjson::StringBuffer sb;
-        sv.GetInvalidSchemaPointer().StringifyUriFragment(sb);
-        QString str = QString("Invalid schema %1.\nInvalid keyword: %2\n").arg(sb.GetString(), sv.GetInvalidSchemaKeyword());
-        sb.Clear();
-        sv.GetInvalidDocumentPointer().StringifyUriFragment(sb);
-        str += QString("Invalid document: %1\n").arg(sb.GetString());
-        logError("PluginsDialog", QString("File plid.json does not comply the schema. %1").arg(str));
+        QString errorFormat = QString("%1. At offset: %2").arg(rapidjson::GetParseError_En(jsonDoc.GetParseError())).arg(jsonDoc.GetErrorOffset());
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. The data had errors\n%1")).arg(errorFormat));
         return;
     }
 
-    auto exchRate = std::stod(jsonDoc["Realtime Currency Exchange Rate"]["5. Exchange Rate"].GetString());
+    auto cacheMember = pluginSettings.FindMember("cache");
+    if (cacheMember != pluginSettings.MemberEnd())
+        pluginSettings.RemoveMember(cacheMember);
 
-    logInfo("ExchangeRatePlugin", QString("Exchange rate is -> %1/%2: %3").arg(base.c_str(), quote.c_str()).arg(exchRate, 8, 'f', 5));
+    rapidjson::Value cache(rapidjson::kArrayType);
+    rapidjson::Document::AllocatorType &allocator = pluginSettings.GetAllocator();
 
-    if (exchRate > 0)
+    if (jsonDoc.HasMember("success") && jsonDoc["success"].GetBool())
     {
-        m_exchangeRate->setText(QString("%1/%2: $ %3  ").arg(base.c_str(), quote.c_str()).arg(exchRate, 8, 'f', 5));
+        auto symbolsIter = jsonDoc.FindMember("symbols");
+        if (symbolsIter != jsonDoc.MemberEnd())
+        {
+            for (const auto &symbol : symbolsIter->value.GetObject())
+            {
+                QString description;
+                QString name { symbol.name.GetString() };
+                auto descIter = symbol.value.FindMember("description");
+                if (descIter != symbol.value.MemberEnd())
+                {
+                    description = descIter->value.GetString();
+                }
+                m_currencyData[name] = description;
+
+                rapidjson::Value jsonName;
+                rapidjson::Value jsonDescription;
+                jsonName.SetString(name.toStdString().c_str(), static_cast<rapidjson::SizeType>(name.toStdString().size()), allocator);
+                jsonDescription.SetString(description.toStdString().c_str(), static_cast<rapidjson::SizeType>(description.toStdString().size()), allocator);
+
+                rapidjson::Value cacheItem(rapidjson::kObjectType);
+                cacheItem.AddMember("currency", jsonName, allocator);
+                cacheItem.AddMember("description", jsonDescription, allocator);
+
+                cache.PushBack(cacheItem, allocator);
+            }
+        }
+    }
+
+    pluginSettings.AddMember("cache", cache, allocator);
+
+    rapidjson::Value jsonDate;
+    auto dateString = QDate::currentDate().toString().toStdString();
+    jsonDate.SetString(dateString.c_str(), static_cast<rapidjson::SizeType>(dateString.size()), allocator);
+    pluginSettings["timestamp"] = jsonDate;
+}
+
+void cen::plugin::ExchangeRatePlugin::acquireFromCache() noexcept
+{
+    logDebug("ExchangeRatePlugin", "ExchangeRatePlugin::acquireFromCache()");
+
+    for (auto &item : pluginSettings["cache"].GetArray())
+    {
+        QString name { item["currency"].GetString() };
+        QString desc { item["description"].GetString() };
+        m_currencyData[name] = desc;
+    }
+}
+
+void cen::plugin::ExchangeRatePlugin::loadData() noexcept
+{
+    if (!m_configurationLoaded)
+        return;
+
+    auto tsIter = pluginSettings.FindMember("timestamp");
+    if (tsIter == pluginSettings.MemberEnd())
+        acquireFromInternet();
+
+    auto timestampCache = QDate::fromString(QString { tsIter->value.GetString() });
+
+    const auto currentDate = QDate::currentDate();
+
+    if (timestampCache.day() != currentDate.day())
+    {
+        // We have a change of date
+        acquireFromInternet();
     }
     else
     {
-        m_exchangeRate->setText(QString("%1/%2: N/A").arg(base.c_str(), quote.c_str()));
+        // Same date
+        acquireFromCache();
+    }
+
+    loadUserData();
+
+    rapidjson::StringBuffer jsonBuffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(jsonBuffer);
+    pluginSettings.Accept(writer);
+
+    QFile file(QString::fromStdString(m_config->getConfigurationFileName()));
+    if (file.open(QFile::WriteOnly | QFile::Truncate))
+    {
+        QTextStream stream(&file);
+        stream << jsonBuffer.GetString();
+        file.close();
     }
 }
 
-/*
-QString ExchangeRatePlugin::menuSlotName([[maybe_unused]] const QString &identifier) noexcept
+void cen::plugin::ExchangeRatePlugin::loadUserData() noexcept
 {
-    return QString();
+    m_defaultQuote = pluginSettings["default"]["quote"].GetString();
+    m_defaultBase  = pluginSettings["default"]["base"].GetString();
+
+    m_defaultValue = value(m_defaultQuote, m_defaultBase);
+
+    for (auto &available : pluginSettings["available"].GetArray())
+    {
+        m_currencySupported.emplace_back(available["b"].GetString(), available["q"].GetString());
+    }
 }
- */

@@ -14,6 +14,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 set(CENTAUR_QT_DIRECTORY PUBLIC "/Volumes/RicardoESSD/Qt/6.3.0/macos")
 
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG>)
+add_compile_definitions($<$<CONFIG:Debug>:TEST_LOGIN_MODE>)
+
 include_directories(Plugins/include)
 
 # Main Application
@@ -23,6 +26,7 @@ add_subdirectory(Centaur)
 
 #Libraries
 add_subdirectory(Library/uuid)
+add_subdirectory(Library/cui)
 add_subdirectory(Library/Protocol)
 
 #Libraries for exchanges

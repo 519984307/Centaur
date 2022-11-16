@@ -19,17 +19,22 @@ find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui LinguistTools Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui LinguistTools Widgets REQUIRED)
 # Required libraries
 
+SET(PROJECT_FILES
+        include/ExchangeRate.hpp
+        src/ExchangeRate.cpp
+        res/resources.qrc)
 
 add_library(ExchangeRate SHARED
-        include/ExchangeRate.hpp
-        src/ExchangeRate.cpp)
+        ${PROJECT_FILES}
+        )
 
 
 target_include_directories(ExchangeRate PRIVATE
         include
         ../include
         ../../Library/Protocol/include
-        ../../Library/uuid/include)
+        ../../Library/uuid/include
+        ../../include/)
 
 
 target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Gui)
@@ -41,14 +46,9 @@ target_link_libraries(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib
 target_link_libraries(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 
 
-target_compile_options(ExchangeRate PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -fdiagnostics-color=always
-        -Wno-poison-system-directories)
+SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
 
+set_source_files_properties(
+        ${PROJECT_FILES}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")

@@ -112,6 +112,7 @@ AddUserDialog::UserInformation AddUserDialog::getUserInformation() const noexcep
     aud.user       = ui()->newUsrEdit->text();
     aud.name       = ui()->nameEdit->text();
     aud.psw        = ui()->newPswEdit->text();
+    aud.prevPsw    = ui()->oldPasswordEdit->text();
     aud.mail       = ui()->mailEdit->text();
     aud.photograph = _impl->photo;
 

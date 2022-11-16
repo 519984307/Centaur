@@ -49,25 +49,25 @@ namespace CENTAUR_NAMESPACE
         // IBase
     public:
         QObject *getPluginObject() noexcept override;
-        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept override;
+        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
         QString getPluginName() noexcept override;
         QString getPluginVersionString() noexcept override;
         uuid getPluginUUID() noexcept override;
-        bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
 
         // IExchange
     public:
         bool initialization() noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIcon getSymbolListName() const noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIconVector getSymbolList() const noexcept override;
-        bool addSymbol(const QString &name, int item) noexcept override;
-        void removeSymbol(const QString &name) noexcept override;
+        bool addSymbolToWatchlist(const QString &name, int item) noexcept override;
+        void removeSymbolFromWatchlist(const QString &name) noexcept override;
         void updateOrderbook(const QString &symbol) noexcept override;
         void stopOrderbook(const QString &symbol) noexcept override;
         QString getQuoteFromSymbol(const QString &symbol) noexcept override;
         QString getBaseFromSymbol(const QString &symbol) noexcept override;
-        QList<QPair<QString, uuid>> dynamicWatchListMenuItems() noexcept override;
-        bool setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const uuid &id) noexcept override;
+        QList<QAction *> dynamicWatchListMenuItems() noexcept override;
+        QList<std::pair<qreal, QString>> getWatchlist24hrPriceChange() noexcept override;
+        QList<std::pair<quint64, qreal>> get7dayData(const QString &symbol) noexcept override;
 
     public slots:
         void onTickerUpdate(const QString &symbol, quint64 receivedTime, double price) noexcept;
@@ -90,13 +90,12 @@ namespace CENTAUR_NAMESPACE
 
         // Resources
     protected:
-        mutable QIcon m_exchIcon { ":/img/plugin" };
+        mutable QIcon m_exchIcon { ":/img/binance-plugin" };
         QIcon m_cryptoIcon { ":/img/crypto" };
 
     private:
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
         CENTAUR_INTERFACE_NAMESPACE::IConfiguration *m_config { nullptr };
-        CENTAUR_INTERFACE_NAMESPACE::ILongOperation *m_longOperation { nullptr };
         std::unique_ptr<SpotMarketWS> m_spotWS { nullptr };
         std::unique_ptr<std::thread> m_spotWSThread { nullptr };
 

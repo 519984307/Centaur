@@ -57,8 +57,12 @@ void OptionsTableWidget::init(int filterColumn) noexcept
     sortProxyModel->setSourceModel(m_itemModel);
     sortProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
     this->setModel(sortProxyModel);
+    m_selectionModel = new QItemSelectionModel(sortProxyModel, this);
+    this->setSelectionModel(m_selectionModel);
 
     int localEditableColumn;
+
+    connect(m_selectionModel, &QItemSelectionModel::currentChanged, this, &OptionsTableWidget::onModelSelectionChanged);
 
     switch (m_mode)
     {
@@ -247,6 +251,17 @@ void OptionsTableWidget::insertRowWithOptions(int row, const QList<QStandardItem
         this->setCurrentIndex(editableData);
         this->edit(editableData);
     }
+}
+
+void OptionsTableWidget::onModelSelectionChanged(const QModelIndex &current, C_UNUSED const QModelIndex &previous)
+{
+    emit itemSelectionChanged(current);
+}
+
+void OptionsTableWidget::focusOutEvent(QFocusEvent *event)
+{
+    m_selectionModel->clear();
+    QTableView::focusOutEvent(event);
 }
 
 int OptionsTableWidget::getRowCount() const noexcept

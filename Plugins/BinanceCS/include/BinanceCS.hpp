@@ -47,9 +47,8 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         QObject *getPluginObject() noexcept override;
         QString getPluginName() noexcept override;
         QString getPluginVersionString() noexcept override;
-        void setPluginInterfaces(cen::interface::ILogger *logger, cen::interface::IConfiguration *config, cen::interface::ILongOperation *lOper) noexcept override;
+        void setPluginInterfaces(cen::interface::ILogger *logger, cen::interface::IConfiguration *config) noexcept override;
         uuid getPluginUUID() noexcept override;
-        bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
         C_NODISCARD QList<PluginInformation> supportedExchanges() noexcept override;
         void acquire(const PluginInformation &pi, const QString &symbol, TimeFrame frame, const uuid &id) noexcept override;
         void disengage(const uuid &id, uint64_t lastTimeframeStart, uint64_t lastTimeframeEnd) noexcept override;

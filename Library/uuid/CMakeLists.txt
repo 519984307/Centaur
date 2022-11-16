@@ -8,7 +8,7 @@ FIND_PACKAGE(re2 CONFIG REQUIRED)
 
 SET(INCLUDE_FILES
         include/uuid.hpp
-        ../../Centaur.hpp)
+        ../../include/Centaur.hpp)
 
 SET(SOURCE_FILES
         src/uuid.cpp)
@@ -23,7 +23,9 @@ TARGET_COMPILE_DEFINITIONS(uuid PRIVATE BINAPI_LIBRARY)
 
 TARGET_LINK_LIBRARIES(uuid PRIVATE re2::re2)
 
-INCLUDE_DIRECTORIES(include PRIVATE)
+TARGET_INCLUDE_DIRECTORIES(uuid PRIVATE
+        include
+        ../../include/)
 
 
 SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")

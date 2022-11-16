@@ -26,21 +26,42 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 
-add_library(BinanceSPOT SHARED
-        qrc/resource.qrc
+SET(SOURCE_FILE
         src/BinanceSPOT.cpp
-        include/BinanceSPOT.hpp
         src/SpotMarketWS.cpp
-        # Includes for the necessary table widget
-        ../../Library/Helpers/include/OptionsWidget.hpp
         ../../Library/Helpers/src/OptionsWidget.cpp
+        src/CoinInfoDialog.cpp
+        src/NetworkAddressDialog.cpp
+        src/AssetDetailDialog.cpp
+        src/FeesDialog.cpp)
+
+SET(INCLUDE_FILE
+        include/BinanceSPOT.hpp
+        ../../Library/Helpers/include/OptionsWidget.hpp
         ../../Library/Helpers/include/OptionsTableWidget.hpp
         ../../Library/Helpers/src/OptionsTableWidget.cpp
-        ../../Library/Helpers/qrc/options.qrc
         include/CoinInfoDialog.hpp
-        src/CoinInfoDialog.cpp
         include/NetworkAddressDialog.hpp
-        src/NetworkAddressDialog.cpp include/AssetDetailDialog.hpp src/AssetDetailDialog.cpp include/FeesDialog.hpp src/FeesDialog.cpp)
+        include/AssetDetailDialog.hpp
+        include/FeesDialog.hpp
+        )
+
+SET(UI_FILES
+        ui/AssetDetailDialog.ui
+        ui/CoinInfoDialog.ui
+        ui/FeesDialog.ui
+        ui/NetworkAddress.ui
+        ui/NetworksDialog.ui
+        ../../Library/Helpers/qrc/options.qrc
+        qrc/resource.qrc
+        )
+
+
+add_library(BinanceSPOT SHARED
+        ${INCLUDE_FILE}
+        ${SOURCE_FILE}
+        ${UI_FILES}
+        )
 
 
 target_include_directories(BinanceSPOT PRIVATE
@@ -48,7 +69,8 @@ target_include_directories(BinanceSPOT PRIVATE
         ../../Library/Exchanges/BinanceAPI/include
         ../../Library/Protocol/include
         ../include
-        ../../Library/Helpers/include)
+        ../../Library/Helpers/include
+        ../../include)
 
 
 target_link_libraries(BinanceSPOT PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
@@ -63,14 +85,15 @@ target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.
 target_compile_definitions(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)
 
 
-target_compile_options(BinanceSPOT PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -fdiagnostics-color=always
-        -Wno-poison-system-directories)
+SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+
+set_source_files_properties(
+        ${INCLUDE_FILE}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+set_source_files_properties(
+        ${SOURCE_FILE}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
 

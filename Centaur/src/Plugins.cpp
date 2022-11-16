@@ -59,15 +59,13 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
 {
     logTrace("plugins", "CentaurApp::loadPlugins()");
 
-    m_longOperation = std::make_unique<LongOperation>();
-
     logInfo("plugins", tr("Plugins local data loaded and parsed."));
 
     QString pluginPath = g_globals->paths.pluginsPath;
     QDir pluginsDir(pluginPath);
 
     auto range = splash->getProgressRange();
-    splash->setProgressRange(0, range.second + static_cast<int>(pluginsDir.entryList(QDir::Files).size()));
+    splash->setProgressRange(0, range.second + 2 * static_cast<int>(pluginsDir.entryList(QDir::Files).size()));
 
     for (const auto &plFile : pluginsDir.entryList(QDir::Files))
     {
@@ -84,8 +82,11 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
             realFile = info.symLinkTarget();
         }
 
+        splash->setDisplayText(QString(tr("Loading: %1")).arg(plFile));
+
         auto loader     = new QPluginLoader(realFile);
         QObject *plugin = loader->instance();
+        splash->step();
 
         if (plugin)
         {
@@ -108,8 +109,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
                 // tr            loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
 
                 baseInterface->setPluginInterfaces(g_logger,
-                    static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig),
-                    static_cast<CENTAUR_INTERFACE_NAMESPACE::ILongOperation *>(m_longOperation.get()));
+                    static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig));
 
                 // Generate the plugin data
                 mapConfigurationInterface(baseInterface->getPluginUUID(), pluginConfig);
@@ -125,13 +125,13 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
                 }
                 else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                 {
-                    logInfo("plugin", QString(LS("info-plugin-istatus")).arg(plFile));
+                    logInfo("plugin", QString(tr("IStatus plugin found in file: ##F2FEFF#%1#")).arg(plFile));
                     // Init the plugin
-                    // stInterface->initialization(ui()->statusBar);
+                    initStatusPlugin(stInterface);
                 }
                 else if (auto cvInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::ICandleView *>(plugin); cvInterface)
                 {
-                    logInfo("plugin", QString(LS("info-plugin-icandleview")).arg(plFile));
+                    logInfo("plugin", QString(tr("ICandleView plugin found in file: ##F2FEFF#%1#")).arg(plFile));
                     if (!initCandleViewPlugin(cvInterface))
                     {
                         loader->unload();
@@ -149,10 +149,6 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
 
         splash->step();
     }
-}
-
-void CENTAUR_NAMESPACE::CentaurApp::loadPluginLocalData(const CENTAUR_NAMESPACE::uuid &uuid, xercesc::DOMDocument *doc, PluginConfiguration *config) noexcept
-{
 }
 
 bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
@@ -173,7 +169,6 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
 
     // clang-format off
     connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
-    connect(exchange->getPluginObject(), SIGNAL(snOrderbookUpdate(QString,QString,quint64,QMap<qreal,QPair<qreal,qreal> >,QMap<qreal,QPair<qreal,qreal> >)), this, SLOT(onOrderbookUpdate(QString, QString, quint64, QMap<qreal,QPair<qreal,qreal> >,QMap<qreal,QPair<qreal,qreal> >)));
     // clang-format on
 
     mapExchangePluginViewMenus(uuid, exchange->dynamicWatchListMenuItems());
@@ -262,7 +257,6 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
 
         auto item  = new QStandardItem(sym);
         int curRow = symbolsList->getRowCount();
-        item->setFont(g_globals->fonts.symbolsDock.tableFont);
         item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
         const QString base = exchange->getBaseFromSymbol(sym);
@@ -278,6 +272,81 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
     logInfo("plugins", "Exchange list populated");
 
     return symbolsList;
+}
+
+void cen::CentaurApp::initStatusPlugin(CENTAUR_PLUGIN_NAMESPACE::IStatus *status) noexcept
+{
+    using namespace CENTAUR_PLUGIN_NAMESPACE;
+    auto mode = status->initialize();
+
+    constexpr static char stylesheet[] = { R"(QToolButton{border-radius: 0px; border: 0px; }
+QToolButton:hover{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 0  rgb(58,58,58), stop: 1 rgb(68,68,68)); border-radius: 0px;}
+QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 1  rgb(85,85,85), stop: 0 rgb(95,95,95)); border-radius: 0px;})" };
+
+    auto *button = new QToolButton(ui()->frameStatusPluginsFrame);
+
+    ui()->frameStatusPluginsFrameLayout->addWidget(button);
+
+    button->setStyleSheet(stylesheet);
+    button->setCheckable(false);
+
+    auto textMode = [&]() {
+        button->setMinimumSize(QSize(0, 20));
+        button->setMaximumSize(QSize(16777215, 20));
+        button->setText(status->text());
+        button->setFont(status->font());
+    };
+    auto imageMode = [&]() {
+        button->setMinimumSize(QSize(20, 20));
+        button->setMaximumSize(QSize(20, 20));
+        button->setIconSize(QSize(18, 18));
+        button->setIcon(QIcon(status->image().scaled(18, 18, Qt::AspectRatioMode::KeepAspectRatio)));
+    };
+
+    switch (mode)
+    {
+        case IStatus::DisplayMode::OnlyText:
+            button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+            textMode();
+            break;
+
+        case IStatus::DisplayMode::OnlyIcon:
+            button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+            imageMode();
+            break;
+        case IStatus::DisplayMode::TextIcon:
+            button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+            imageMode();
+            textMode();
+            break;
+    }
+
+    const auto foregroundBrush = status->brush(IStatus::DisplayRole::Foreground);
+    const auto backgroundBrush = status->brush(IStatus::DisplayRole::Background);
+
+    QPalette palette = button->palette();
+    if (foregroundBrush != Qt::NoBrush)
+    {
+        palette.setBrush(QPalette::ColorRole::ButtonText, status->brush(IStatus::DisplayRole::Foreground));
+    }
+    if (backgroundBrush != Qt::NoBrush)
+    {
+        button->setStyleSheet("");
+        button->setAutoFillBackground(true);
+        palette.setBrush(QPalette::ColorRole::Button, status->brush(IStatus::DisplayRole::Background));
+    }
+    else
+    {
+        button->setStyleSheet(stylesheet);
+        button->setAutoFillBackground(false);
+    }
+    button->setPalette(palette);
+
+    // clang-format off
+    connect(status->getPluginObject(), SIGNAL(displayChange(plugin::IStatus::DisplayRole)), this, SLOT(onStatusDisplayChanged(plugin::IStatus::DisplayRole)));
+    // clang-format on
+
+    mapStatusPlugins(status->getPluginUUID(), status, button, mode);
 }
 
 #include <QMetaMethod>
@@ -303,8 +372,7 @@ bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView)
         // clang-format on
     }
 
-    // Get supported time frames
-    m_candleViewSupport[candleView] = { candleView->supportedExchanges(), candleView->supportedTimeFrames() };
+    mapCandleViewSupport(candleView, { candleView->supportedExchanges(), candleView->supportedTimeFrames() });
 
     return true;
 }
@@ -316,27 +384,4 @@ CENTAUR_PLUGIN_NAMESPACE::PluginInformation cen::CentaurApp::pluginInformationFr
         base->getPluginName(),
         base->getPluginVersionString()
     };
-}
-
-CENTAUR_PLUGIN_NAMESPACE::ICandleView *cen::CentaurApp::getSupportedCandleViewPlugins(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &id)
-{
-    for (auto &cvs : m_candleViewSupport)
-    {
-        for (auto &spexch : cvs.second.info)
-        {
-            if (spexch == id)
-                return cvs.first;
-        }
-    }
-
-    return nullptr;
-}
-
-std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> cen::CentaurApp::getCandleViewTimeframeSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *id) const
-{
-    auto it = m_candleViewSupport.find(id);
-    if (it == m_candleViewSupport.end())
-        return std::nullopt;
-
-    return std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> { std::cref(it->second.timeframes) };
 }

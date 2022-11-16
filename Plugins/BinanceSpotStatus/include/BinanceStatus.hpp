@@ -53,18 +53,26 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         QObject *getPluginObject() noexcept override;
         QString getPluginName() noexcept override;
         QString getPluginVersionString() noexcept override;
-        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept override;
+        void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
         uuid getPluginUUID() noexcept override;
-        bool addMenuAction(QAction *action, const uuid &menuId) noexcept override;
 
     public:
-        void initialization(QStatusBar *bar) noexcept override;
+        DisplayMode initialize() noexcept override;
+        QAction *action(const QPoint &pt) noexcept override;
+        QString text() noexcept override;
+        QPixmap image() noexcept override;
+        QFont font() noexcept override;
+        QBrush brush(DisplayRole role) noexcept override;
+
+    signals:
+        void displayChange(plugin::IStatus::DisplayRole role);
 
     protected:
         void onCheckAccountStatus() noexcept;
         void onViewData() noexcept;
 
     private:
+        QPixmap m_image;
         ClickableLabel *m_status { nullptr };
 
     private:

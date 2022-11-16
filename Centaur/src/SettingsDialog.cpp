@@ -320,6 +320,57 @@ void SettingsDialog::onAddUser() noexcept
         {
             _impl->userInfoTableItems._pswValue->setText(QString("*").repeated(15));
             _impl->userInfoTableItems._pswValue->setData(Qt::UserRole, ifo.psw);
+
+            const QString tfaFile = []() -> QString {
+                QString data = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+                return QString("%1/f6110cb58f3b").arg(data);
+            }();
+
+            QFile file(tfaFile);
+            if (!file.open(QIODeviceBase::ReadOnly) && g_globals->session.tfa)
+            {
+                // Code: 0x00000001 is encryption failed
+                // Code: 0x00000002 is a file failure
+                QMessageBox::critical(this, tr("Error"), QString(tr("2FA can not be updated.\n2FA will be disabled.\nError: 0x0000001")),
+                    QMessageBox::Ok);
+                _impl->userInfoTableItems._checkBox->setChecked(false);
+            }
+            else
+            {
+                QTextStream stream(&file);
+                QString fileData = stream.readAll();
+                file.close();
+
+                g_globals->session.userTFA = AESSym::decrypt(fileData, ifo.prevPsw.toLocal8Bit());
+
+                if (!QFile::remove(tfaFile))
+                {
+                    QMessageBox::critical(this, tr("Error"), QString(tr("2FA can not be updated.\n2FA will be disabled.\nError: 0x0000002")),
+                        QMessageBox::Ok);
+                    _impl->userInfoTableItems._checkBox->setChecked(false);
+                }
+                else
+                {
+                    auto result = AESSym::encrypt(g_globals->session.userTFA.toLocal8Bit(), ifo.psw.toLocal8Bit());
+                    QFile file(tfaFile);
+                    if (!file.open(QIODeviceBase::WriteOnly) || result.isEmpty())
+                    {
+                        // Code: 0x00000001 is: encryption failed
+                        // Code: 0x00000002 is: a file failure
+                        QMessageBox::critical(this, tr("Error"),
+                            QString(tr("2FA can not be updated.\n2FA will be disabled.\nError: 0x0000003")),
+                            QMessageBox::Ok);
+                        _impl->userInfoTableItems._checkBox->setChecked(false);
+                    }
+                    else
+                    {
+                        // Store the data
+                        QTextStream stream(&file);
+                        stream << result;
+                        file.close();
+                    }
+                }
+            }
         }
 
         if (ifo.photoUpdate)
@@ -340,7 +391,7 @@ void SettingsDialog::onAddUser() noexcept
         settings.setValue("__user__", g_globals->session.user);
         settings.setValue("__display__", g_globals->session.display);
         settings.setValue("__email__", g_globals->session.email);
-        if (!editingMode || (editingMode && ifo.pswUpdate))
+        if (!editingMode || ifo.pswUpdate)
             settings.setValue("__sec__", QString::fromUtf8(QCryptographicHash::hash(QByteArrayView(ifo.psw.toUtf8()), QCryptographicHash::RealSha3_512).toBase64()));
         settings.endGroup();
 

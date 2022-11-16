@@ -135,7 +135,7 @@ QString cen::plugin::BinanceSPOTStatus::getPluginVersionString() noexcept
     return g_ExchangeRateVersionString;
 }
 
-void cen::plugin::BinanceSPOTStatus::setPluginInterfaces(cen::interface::ILogger *logger, cen::interface::IConfiguration *config, C_UNUSED cen::interface::ILongOperation *lOper) noexcept
+void cen::plugin::BinanceSPOTStatus::setPluginInterfaces(cen::interface::ILogger *logger, cen::interface::IConfiguration *config) noexcept
 {
     m_logger = logger;
     m_config = config;
@@ -146,11 +146,7 @@ cen::uuid cen::plugin::BinanceSPOTStatus::getPluginUUID() noexcept
     return m_thisUUID;
 }
 
-bool cen::plugin::BinanceSPOTStatus::addMenuAction(C_UNUSED QAction *action, C_UNUSED const uuid &menuId) noexcept
-{
-    return false;
-}
-
+/*
 void cen::plugin::BinanceSPOTStatus::initialization(QStatusBar *bar) noexcept
 {
     logTrace("BinanceSPOTStatus", "BinanceSPOTStatus::initialization");
@@ -242,6 +238,7 @@ void cen::plugin::BinanceSPOTStatus::onCheckAccountStatus() noexcept
         CATCH_API_EXCEPTION()
     }
 }
+*/
 
 void cen::plugin::BinanceSPOTStatus::onViewData() noexcept
 {
@@ -249,4 +246,44 @@ void cen::plugin::BinanceSPOTStatus::onViewData() noexcept
     StatusDialog dlg(&m_apiPermissions, &m_apiTradingStatus, m_status->text(), nullptr);
     dlg.setModal(true);
     dlg.exec();
+}
+
+cen::plugin::IStatus::DisplayMode cen::plugin::BinanceSPOTStatus::initialize() noexcept
+{
+    m_image.load(":/main/icon");
+    return DisplayMode::TextIcon;
+}
+
+QAction *cen::plugin::BinanceSPOTStatus::action(const QPoint &pt) noexcept
+{
+    return nullptr;
+}
+
+QString cen::plugin::BinanceSPOTStatus::text() noexcept
+{
+    return "SPOT";
+}
+
+QPixmap cen::plugin::BinanceSPOTStatus::image() noexcept
+{
+    return m_image;
+}
+
+QFont cen::plugin::BinanceSPOTStatus::font() noexcept
+{
+    return QApplication::font();
+}
+
+QBrush cen::plugin::BinanceSPOTStatus::brush(cen::plugin::IStatus::DisplayRole role) noexcept
+{
+    switch (role)
+    {
+        case DisplayRole::Icon: C_FALLTHROUGH;
+        case DisplayRole::Text: C_FALLTHROUGH;
+        case DisplayRole::Font: C_FALLTHROUGH;
+        case DisplayRole::Background:
+            return Qt::NoBrush;
+        case DisplayRole::Foreground:
+            return QBrush(QColor(255, 5, 0));
+    }
 }

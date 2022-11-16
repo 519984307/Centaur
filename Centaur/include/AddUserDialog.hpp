@@ -35,6 +35,7 @@ public:
         QString user;
         QString name;
         QString psw;
+        QString prevPsw;
         QString mail;
         QImage photograph;
 

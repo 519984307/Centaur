@@ -12,6 +12,7 @@
         <file alias="server_green">../res/img/dns_green_48dp.svg</file>
         <file alias="server_red">../res/img/dns_red_48dp.svg</file>
         <file alias="settings">../res/img/settings_white_48dp.svg</file>
+        <file alias="on-top">../res/img/tab_white_48dp.svg</file>
     </qresource>
 
     <qresource prefix="login/u_table">

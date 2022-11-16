@@ -1,0 +1,838 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CENTAUR_NAMESPACE::CentaurApp</class>
+ <widget class="QMainWindow" name="CENTAUR_NAMESPACE::CentaurApp">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>767</width>
+    <height>647</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>TraderApp</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="m_centrarWidgetLayout">
+    <item>
+     <widget class="QMdiArea" name="mdiArea">
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
+      <property name="background">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>30</red>
+         <green>31</green>
+         <blue>32</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="documentMode">
+       <bool>false</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>false</bool>
+      </property>
+      <property name="tabsMovable">
+       <bool>false</bool>
+      </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QFrame" name="frame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>767</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuOrderbook">
+     <property name="title">
+      <string>Orderbook</string>
+     </property>
+     <addaction name="actionAsks"/>
+     <addaction name="actionBids"/>
+     <addaction name="actionDepth"/>
+    </widget>
+    <addaction name="actionLogging"/>
+    <addaction name="actionSymbols"/>
+    <addaction name="actionBalances"/>
+    <addaction name="menuOrderbook"/>
+   </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="title">
+     <string>Window</string>
+    </property>
+    <addaction name="actionTileWindows"/>
+    <addaction name="actionCascadeWindows"/>
+    <addaction name="actionCloseAllWindows"/>
+    <addaction name="actionNextWindow"/>
+    <addaction name="actionPreviousWindow"/>
+    <addaction name="separator"/>
+    <addaction name="actionTabView"/>
+   </widget>
+   <widget class="QMenu" name="menuSymbols">
+    <property name="title">
+     <string>Symbols</string>
+    </property>
+    <addaction name="actionWatchlistFavorites"/>
+   </widget>
+   <addaction name="menuSymbols"/>
+   <addaction name="menuView"/>
+   <addaction name="menuWindow"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="dockLogging">
+   <property name="windowTitle">
+    <string>Logging</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="m_logsLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QTableWidget" name="logsTable">
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="rowCount">
+        <number>0</number>
+       </property>
+       <property name="columnCount">
+        <number>6</number>
+       </property>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>21</number>
+       </attribute>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>21</number>
+       </attribute>
+       <attribute name="verticalHeaderDefaultSectionSize">
+        <number>21</number>
+       </attribute>
+       <attribute name="verticalHeaderShowSortIndicator" stdset="0">
+        <bool>false</bool>
+       </attribute>
+       <column/>
+       <column/>
+       <column/>
+       <column/>
+       <column/>
+       <column/>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockOrderbookBids">
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Orderbook - Bids</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockOrderbookBidsLayout">
+    <layout class="QVBoxLayout" name="orderBookBidsLayout">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <property name="leftMargin">
+      <number>2</number>
+     </property>
+     <property name="topMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>2</number>
+     </property>
+     <property name="bottomMargin">
+      <number>2</number>
+     </property>
+     <item>
+      <layout class="QHBoxLayout" name="bidsGrid">
+       <item>
+        <widget class="QLabel" name="bidsSymbol">
+         <property name="font">
+          <font/>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QLabel{
+                                            color: rgb(61, 90, 255);
+                                            }
+                                        </string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bidsLatency">
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QTableWidget" name="bidsTable">
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="rowCount">
+        <number>0</number>
+       </property>
+       <property name="columnCount">
+        <number>3</number>
+       </property>
+       <attribute name="verticalHeaderDefaultSectionSize">
+        <number>24</number>
+       </attribute>
+       <column/>
+       <column/>
+       <column/>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockOrderbookAsks">
+   <property name="windowTitle">
+    <string>Orderbook - Asks</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockOrderbookAsksLayout">
+    <layout class="QVBoxLayout" name="orderBookAsksLayout">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <property name="leftMargin">
+      <number>2</number>
+     </property>
+     <property name="topMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>2</number>
+     </property>
+     <property name="bottomMargin">
+      <number>2</number>
+     </property>
+     <item>
+      <layout class="QHBoxLayout" name="asksGrid">
+       <item>
+        <widget class="QLabel" name="asksSymbol">
+         <property name="font">
+          <font/>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QLabel{
+                                            color: rgb(61, 90, 255);
+                                            }
+                                        </string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="asksLatency">
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QTableWidget" name="asksTable">
+       <property name="styleSheet">
+        <string notr="true">QTableView:item{ font-size: 10pt;}</string>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="rowCount">
+        <number>0</number>
+       </property>
+       <property name="columnCount">
+        <number>3</number>
+       </property>
+       <attribute name="verticalHeaderDefaultSectionSize">
+        <number>24</number>
+       </attribute>
+       <column/>
+       <column/>
+       <column/>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockDepth">
+   <property name="windowTitle">
+    <string>Depth</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockDepthLayout">
+    <layout class="QHBoxLayout" name="m_depthLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>2</number>
+     </property>
+     <property name="topMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>2</number>
+     </property>
+     <property name="bottomMargin">
+      <number>2</number>
+     </property>
+     <item>
+      <widget class="QChartView" name="bidsChart" native="true"/>
+     </item>
+     <item>
+      <widget class="QChartView" name="asksChart" native="true"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockSymbols">
+   <property name="windowTitle">
+    <string notr="true">__symbols__</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockContents">
+    <layout class="QHBoxLayout" name="m_symbolsLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QTabWidget" name="tabSymbols">
+       <property name="tabPosition">
+        <enum>QTabWidget::South</enum>
+       </property>
+       <property name="tabShape">
+        <enum>QTabWidget::Rounded</enum>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="usesScrollButtons">
+        <bool>true</bool>
+       </property>
+       <property name="documentMode">
+        <bool>true</bool>
+       </property>
+       <property name="tabsClosable">
+        <bool>false</bool>
+       </property>
+       <property name="movable">
+        <bool>true</bool>
+       </property>
+       <property name="tabBarAutoHide">
+        <bool>true</bool>
+       </property>
+       <widget class="QWidget" name="tabWatchList">
+        <attribute name="title">
+         <string notr="true">__watchlist__</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="m_watchListLayout">
+         <property name="spacing">
+          <number>2</number>
+         </property>
+         <property name="leftMargin">
+          <number>2</number>
+         </property>
+         <property name="topMargin">
+          <number>2</number>
+         </property>
+         <property name="rightMargin">
+          <number>2</number>
+         </property>
+         <property name="bottomMargin">
+          <number>2</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="editWatchListFilter">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string notr="true"/>
+           </property>
+           <property name="echoMode">
+            <enum>QLineEdit::Normal</enum>
+           </property>
+           <property name="placeholderText">
+            <string notr="true">Search...</string>
+           </property>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="CENTAUR_NAMESPACE::CenListCtrl" name="listWatchList">
+           <property name="styleSheet">
+            <string notr="true">
+                                                    QTableView QTableCornerButton::section {
+                                                    background: rgb(48,48,48);
+                                                    border: 0px;
+                                                    }
+
+                                                    QTableView::item {
+                                                    border: 0px;
+                                                    min-height: 100px;
+                                                    }
+
+                                                    QTableView::item:hover{
+                                                    background-color: rgb(48,48,48);
+                                                    }
+
+                                                    QTableView::item:selected{
+                                                    background-color: rgb(78,78,78);
+                                                    }
+                                                </string>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <attribute name="verticalHeaderVisible">
+            <bool>false</bool>
+           </attribute>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="symbolsEmptyLayout">
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <layout class="QHBoxLayout" name="m_symbolsEmptyLayout"/>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockBalances">
+   <property name="windowTitle">
+    <string>Balances</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockBalancesContents">
+    <layout class="QVBoxLayout" name="m_balancesLayout">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <property name="leftMargin">
+      <number>2</number>
+     </property>
+     <property name="topMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>2</number>
+     </property>
+     <property name="bottomMargin">
+      <number>2</number>
+     </property>
+     <item>
+      <widget class="QTreeWidget" name="ctrlBalances">
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="showDropIndicator" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
+       <property name="headerHidden">
+        <bool>false</bool>
+       </property>
+       <property name="columnCount">
+        <number>2</number>
+       </property>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string notr="true">2</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayoutTotalBalances">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QFrame" name="balancesTotalFrame">
+         <property name="styleSheet">
+          <string notr="true">QFrame{
+background-color: rgb(22,22,22);
+border-radius: 2px;
+border-left: 0px;
+border-right: 0px;
+border-top: 0px;
+border-bottom: 0px;
+}
+
+QLabel{
+border:0px;
+}
+
+/*border-left: 20px solid */</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="spacing">
+           <number>-1</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="labelTotal">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Total:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="totalBalances">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QLabel{
+color: rgb(172, 6, 0);
+border-radius: 3px;
+min-width: 85px;
+qproperty-alignment: AlignCenter;
+}</string>
+            </property>
+            <property name="text">
+             <string>$ 0.0</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <action name="actionSymbols">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Symbols</string>
+   </property>
+   <property name="toolTip">
+    <string>Show symbols dock</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+1</string>
+   </property>
+  </action>
+  <action name="actionLogging">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Logging</string>
+   </property>
+   <property name="toolTip">
+    <string>Show logging dock</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+0</string>
+   </property>
+  </action>
+  <action name="actionBalances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Balances</string>
+   </property>
+   <property name="toolTip">
+    <string>Show/Hide balances</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+2</string>
+   </property>
+  </action>
+  <action name="actionAsks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Asks</string>
+   </property>
+   <property name="toolTip">
+    <string>Show/Hide orderbook Asks</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+3</string>
+   </property>
+  </action>
+  <action name="actionBids">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Bids</string>
+   </property>
+   <property name="toolTip">
+    <string>Show/Hide orderbook Bids</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+4</string>
+   </property>
+  </action>
+  <action name="actionTileWindows">
+   <property name="icon">
+    <iconset theme="˙">
+     <normaloff>../../../../../../../../Users/ricardo/.designer/backup</normaloff>../../../../../../../../Users/ricardo/.designer/backup</iconset>
+   </property>
+   <property name="text">
+    <string>Tile windows</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+W, Alt+T</string>
+   </property>
+  </action>
+  <action name="actionCascadeWindows">
+   <property name="text">
+    <string>Cascade windows</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+W, Alt+C</string>
+   </property>
+  </action>
+  <action name="actionDepth">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Depth</string>
+   </property>
+   <property name="toolTip">
+    <string>Show/hide Depth</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+5</string>
+   </property>
+  </action>
+  <action name="actionWatchlistFavorites">
+   <property name="text">
+    <string notr="true">Watchlist Favorites</string>
+   </property>
+   <property name="iconText">
+    <string notr="true">Watchlist Favorites</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+Ƒ</string>
+   </property>
+  </action>
+  <action name="actionCloseAllWindows">
+   <property name="text">
+    <string>Close all windows</string>
+   </property>
+  </action>
+  <action name="actionNextWindow">
+   <property name="text">
+    <string>Next window</string>
+   </property>
+  </action>
+  <action name="actionPreviousWindow">
+   <property name="text">
+    <string>Previous window</string>
+   </property>
+  </action>
+  <action name="actionTabView">
+   <property name="text">
+    <string>Tab view</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CENTAUR_NAMESPACE::CenListCtrl</class>
+   <extends>QTableView</extends>
+   <header>CenListCtrl.hpp</header>
+  </customwidget>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QWidget</extends>
+   <header>QtCharts/QChartView</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../qrc/resource.qrc"/>
+ </resources>
+ <connections/>
+</ui>

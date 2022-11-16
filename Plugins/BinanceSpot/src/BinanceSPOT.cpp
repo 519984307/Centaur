@@ -106,18 +106,17 @@ QString CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginName() noexcept
     return g_BinanceSpotName;
 }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept
 {
-    m_logger        = logger;
-    m_config        = config;
-    m_longOperation = lOper;
+    m_logger = logger;
+    m_config = config;
 }
 
 CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() noexcept
 {
     return m_globalPluginUuid;
 }
-
+/*
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addMenuAction(QAction *action, const uuid &menuId) noexcept
 {
     if (menuId == uuid { "{5445eaec-d22c-4204-b720-ab07a570ab2e}" })
@@ -137,7 +136,7 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addMenuAction(QAction *action, const 
     }
 
     return false;
-}
+}*/
 
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
@@ -152,36 +151,37 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
     } catch (const std::exception &ex)
     {
         logError("BinanceSpotPlugin", QString("Could not load the plugin public key. %1").arg(ex.what()));
-        return false;
+        //  return false;
     }
+    /*
+        bool apiError, secError;
+        const auto apiKeyCip = m_config->getValue("apiKey", &apiError);
+        const auto secKeyCip = m_config->getValue("secretKey", &secError);*/
+    /*
+        if (!apiError || !secError)
+        {
+            logError("BinanceSpotPlugin", "Either the API Key or the secret key are empty on the plugins configuration file.");
+            return false;
+        }
 
-    bool apiError, secError;
-    const auto apiKeyCip = m_config->getValue("apiKey", &apiError);
-    const auto secKeyCip = m_config->getValue("secretKey", &secError);
+        const auto apiKey = ec.decryptPublic(apiKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
+        const auto secKey = ec.decryptPublic(secKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
 
-    if (!apiError || !secError)
-    {
-        logError("BinanceSpotPlugin", "Either the API Key or the secret key are empty on the plugins configuration file.");
-        return false;
-    }
+        if (apiKey.empty() || secKey.empty())
+        {
+            logError("BinanceSpotPlugin", "Could not decrypt the binance keys");
+            return false;
+        }
 
-    const auto apiKey = ec.decryptPublic(apiKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
-    const auto secKey = ec.decryptPublic(secKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
-
-    if (apiKey.empty() || secKey.empty())
-    {
-        logError("BinanceSpotPlugin", "Could not decrypt the binance keys");
-        return false;
-    }
-
-    // set the keys
-    m_keys.apiKey    = apiKey;
-    m_keys.secretKey = secKey;
-
-    m_api            = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
+        // set the keys
+        m_keys.apiKey    = apiKey;
+        m_keys.secretKey = secKey;
+    */
+    m_api = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
 
     try
     {
+
         m_api->ping();
         logInfo("BinanceSpotPlugin", "Binance Server SPOT ping correctly");
         if (!m_api->getExchangeStatus())
@@ -242,8 +242,6 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::runMarketWS");
 
-    m_longOperation->show("Starting WebSocket service...", QIcon {}, false);
-
     if (m_spotWSThread && m_spotWSThread->joinable())
     {
         m_spotWS->terminate();
@@ -255,7 +253,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
     std::promise<void> connected;
     std::future<void> future = connected.get_future();
 
-    m_spotWS                 = std::make_unique<SpotMarketWS>(std::move(connected));
+    m_spotWS = std::make_unique<SpotMarketWS>(std::move(connected));
     m_spotWS->initialize(this, m_logger);
 
     auto ticker          = m_spotWS->subscribeIndividualMiniTicker(symbol.toStdString());
@@ -271,13 +269,11 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
     future.wait();
 
     logInfo("BinanceSpotPlugin", "The main thread is unblocked");
-
-    m_longOperation->hide();
 }
 
-bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, int item) noexcept
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &name, int item) noexcept
 {
-    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::addSymbol()");
+    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::addSymbolToWatchlist()");
 
     auto itemId = m_symbolId.find(name);
     if (itemId != m_symbolId.end())
@@ -310,9 +306,9 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbol(const QString &name, int it
     return true;
 }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbol(const QString &name) noexcept
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbolFromWatchlist(const QString &name) noexcept
 {
-    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::removeSymbol()");
+    logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::removeSymbolFromWatchlist()");
 
     logInfo("BinanceSpotPlugin", QString("Attempting to remove %1 from the watchlist").arg(name));
 
@@ -474,7 +470,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
         {
             const double total = price * quantity;
 
-            bids[price]        = { quantity, total };
+            bids[price] = { quantity, total };
         }
     }
 
@@ -484,7 +480,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
         {
             const double total = price * quantity;
 
-            asks[price]        = { quantity, total };
+            asks[price] = { quantity, total };
         }
     }
 
@@ -555,76 +551,59 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onAccountTradeList() noexcept
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::onAccountTradeList");
 }
 
-QList<QPair<QString, CENTAUR_NAMESPACE::uuid>> CENTAUR_NAMESPACE::BinanceSpotPlugin::dynamicWatchListMenuItems() noexcept
+QList<QAction *> CENTAUR_NAMESPACE::BinanceSpotPlugin::dynamicWatchListMenuItems() noexcept
 {
+    auto *baseAsset         = new QAction("Get Base Asset Coin information", this);
+    auto *quoteAsset        = new QAction("Get Quote Asset Coin information", this);
+    auto *separator0        = new QAction;
+    auto *baseAssetDeposit  = new QAction("Get Base Asset deposit address", this);
+    auto *quoteAssetDeposit = new QAction("Get Quote Asset deposit address", this);
+    auto *separator1        = new QAction;
+    auto *baseAssetDetails  = new QAction("Get Base Asset Details", this);
+    auto *quoteAssetDetails = new QAction("Get Quote Asset Details", this);
+    auto *separator3        = new QAction;
+    auto *symbolFees        = new QAction("Get Symbol Fees", this);
+
+    connect(baseAsset, &QAction::triggered, this, [&, baseAsset](C_UNUSED bool checked = false) {
+        onDisplayBaseAssetInfo(baseAsset->data().toString());
+    });
+
+    connect(quoteAsset, &QAction::triggered, this, [&, quoteAsset](C_UNUSED bool checked = false) {
+        onDisplayBaseAssetInfo(quoteAsset->data().toString());
+    });
+
+    connect(baseAssetDeposit, &QAction::triggered, this, [&, baseAssetDeposit](C_UNUSED bool checked = false) {
+        onDisplayCoinAssetDepositAddress(baseAssetDeposit->data().toString());
+    });
+
+    connect(quoteAssetDeposit, &QAction::triggered, this, [&, quoteAssetDeposit](C_UNUSED bool checked = false) {
+        onDisplayCoinAssetDepositAddress(quoteAssetDeposit->data().toString());
+    });
+
+    connect(baseAssetDetails, &QAction::triggered, this, [&, baseAssetDetails](C_UNUSED bool checked = false) {
+        onDisplayAssetDetail(baseAssetDetails->data().toString());
+    });
+
+    connect(quoteAssetDetails, &QAction::triggered, this, [&, quoteAssetDetails](C_UNUSED bool checked = false) {
+        onDisplayAssetDetail(quoteAssetDetails->data().toString());
+    });
+
+    connect(symbolFees, &QAction::triggered, this, [&, symbolFees](C_UNUSED bool checked = false) {
+        onShowFees(symbolFees->data().toString());
+    });
+
     return {
-        { "Get Base Asset Coin information", uuid { "{97123f13-4cc9-4236-956e-777f7f42caed}" } },
-        { "Get Quote Asset Coin information", uuid { "{55f0891f-010a-49c2-bfbb-c502c3ea1910}" } },
-        { "", uuid { "{00000000-0000-0000-0000-000000000000}" } }, // Separator
-        { "Get Base Asset deposit address", uuid { "{55e4bc4f-41e9-46b6-b24a-cfe73b05e828}" } },
-        { "Get Quote Asset deposit address", uuid { "{5476bcd1-08a1-415a-905b-39ee4bd1d049}" } },
-        { "", uuid { "{00000000-0000-0000-0000-000000000000}" } }, // Separator
-        { "Get Base Asset Details", uuid { "{1bb51cdb-0c6a-4d7b-b1c5-8473ae21c0fe}" } },
-        { "Get Quote Asset Details", uuid { "{249d0800-e806-45f5-802d-27832f734a7f}" } },
-        { "", uuid { "{00000000-0000-0000-0000-000000000000}" } }, // Separator
-        { "Get Symbol Fees", uuid { "{030ab818-cfb3-4c20-94c1-97a53204b840}" } }
+        baseAsset,
+        quoteAsset,
+        separator0,
+        baseAssetDeposit,
+        quoteAssetDeposit,
+        separator1,
+        baseAssetDetails,
+        quoteAssetDetails,
+        separator3,
+        symbolFees,
     };
-}
-
-bool CENTAUR_NAMESPACE::BinanceSpotPlugin::setDynamicWatchListMenuAction(QAction *action, const QString &symbolName, const CENTAUR_NAMESPACE::uuid &id) noexcept
-{
-    const auto baseAsset  = QString::fromStdString(m_exchInfo.symbols[symbolName.toStdString()].baseAsset);
-    const auto quoteAsset = QString::fromStdString(m_exchInfo.symbols[symbolName.toStdString()].quoteAsset);
-
-    if (id == uuid { "{97123f13-4cc9-4236-956e-777f7f42caed}" })
-    {
-        connect(action, &QAction::triggered, this, [&, baseAsset](C_UNUSED bool checked = false) {
-            onDisplayBaseAssetInfo(baseAsset);
-        });
-        return true;
-    }
-    else if (id == uuid { "{55f0891f-010a-49c2-bfbb-c502c3ea1910}" })
-    {
-        connect(action, &QAction::triggered, this, [&, quoteAsset](C_UNUSED bool checked = false) {
-            onDisplayBaseAssetInfo(quoteAsset);
-        });
-        return true;
-    }
-    else if (id == uuid { "{5476bcd1-08a1-415a-905b-39ee4bd1d049}" })
-    {
-        connect(action, &QAction::triggered, this, [&, quoteAsset](C_UNUSED bool checked = false) {
-            onDisplayCoinAssetDepositAddress(quoteAsset);
-        });
-        return true;
-    }
-    else if (id == uuid { "{55e4bc4f-41e9-46b6-b24a-cfe73b05e828}" })
-    {
-        connect(action, &QAction::triggered, this, [&, baseAsset](C_UNUSED bool checked = false) {
-            onDisplayCoinAssetDepositAddress(baseAsset);
-        });
-        return true;
-    }
-    else if (id == uuid { "{1bb51cdb-0c6a-4d7b-b1c5-8473ae21c0fe}" })
-    {
-        connect(action, &QAction::triggered, this, [&, baseAsset](C_UNUSED bool checked = false) {
-            onDisplayAssetDetail(baseAsset);
-        });
-        return true;
-    }
-    else if (id == uuid { "{249d0800-e806-45f5-802d-27832f734a7f}" })
-    {
-        connect(action, &QAction::triggered, this, [&, quoteAsset](C_UNUSED bool checked = false) {
-            onDisplayAssetDetail(quoteAsset);
-        });
-        return true;
-    }
-    else if (id == uuid { "{030ab818-cfb3-4c20-94c1-97a53204b840}" })
-    {
-        connect(action, &QAction::triggered, this, [&](C_UNUSED bool checked = false) { onShowFees(symbolName); });
-        return true;
-    }
-
-    return false;
 }
 
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayBaseAssetInfo(const QString &asset) noexcept
@@ -708,4 +687,46 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onShowFees(const QString &symbol) noe
     TradeFeesDialog dlg(m_fees, symbol, nullptr);
     dlg.setModal(true);
     dlg.exec();
+}
+
+QList<std::pair<qreal, QString>> CENTAUR_NAMESPACE::BinanceSpotPlugin::getWatchlist24hrPriceChange() noexcept
+try
+{
+    QList<std::pair<qreal, QString>> ret;
+    std::vector<std::string> list;
+    list.reserve(m_symbolId.size());
+    for (const auto &id : m_symbolId)
+        list.emplace_back(id.first.toStdString());
+
+    auto data = m_api->tickerPriceChangeStatistics24hr(list);
+
+    for (const auto &[sym, data] : data)
+        ret.emplace_back(data.priceChangePercent, QString::fromStdString(sym));
+
+    return ret;
+} catch (const BINAPI_NAMESPACE::APIException &ex)
+{
+    CATCH_API_EXCEPTION()
+    return {};
+}
+
+QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QString &symbol) noexcept
+{
+    const auto dayMS   = binapi::BinanceAPI::fromIntervalToMilliseconds(binapi::BinanceTimeIntervals::i1d);
+    const auto todayMS = binapi::BinanceAPI::getTime();
+    const auto today   = (todayMS - (todayMS % dayMS));
+
+    auto data = m_api->candlestickData(symbol.toStdString(),
+        binapi::BinanceTimeIntervals::i1d,
+        today - dayMS * 7,
+        today,
+        7);
+
+    QList<std::pair<quint64, qreal>> ret;
+    for (const auto &pt : data)
+    {
+        ret.emplace_back(pt.openTime, pt.close);
+    }
+
+    return ret;
 }

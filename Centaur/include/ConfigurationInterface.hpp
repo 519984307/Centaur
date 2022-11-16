@@ -26,24 +26,17 @@ namespace CENTAUR_NAMESPACE
         explicit PluginConfiguration(const QString &uuidString);
         ~PluginConfiguration() override;
 
-    public:
-        auto addValue(const std::string &key, const std::string &value) -> void;
 
     public:
         auto getPluginPublicKeyPath() -> std::string override;
-        auto getValue(const std::string &key, bool *error) -> std::string override;
-        auto getUint32(const std::string &key, bool *error) -> uint32_t override;
-        auto getUint64(const std::string &key, bool *error) -> uint64_t override;
-        auto getInt32(const std::string &key, bool *error) -> int32_t override;
-        auto getInt64(const std::string &key, bool *error) -> int64_t override;
-        auto getBool(const std::string &key, bool *error) -> bool override;
+        auto getConfigurationFileName() noexcept  -> std::string override;
 
     public:
         auto getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool override;
 
     private:
         QString m_path;
-        std::unordered_map<std::string, std::string> m_data;
+        QString m_settingsFile;
     };
 } // namespace CENTAUR_NAMESPACE
 

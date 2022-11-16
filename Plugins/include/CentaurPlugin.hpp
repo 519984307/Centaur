@@ -21,6 +21,7 @@
     (((x)*100000) + ((y)*100) + (z))
 
 #ifndef DONT_INCLUDE_QT
+#include <QList>
 #include <QObject>
 #include <QStatusBar>
 #include <QString>
@@ -99,29 +100,105 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \param logger Use to communicate plugin logs in the user interface
         /// \param config Configuration access from the configuration file. This structure wont hold data by the time this function is called. However, by the time the initialization methods
         ///               of an IBase derived class this structure will hold the plugin data
-        /// \param lOper Allows access to the LongOperation dialog
-        virtual void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config, CENTAUR_INTERFACE_NAMESPACE::ILongOperation *lOper) noexcept = 0;
+        virtual void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept = 0;
 
         /// \brief Get the plugin UUID
         /// \return Beware that versions are check in order to run the plugin
         virtual uuid getPluginUUID() noexcept = 0;
-
-        /// \brief When a menu action is defined in the UI file.
-        /// \param action Action to be connected
-        /// \param menuId As specified by the UI file
-        /// \return true on success. false on fail and the menu will be grayed
-        /// \remarks Generally what you will do is: connect(action, &QAction::triggered, (pluginObjectPointer), plugin member function);
-        C_NODISCARD virtual bool addMenuAction(QAction *action, const uuid &menuId) noexcept = 0;
     };
 
     /// \brief Provides access to the status bar
+    /// \remarks IStatus corresponds to buttons displayed from right to left
+    /// depending on the loading order of the plugins.
+    /// \remarks You must provide information about how the object will be display
+    /// \remarks Create a signal in the IStatus object name: void displayChange(IStatus::DisplayRole); to inform the parent UI that
+    /// way the button foreground, background brushes, text or icon have been changed
+
     struct IStatus : public IBase
     {
+        enum class DisplayMode
+        {
+            OnlyText,
+            OnlyIcon,
+            TextIcon
+        };
+
+        enum class DisplayRole
+        {
+            Icon,
+            Text,
+            Foreground,
+            Background,
+            Font
+        };
+
         ~IStatus() override = default;
 
-        /// \brief Provides access to the status bar
-        /// \param bar The status bar object
-        virtual void initialization(QStatusBar *bar) noexcept = 0;
+        /// \brief This function will be called after loading
+        /// \return Return the way the button will display information
+        /// \remarks emit a signal displayChange with the below signature to inform the way the data will be display
+        /// \remarks After initialization the UI will call: font(), brush(DisplayRole::Foreground) and text() in that order an if initialize returned  OnlyText,
+        /// \remarks call image() if OnlyIcon was return
+        /// \remarks Or call all if TextIcon was returned.
+        /// \remarks in all cases brush(DisplayRole::Background) will always be called first
+        virtual DisplayMode initialize() noexcept = 0;
+
+        /// \brief Returns the text to display
+        virtual QString text() noexcept = 0;
+        /// \brief Returns the image to display
+        virtual QPixmap image() noexcept = 0;
+        /// \brief Returns the font to use
+        /// \return QCoreApplication::font() to display the default application
+        virtual QFont font() noexcept = 0;
+        /// \brief Returns the brush to use
+        /// \param role It is either DisplayRole::Foreground or DisplayRole::Background
+        /// \return Qt::NoBrush if the default brush is going to be used
+        virtual QBrush brush(DisplayRole role) noexcept = 0;
+
+        /// \brief This function will be use from the UI to perform an action
+        /// \param pt Point of the Top-left of the UI status button in screen coordinates. Useful to display menus
+        /// \return The default action you want the UI to perform when icon is pressed
+        virtual QAction *action(const QPoint &pt) noexcept = 0;
+
+        /// \brief void displayChange(IStatus::DisplayRole);
+        /// \attention How to use: emit this signal and the UI will call text(), icon(), font() or brush() respectively according to the display role
+
+        // signal:
+        //      void displayChange(IStatus::DisplayRole);
+    };
+
+    /// \brief Use this interface to manage different currencies and their values.
+    /// You can use the balances to link all balances towards a unique currency or multiple
+    /// \see the ExchangeRate plugin to see how the information can be managed
+    /// \see the Balances Protocol documentation to how create a link on a loaded IExchangeRate plugin
+    /// \remarks As IExchangeRate is derived from IStatus, you can use this to create status bar item
+    struct IExchangeRate : public IStatus
+    {
+        ~IExchangeRate() override = default;
+
+        /// \brief Return a list with all supported currencies
+        virtual QList<QString> listSupported() noexcept = 0;
+
+        /// \brief Get the equivalent of 1 quote to base
+        /// \param quote From currency
+        /// \param base To currency
+        /// \return The value converted from one quote to corresponding base
+        virtual qreal value(const QString &quote, const QString &base) noexcept = 0;
+
+        /// \brief Get the equivalent of quoteQuantity quote to base
+        /// \param quote From currency
+        /// \param base To currency
+        /// \param quoteQuantity Quantity
+        /// \return The value converted from quoteQuantity quote to corresponding base
+        virtual qreal convert(const QString &quote, const QString &base, qreal quoteQuantity) noexcept = 0;
+
+        /// \brief Get the equivalent of quoteQuantity quote to base in a specific date
+        /// \param quote  From currency
+        /// \param base To currency
+        /// \param quoteQuantity Quantity
+        /// \param date Date
+        /// \return The value converted from quoteQuantity quote to corresponding base
+        virtual qreal convert(const QString &quote, const QString &base, qreal quoteQuantity, QDate *date) noexcept = 0;
     };
 
     /// \brief Handles an exchange
@@ -186,6 +263,16 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \remarks This function will be called in very remove/insertion to the watchlist.
         C_NODISCARD virtual QList<std::pair<qreal, QString>> getWatchlist24hrPriceChange() noexcept = 0;
 
+        /// \brief Call by the UI when an item in the Watchlist is clicked
+        /// \param symbol Symbol that is requested
+        /// \return A 7-element list containing the prices of the last 7 days with associated timestamp in milliseconds.
+        /// The UI Will display a graph with this information
+        /// Return an empty list if this information is not available. The ui will display an item with the legend: "No information available"
+        /// The data must be in index 0 the farthest day and index 6 the nearest.
+        /// If the list size is larger than 7, it will ignore the first items that exceed the size of seven.
+        /// If the list size is less than 7, it will consider an empty list
+        virtual QList<std::pair<quint64, qreal>> get7dayData(const QString &symbol) noexcept = 0;
+
         /**
          *
     signals:
@@ -202,9 +289,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     /// Each ICandleView object is a candle object
     struct ICandleView : public IBase
     {
-        /// \brief All charts are to 4320 candles at all time. This means 72 minutes in candles of one seconds, 72-hours(3-days) in candles of 1 minute or 18-days on 1 hour candles
+        /// \brief All charts can have 4320 candles at most. This means 72 minutes in candles of one seconds, 72-hours(3-days) in candles of 1 minute or 18-days on 1 hour candles
         /// \remarks No more than candleLimit is going to be held in the UI. Is up to the Plugin to keep more information on memory if that is considered prudent.
-        /// Remember that calls to getCandlesByPeriod are not asynchronous so having some information
+        /// Remember that calls to getCandlesByPeriod are not asynchronous
         static constexpr uint64_t candleLimit = 4320;
 
         /// \brief When an interface emits snRealTimeCandleUpdate without a previous request this is the limit before a disconnection will be set
@@ -254,11 +341,15 @@ namespace CENTAUR_PLUGIN_NAMESPACE
             double volume;
         };
 
-        /// \brief All exchange information comes from plugin. So this functions indicates the UI which plugins this ICandleView can receive information
+        /// \brief This information will be used to create a menu in the Watchlist table with all possible timeframes.
+        /// The menu will be linked to a table item that has an uuid equal to the returned in this function.
+        /// If there are more than one plugin linked to an IExchange item, the last plugin to load is the one that will receive all I/O
+        /// The actual menu items are get from supportedTimeFrames()
         /// \return A List of supported plugins
         C_NODISCARD virtual QList<PluginInformation> supportedExchanges() noexcept = 0;
 
-        /// \brief Must return a list of the timeframes supported by this interface
+        /// \brief Must return a list of the timeframes supported by this interface.
+        /// This information will be used to set the names in the menu
         /// \return The list of time frames
         C_NODISCARD virtual QList<TimeFrame> supportedTimeFrames() noexcept = 0;
 
@@ -362,6 +453,9 @@ Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IBase, IBase_iid)
 
 #define IStatus_iid "com.centaur-project.plugin.IStatus/0.2"
 Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IStatus, IStatus_iid)
+
+#define IExchangeRate_iid "com.centaur-project.plugin.IExchangeRate/0.2"
+Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IExchangeRate, IExchangeRate_iid)
 
 #define IExchange_iid "com.centaur-project.plugin.IExchange/1.0"
 Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IExchange, IExchange_iid)

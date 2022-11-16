@@ -29,7 +29,7 @@ SplashDialog::SplashDialog(QWidget *parent) :
 
     // Center the dialog
     QRect screenGeometry = QGuiApplication::screens()[0]->geometry();
-    
+
     int x = (screenGeometry.width() - this->width()) / 2;
     int y = (screenGeometry.height() - this->height()) / 2;
     this->move(x, y);
@@ -57,17 +57,29 @@ void SplashDialog::setDisplayText(const QString &text)
 {
     ui()->displayText->setText(text);
     QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
 }
 
 void SplashDialog::setProgressRange(int min, int max)
 {
     ui()->progressBar->setRange(min, max);
     QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
 }
 
 void SplashDialog::setProgressPos(int pos)
 {
     ui()->progressBar->setValue(pos);
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
     QCoreApplication::processEvents();
 }
 
