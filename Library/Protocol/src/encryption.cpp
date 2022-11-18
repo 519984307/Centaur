@@ -54,7 +54,7 @@ private:
         // clang-format off
 #if defined(__clang__) || defined(__GNUC__)
         CENTAUR_WARN_PUSH()
-        CENTAUR_WARN_OFF(old-style-cast)
+        CENTAUR_WARN_OFF("-Wold-style-cast")
 #endif /**/
         char *buff = (char *)malloc(bptr->length);
 #if defined(__clang__) || defined(__GNUC__)
@@ -77,7 +77,7 @@ private:
         // clang-format off
 #if defined(__clang__) || defined(__GNUC__)
 CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF(old-style-cast)
+CENTAUR_WARN_OFF("-Wold-style-cast")
 #endif /**/
         char *buffer = (char *)malloc(input.length()+1);
 #if defined(__clang__) || defined(__GNUC__)
@@ -149,7 +149,7 @@ public:
 
         buffer[size] = 0;
 
-        BIO *keyBio  = BIO_new_mem_buf(reinterpret_cast<const void *>(buffer), -1);
+        BIO *keyBio = BIO_new_mem_buf(reinterpret_cast<const void *>(buffer), -1);
 
 #endif /*WIN32*/
         m_publicKey = RSA_new();

@@ -11,14 +11,14 @@
 #ifdef __clang__
 // clang-format off
 CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF(zero-as-null-pointer-constant)
-CENTAUR_WARN_OFF(extra-semi-stmt)
-CENTAUR_WARN_OFF(shadow)
-CENTAUR_WARN_OFF(ambiguous-reversed-operator)
-CENTAUR_WARN_OFF(suggest-override)
-CENTAUR_WARN_OFF(suggest-destructor-override)
-CENTAUR_WARN_OFF(reserved-id-macro)
-CENTAUR_WARN_OFF(deprecated-declarations)
+CENTAUR_WARN_OFF("-Wzero-as-null-pointer-constant")
+CENTAUR_WARN_OFF("-Wextra-semi-stmt")
+CENTAUR_WARN_OFF("-Wshadow")
+CENTAUR_WARN_OFF("-Wambiguous-reversed-operator")
+CENTAUR_WARN_OFF("-Wsuggest-override")
+CENTAUR_WARN_OFF("-Wsuggest-destructor-override")
+CENTAUR_WARN_OFF("-Wreserved-id-macro")
+CENTAUR_WARN_OFF("-Wdeprecated-declarations")
 // clang-format on
 #endif /*__clang__*/
 #include <rapidjson/document.h>
