@@ -16,7 +16,7 @@ cen::ProtocolServer::ProtocolServer(QObject *parent) :
     const qint16 port = 80;
     if (listen(QHostAddress("localhost"), port))
     {
-        logInfo("server", QString(LS("info-server-listening")).arg(port));
+        logInfo("server", QString(tr("Communications server is running in port: %1")).arg(port));
         connect(this, &QWebSocketServer::acceptError, this, &ProtocolServer::onAcceptError);
         connect(this, &QWebSocketServer::closed, this, &ProtocolServer::onClosed);
         connect(this, &QWebSocketServer::newConnection, this, &ProtocolServer::onNewConnection);
@@ -44,7 +44,7 @@ void cen::ProtocolServer::onNewConnection() noexcept
     auto socket = this->nextPendingConnection();
     if (socket == nullptr)
     {
-        logError("server", LS("error-server-empty_connection"));
+        logError("server", tr("An empty connection was acquired"));
         return;
     }
     auto client = new ProtocolClient(socket, this);

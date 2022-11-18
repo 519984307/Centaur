@@ -68,11 +68,11 @@ void cen::ProtocolClient::sendData(cen::protocol::ProtocolBase *data) noexcept
 void cen::ProtocolClient::onTextMessageReceived(C_UNUSED const QString &message) noexcept
 {
     // ANY ATTEMPT OF SENDING TEXT MESSAGES WILL BE DISCARDED
-    logWarn("client", LS("warning-wrong-protocol-message-type"));
+    logWarn("client", tr("A client send a wrong message type. More attempts will result in a disconnection"));
     if (++m_textAttempts > g_maxTextAttempts)
     {
-        logWarn("client", LS("warning-wrong-protocol-message-type-disconnect"));
-        m_socket->close(QWebSocketProtocol::CloseCodeBadOperation, LS("info-wrong-message-types"));
+        logWarn("client", tr("A client sent too many wrong message types. The client will be disconnected"));
+        m_socket->close(QWebSocketProtocol::CloseCodeBadOperation, tr("Too many wrong messages type"));
     }
 }
 
@@ -89,37 +89,37 @@ void cen::ProtocolClient::onBinaryMessageReceived(const QByteArray &message) noe
     if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongSize)
     {
         messageCorrect = false;
-        logError("client", LS("error-protocol-size"));
+        logError("client", tr("Data size received is not consistent with a Centaur Communication Protocol"));
     }
 
     if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongMagic)
     {
         messageCorrect = false;
-        logError("client", LS("error-protocol-unknown-data"));
+        logError("client", tr("The message received is not consistent with a Centaur Communication Protocol"));
     }
 
     if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongHash)
     {
         messageCorrect = false;
-        logError("client", LS("error-protocol-corrupted"));
+        logError("client", tr("Centaur Communication Protocol. Data is corrupted"));
     }
 
     if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongMessageSize)
     {
         messageCorrect = false;
-        logError("client", LS("error-protocol-payload-size"));
+        logError("client", tr("Centaur Communication Protocol. Data received is incomplete"));
     }
 
     if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongTimestamp)
     {
         messageCorrect = false;
-        logError("client", LS("error-protocol-out-of-sync"));
+        logError("client", tr("Centaur Communication Protocol. Data received is out of time"));
     }
 
     if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongVersion)
     {
         messageCorrect = false;
-        logError("client", LS("error-protocol-wrong-version"));
+        logError("client", tr("Centaur Communication Protocol. Library Version and Message Version are incompatible"));
     }
 
     if (messageCorrect)
@@ -130,15 +130,15 @@ void cen::ProtocolClient::onBinaryMessageReceived(const QByteArray &message) noe
     {
         if (++m_wrongFormat > g_maxWrongFormatted)
         {
-            logWarn("client", LS("warning-wrong-protocol-message-format-disconnect"));
-            m_socket->close(QWebSocketProtocol::CloseCodeBadOperation, LS("info-wrong-message-format"));
+            logWarn("client", tr("A client sent too many messages with a wrong format. The client will be disconnected"));
+            m_socket->close(QWebSocketProtocol::CloseCodeBadOperation, tr("Too many messages with the wrong format"));
         }
     }
 }
 
 void cen::ProtocolClient::onDisconnected() noexcept
 {
-    logInfo("client", QString(LS("info-client-disconnected")).arg(m_clientName.isEmpty() ? "unknown" : m_clientName));
+    logInfo("client", QString(tr("The client with name %1 was disconnected")).arg(m_clientName.isEmpty() ? "unknown" : m_clientName));
 
     for (auto &item : m_balancesItems)
     {
@@ -152,8 +152,8 @@ void cen::ProtocolClient::onHandleProtocolMessage(uint32_t type, const std::stri
     if (type != CENTAUR_PROTOCOL_NAMESPACE::type::Protocol_AcceptConnection && !m_accepted)
     {
         // Automatic disconnection
-        logWarn("client", LS("warning-automatic-disconnection"));
-        m_socket->close(QWebSocketProtocol::CloseCodeBadOperation, LS("info-automatic_disconnection"));
+        logWarn("client", tr("A protocol-message was sent without a prior connection-acceptance from the server"));
+        m_socket->close(QWebSocketProtocol::CloseCodeBadOperation, tr("The client sent a protocol message without a prior connection-acceptance from the server"));
     }
 
     switch (type)
@@ -209,7 +209,7 @@ void cen::ProtocolClient::onHandleProtocolMessage(uint32_t type, const std::stri
             break;
 
         default:
-            logWarn(LOG_NAME, LS("warning-unknown-protocol-message"));
+            logWarn(LOG_NAME, tr("Unknown protocol message"));
             break;
     }
 }
@@ -223,7 +223,7 @@ void cen::ProtocolClient::onHandleAcceptConnection(cen::protocol::message::Proto
     m_id = accept->uuid();
     // Set the name of the connection
     m_clientName = QString::fromStdString(accept->name());
-    logInfo(LOG_NAME, QString(LS("info-protocol-name")).arg(m_clientName));
+    logInfo(LOG_NAME, QString(tr("A client connection with name -%1- was accepted.")).arg(m_clientName));
 
     // Send the accepted connection
     protocol::message::Protocol_AcceptedConnection accepted;
@@ -302,7 +302,7 @@ auto cen::ProtocolClient::onBalanceAssetItem(cen::protocol::message::Protocol_Ba
             m_balancesItems.insert(QString::fromStdString(assetItem->subHandle()), { item, false });
 
             MAKE_BALANCE_RESPONSE(assetItem, allOk);
-            logInfo(LOG_NAME, QString(LS("info-asset-item-received")).arg(QString::fromStdString(assetItem->name())));
+            logInfo(LOG_NAME, QString(tr("A client sent a balance asset item -%1")).arg(QString::fromStdString(assetItem->name())));
         }
     }
 }
@@ -325,7 +325,7 @@ auto cen::ProtocolClient::onReceiveIcon(cen::protocol::message::Protocol_Icon *i
 
     if (m_icons.contains(id))
     {
-        logError(LOG_NAME, LS("error-client-existing-icon"));
+        logError(LOG_NAME, tr("A client sent an image with an already existing ID"));
         return;
     }
 
@@ -350,7 +350,7 @@ auto cen::ProtocolClient::onReceiveIcon(cen::protocol::message::Protocol_Icon *i
     pm.loadFromData(data, format);
     m_icons.insert(id, pm);
 
-    logInfo(LOG_NAME, QString(LS("info-client-icon")).arg(format, id));
+    logInfo(LOG_NAME, QString(tr("A client sent an icon with format -%1- and ID -%2-")).arg(format, id));
 }
 
 auto cen::ProtocolClient::onBalanceTotalUpdate(cen::protocol::message::Protocol_BalanceTotalUpdate *update) noexcept -> void
