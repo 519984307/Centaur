@@ -105,12 +105,12 @@ CENTAUR_TOOL_WARN_OFF(weak-vtables)
         struct UIIconIdGenerator
         {
             inline UIIconIdGenerator() :
-                ipoIconId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
-                storageId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
-                withdrawId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
-                moneyId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
-                moneyOffId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() },
-                binanceId { CENTAUR_NAMESPACE::uuid::generate<std::mt19937_64>().to_string() }
+                ipoIconId { CENTAUR_NAMESPACE::uuid::generate().to_string() },
+                storageId { CENTAUR_NAMESPACE::uuid::generate().to_string() },
+                withdrawId { CENTAUR_NAMESPACE::uuid::generate().to_string() },
+                moneyId { CENTAUR_NAMESPACE::uuid::generate().to_string() },
+                moneyOffId { CENTAUR_NAMESPACE::uuid::generate().to_string() },
+                binanceId { CENTAUR_NAMESPACE::uuid::generate().to_string() }
             {
             }
             std::string ipoIconId;

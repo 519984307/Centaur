@@ -28,12 +28,8 @@ ELSE ()
     message(FATAL_ERROR "Unknown target platform")
 ENDIF ()
 
-add_executable(btrader
-        ${PLATFORM_INDEPENDENT_FILES}
-        src/main.cpp
-        src/KeysLoader.cpp
-        src/TraderApplication.cpp
-        src/ClientSocket.cpp
+
+SET(INCLUDE_FILES
         include/TraderApplication.hpp
         include/ClientSocket.hpp
         include/TraderGlobals.hpp
@@ -44,12 +40,25 @@ add_executable(btrader
         ../common/Tools.hpp
         include/SpotStreams.hpp)
 
+SET(SOURCE_FILE
+        src/main.cpp
+        src/KeysLoader.cpp
+        src/TraderApplication.cpp
+        src/ClientSocket.cpp)
+
+add_executable(btrader
+        ${PLATFORM_INDEPENDENT_FILES}
+        ${SOURCE_FILE}
+        ${INCLUDE_FILES})
+
+
 target_include_directories(btrader PRIVATE
         include
         ../common
         ../../Library/Protocol/include
         ../../Library/uuid/include
-        ../../Library/Exchanges/BinanceAPI/include)
+        ../../Library/Exchanges/BinanceAPI/include
+        ../../include)
 
 
 target_link_libraries(btrader PRIVATE fmt::fmt)
@@ -69,14 +78,12 @@ IF (APPLE)
 ENDIF ()
 
 
-target_compile_options(btrader PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -fdiagnostics-color=always
-        -Wno-poison-system-directories)
+set_source_files_properties(
+        ${CENT_INCLUDE}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")
 
+set_source_files_properties(
+        ${CENT_SOURCE}
+        PROPERTIES
+        COMPILE_FLAGS "${COMPILER_OPTIONS}")

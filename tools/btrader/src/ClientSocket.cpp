@@ -13,7 +13,7 @@
 
 #define SET_BASICS(msg)                \
     msg.uuid()       = m_connectionId; \
-    msg.responseId() = cen::uuid::generate<std::mt19937_64>().to_string();
+    msg.responseId() = cen::uuid::generate().to_string();
 
 namespace
 {
@@ -79,7 +79,7 @@ auto btrader::CentaurClient::run() -> void
     ccinfo.userdata       = reinterpret_cast<void *>(this);
     ccinfo.ssl_connection = 0; /*LCCSCF_USE_SSL | LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK; */
 
-    m_lws                 = lws_client_connect_via_info(&ccinfo);
+    m_lws = lws_client_connect_via_info(&ccinfo);
 
     if (m_lws == nullptr)
         throw std::runtime_error("failed to connect");
@@ -127,7 +127,7 @@ auto btrader::CentaurClient::eventManager(struct lws *wsi, lws_callback_reasons 
                     {
                         CENTAUR_PROTOCOL_NAMESPACE::ProtocolHeader header {};
 
-                        auto data           = CENTAUR_PROTOCOL_NAMESPACE::Generator::getData(&header, reinterpret_cast<uint8_t *>(in), len, 6000);
+                        auto data = CENTAUR_PROTOCOL_NAMESPACE::Generator::getData(&header, reinterpret_cast<uint8_t *>(in), len, 6000);
 
                         bool messageCorrect = true;
                         if (header.flags & CENTAUR_PROTOCOL_NAMESPACE::PFWrongSize)
@@ -359,7 +359,7 @@ auto btrader::CentaurClient::sendBalanceAsset(const std::string &name, const std
     asset.asset()     = name;
     asset.total()     = source;
     asset.assetIcon() = icon;
-    asset.assetId()   = cen::uuid::generate<std::mt19937_64>().to_string();
+    asset.assetId()   = cen::uuid::generate().to_string();
 
     sendProtocolData(&asset, true);
 
@@ -377,7 +377,7 @@ auto btrader::CentaurClient::sendBalanceAssetItem(const std::string &id, const s
     asset.handle()    = id;
     asset.name()      = name;
     asset.value()     = value;
-    asset.subHandle() = cen::uuid::generate<std::mt19937_64>().to_string();
+    asset.subHandle() = cen::uuid::generate().to_string();
     asset.icon()      = icon;
 
     sendProtocolData(&asset, true);
