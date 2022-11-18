@@ -78,6 +78,7 @@ CENTAUR_NAMESPACE::BinanceSpotPlugin::BinanceSpotPlugin(QObject *parent) :
     m_spotWS { nullptr },
     m_globalPluginUuid { g_uuidString }
 {
+    m_sevenDayLastUpdate = QDate::currentDate();
 }
 
 CENTAUR_NAMESPACE::BinanceSpotPlugin::~BinanceSpotPlugin()
@@ -271,12 +272,12 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
     logInfo("BinanceSpotPlugin", "The main thread is unblocked");
 }
 
-bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &name, int item) noexcept
+bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &name) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::addSymbolToWatchlist()");
 
-    auto itemId = m_symbolId.find(name);
-    if (itemId != m_symbolId.end())
+    auto itemId = m_symbolsWatch.find(name);
+    if (itemId != m_symbolsWatch.end())
     {
         logError("BinanceSpotPlugin", QString("The %1 symbol is already handled").arg(name));
         return false;
@@ -299,10 +300,14 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &n
             m_wsIds[std::get<int>(subsVar)] = name;
     }
 
+    m_symbolsWatch.insert(name);
+
+    // set the seven 7 data to cache
+    get7dayData(name);
+
     // According to the API, there is no way to see if the stream was successfully retrieved in this part of the code
     // since the stream receiving is asynchronous
     // So we'll handle the symbol return true even if there is a slight chance that this will not happen
-    m_symbolId[name] = item;
     return true;
 }
 
@@ -313,9 +318,11 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbolFromWatchlist(const QStri
     logInfo("BinanceSpotPlugin", QString("Attempting to remove %1 from the watchlist").arg(name));
 
     // Remove from the id's list
-    m_symbolId.erase(name);
+    m_symbolsWatch.erase(name);
+    // remove the seven-day cache
+    m_sevenDayCache.remove(name);
 
-    if (m_symbolId.empty())
+    if (m_symbolsWatch.empty())
     {
         /// if the list is empty prefer to stop the thread
         logWarn("BinanceSpotPlugin", "The Spot WebSocket thread will be stopped because the watchlist is empty.");
@@ -342,16 +349,8 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onTickerUpdate(const QString &symbol,
 {
     // Don't log since this message will be sent every 500 ms
 
-    // Find the symbol id
-    auto itemId = m_symbolId.find(symbol);
-    if (itemId == m_symbolId.end())
-    {
-        logError("BinanceSpotPlugin", QString("The id for the %1 symbol was not found. Ticker can not be send").arg(symbol));
-        return;
-    }
-
     // Redirect the signal
-    emit snTickerUpdate(symbol, itemId->second, receivedTime, price);
+    emit snTickerUpdate(symbol, g_uuidString, receivedTime, price);
 }
 
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSubscription(bool subscribe, bool status, int id) noexcept
@@ -381,8 +380,8 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::updateOrderbook(const QString &symbol
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotSymbolListPlugin::updateOrderbook()");
 
-    auto itemId = m_symbolId.find(symbol);
-    if (itemId == m_symbolId.end())
+    auto itemId = m_symbolsWatch.find(symbol);
+    if (itemId == m_symbolsWatch.end())
     {
         logError("BinanceSpotPlugin", QString("The %1 symbol is not handled and the orderbook can not be send").arg(symbol));
         return;
@@ -405,8 +404,8 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::updateOrderbook(const QString &symbol
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::stopOrderbook(const QString &symbol) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotSymbolListPlugin::stopOrderbook()");
-    auto itemId = m_symbolId.find(symbol);
-    if (itemId == m_symbolId.end())
+    auto itemId = m_symbolsWatch.find(symbol);
+    if (itemId == m_symbolsWatch.end())
     {
         logError("BinanceSpotPlugin", QString("The %1 symbol is not handled and the orderbook can not be stopped").arg(symbol));
         return;
@@ -689,19 +688,19 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onShowFees(const QString &symbol) noe
     dlg.exec();
 }
 
-QList<std::pair<qreal, QString>> CENTAUR_NAMESPACE::BinanceSpotPlugin::getWatchlist24hrPriceChange() noexcept
+QList<std::tuple<qreal, qreal, QString>> CENTAUR_NAMESPACE::BinanceSpotPlugin::getWatchlist24hrPriceChange() noexcept
 try
 {
-    QList<std::pair<qreal, QString>> ret;
+    QList<std::tuple<qreal, qreal, QString>> ret;
     std::vector<std::string> list;
-    list.reserve(m_symbolId.size());
-    for (const auto &id : m_symbolId)
-        list.emplace_back(id.first.toStdString());
+    list.reserve(m_symbolsWatch.size());
+    for (const auto &id : m_symbolsWatch)
+        list.emplace_back(id.toStdString());
 
     auto data = m_api->tickerPriceChangeStatistics24hr(list);
 
     for (const auto &[sym, data] : data)
-        ret.emplace_back(data.priceChangePercent, QString::fromStdString(sym));
+        ret.emplace_back(data.lastPrice, data.priceChangePercent, QString::fromStdString(sym));
 
     return ret;
 } catch (const BINAPI_NAMESPACE::APIException &ex)
@@ -712,6 +711,20 @@ try
 
 QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QString &symbol) noexcept
 {
+    QDate thisDate = QDate::currentDate();
+
+    if (thisDate.day() != m_sevenDayLastUpdate.day())
+    {
+        // Invalidate caches
+        m_sevenDayCache.clear();
+        m_sevenDayLastUpdate = thisDate;
+    }
+
+    auto cache = m_sevenDayCache.find(symbol);
+
+    if (cache != m_sevenDayCache.end())
+        return cache.value();
+
     const auto dayMS   = binapi::BinanceAPI::fromIntervalToMilliseconds(binapi::BinanceTimeIntervals::i1d);
     const auto todayMS = binapi::BinanceAPI::getTime();
     const auto today   = (todayMS - (todayMS % dayMS));
@@ -727,6 +740,8 @@ QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QStri
     {
         ret.emplace_back(pt.openTime, pt.close);
     }
+
+    m_sevenDayCache[symbol] = ret;
 
     return ret;
 }

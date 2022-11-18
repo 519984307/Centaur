@@ -26,7 +26,7 @@ public:
 
 public:
     /// \brief Add not normalized data
-    void setData(const QList<std::pair<qreal, QString>> &data, const QBrush &negative, const QBrush &positive);
+    void setData(const QList<std::tuple<qreal, qreal, QString>> &data, const QBrush &negative, const QBrush &positive);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

@@ -124,7 +124,7 @@ private slots:
     void onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept;
     void onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept;
     void onRemoveWatchList(const QModelIndex &index) noexcept;
-    void onTickerUpdate(const QString &symbol, int id, quint64 receivedTime, double price) noexcept;
+    void onTickerUpdate(const QString &symbol, const QString &uuid, quint64 receivedTime, double price) noexcept;
 
     void onRealTimeCandleUpdate(const cen::uuid &id, quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
 
@@ -159,10 +159,6 @@ protected:
     // Plugins
 private:
     PluginCandleViewDisplay m_candleViewDisplay; /// Current candles on display
-
-private:
-    // It will just be incremented
-    int m_sessionIds { 0 };
 
     // Communication Server
 private:

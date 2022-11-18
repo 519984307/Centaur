@@ -107,15 +107,15 @@ SquarifyWidget::SquarifyWidget(QWidget *parent) :
 
 SquarifyWidget::~SquarifyWidget() = default;
 
-void SquarifyWidget::setData(const QList<std::pair<qreal, QString>> &data, const QBrush &negative, const QBrush &positive)
+void SquarifyWidget::setData(const QList<std::tuple<qreal, qreal, QString>> &data, const QBrush &negative, const QBrush &positive)
 {
     _impl->data.clear();
 
     _impl->positive = positive;
     _impl->negative = negative;
 
-    for (const auto &[value, string] : data)
-        _impl->data.emplace_back(string, std::abs(value), value > 0 ? 1 : -1);
+    for (const auto &[price, percent, string] : data)
+        _impl->data.emplace_back(string, std::abs(percent), percent > 0 ? 1 : -1);
 
     std::sort(_impl->data.begin(), _impl->data.end(),
         [](const ItemData &q1, const ItemData &q2) {

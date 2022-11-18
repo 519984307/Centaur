@@ -26,6 +26,7 @@
 #include <memory>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace CENTAUR_NAMESPACE
 {
@@ -59,14 +60,14 @@ namespace CENTAUR_NAMESPACE
         bool initialization() noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIcon getSymbolListName() const noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIconVector getSymbolList() const noexcept override;
-        bool addSymbolToWatchlist(const QString &name, int item) noexcept override;
+        bool addSymbolToWatchlist(const QString &name) noexcept override;
         void removeSymbolFromWatchlist(const QString &name) noexcept override;
         void updateOrderbook(const QString &symbol) noexcept override;
         void stopOrderbook(const QString &symbol) noexcept override;
         QString getQuoteFromSymbol(const QString &symbol) noexcept override;
         QString getBaseFromSymbol(const QString &symbol) noexcept override;
         QList<QAction *> dynamicWatchListMenuItems() noexcept override;
-        QList<std::pair<qreal, QString>> getWatchlist24hrPriceChange() noexcept override;
+        QList<std::tuple<qreal, qreal, QString>> getWatchlist24hrPriceChange() noexcept override;
         QList<std::pair<quint64, qreal>> get7dayData(const QString &symbol) noexcept override;
 
     public slots:
@@ -85,7 +86,7 @@ namespace CENTAUR_NAMESPACE
         void onShowFees(const QString &symbol = "") noexcept;
 
     signals:
-        void snTickerUpdate(const QString &symbol, int symbolId, quint64 receivedTime, double price);
+        void snTickerUpdate(const QString &symbol, const QString &sourceUUID, quint64 receivedTime, double price);
         void snOrderbookUpdate(const QString &source, const QString &symbol, quint64 receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks);
 
         // Resources
@@ -108,10 +109,15 @@ namespace CENTAUR_NAMESPACE
         BINAPI_NAMESPACE::BinanceLimits m_limits;
         BINAPI_NAMESPACE::BinanceKeys m_keys;
 
+        // SEVEN-DAY CACHE CHART
+    private:
+        QDate m_sevenDayLastUpdate;
+        QMap<QString, QList<std::pair<quint64, qreal>>> m_sevenDayCache;
+
     protected:
         uuid m_globalPluginUuid;
-        std::map<QString, int> m_symbolId;
         std::map<int, QString> m_wsIds;
+        std::unordered_set<QString> m_symbolsWatch;
         std::unordered_map<QString, std::pair<bool, uint64_t>> m_symbolOrderbookSnapshot;
 
     protected:

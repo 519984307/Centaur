@@ -56,7 +56,10 @@ SET(CENT_SOURCE
         src/AddUserDialog.cpp
         src/SettingsDialog.cpp
         src/QRCodeDialog.cpp
-        src/TOTP.cpp src/OrderbookDialog.cpp src/DepthChartDialog.cpp)
+        src/TOTP.cpp
+        src/OrderbookDialog.cpp
+        src/DepthChartDialog.cpp
+        src/WatchlistWidget.cpp src/WatchlistModel.cpp)
 
 SET(CENT_INCLUDE
         include/CentaurApp.hpp
@@ -85,7 +88,10 @@ SET(CENT_INCLUDE
         include/SettingsDialog.hpp
         include/LoginDialog.hpp
         include/QRCodeDialog.hpp
-        include/TOTP.hpp include/OrderbookDialog.hpp include/DepthChartDialog.hpp)
+        include/TOTP.hpp
+        include/OrderbookDialog.hpp
+        include/DepthChartDialog.hpp
+        include/WatchlistWidget.hpp include/WatchListModel.hpp)
 
 SET(CENT_UI
         ui/CentaurApp.ui

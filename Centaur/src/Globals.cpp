@@ -282,7 +282,7 @@ auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noe
 
 namespace
 {
-// clang-format off
+    // clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF("-Wexit-time-destructors")
@@ -335,7 +335,7 @@ bool cen::Globals::SymbolsIcons::find(int size, const QString &symbol, QPixmap *
 
         if (!select.exec())
         {
-            logError("app", QString(LS("error-symbols-image-db").arg(select.lastError().text())));
+            logError("app", QString(QCoreApplication::tr("Failed to acquire the image. %1").arg(select.lastError().text())));
             return false;
         }
         else

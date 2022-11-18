@@ -16,6 +16,7 @@
 #include "SettingsDialog.hpp"
 #include "SplashDialog.hpp"
 #include <QAreaSeries>
+#include <QChartView>
 #include <QDateTimeAxis>
 #include <QGraphicsBlurEffect>
 #include <QImageReader>
@@ -27,6 +28,7 @@
 #include <QSqlField>
 #include <QSqlQuery>
 #include <QSqlRecord>
+#include <QStyledItemDelegate>
 #include <QtCharts/QValueAxis>
 #include <utility>
 
@@ -77,6 +79,8 @@ struct CentaurApp::Impl
 
     LogDialog *logDialog { nullptr };
     QChart *last7Chart { nullptr };
+
+    QChartView *sevenDayGraph;
 
     QAction *orderbookDepth;
     QAction *depthChart;
@@ -183,31 +187,6 @@ CandleViewTimeFrameActions::CandleViewTimeFrameActions(QObject *parent) :
 {
 }
 
-namespace
-{
-    constexpr char g_statusRed[] {
-        R"(QLabel{
-color: rgb(255, 255, 255);
-background-color: rgb(172, 6, 0);
-border-radius: 3px;
-min-width: 85px;
-margin: 0 0 0 10;
-qproperty-alignment: AlignCenter;
-})"
-    };
-
-    constexpr char g_statusGreen[] {
-        R"(QLabel{
-color: rgb(255, 255, 255);
-background-color: rgb(0, 104, 18);
-border-radius: 3px;
-min-width: 85px;
-margin: 0 0 0 10;
-qproperty-alignment: AlignCenter;
-})"
-    };
-} // namespace
-
 CentaurApp::CentaurApp(QWidget *parent) :
     QMainWindow(parent),
     _impl { new Impl(this) }
@@ -274,7 +253,7 @@ CentaurApp::CentaurApp(QWidget *parent) :
 
     // Start the server
     splashScreen->setDisplayText(tr("Starting the communication server"));
-    // startCommunicationsServer();
+    startCommunicationsServer();
     splashScreen->step();
 
     // Load plugins
@@ -475,7 +454,10 @@ void CentaurApp::initializeInterface() noexcept
     ui()->maximizeButton->setButtonClass(SystemPushButton::ButtonClass::maximize);
     ui()->maximizeButton->linkMaximize(ui()->closeButton, ui()->minimizeButton);
 #endif
-
+    /*
+        ui()->watchListWidget->item(0)->setIcon(QIcon(":/img/on-top"));
+        ui()->watchListWidget->item(1)->setIcon(QIcon(":/img/on-top"));
+    */
     connect(ui()->settingsButton, &QPushButton::released, this, &CentaurApp::onShowSettings);
     connect(ui()->pluginsViewButton, &QPushButton::released, this, &CentaurApp::onShowPlugins);
     connect(ui()->logsViewButtton, &QPushButton::released, this, &CentaurApp::onShowLogDialog);
@@ -554,19 +536,17 @@ void CentaurApp::initializeInterface() noexcept
         }
     });
 
-    ui()->watchListTable->initialize(ui()->watchListSearch, 6, -1, 5, nullptr);
-    ui()->watchListTable->sortByColumn(0, Qt::AscendingOrder);
-    ui()->watchListTable->getModel()->setHorizontalHeaderLabels({ tr("Symbol"), tr("Price"), tr("Source"), tr("Latency"), tr("UUID"), tr("Options") });
-    ui()->watchListTable->verticalHeader()->setDefaultAlignment(Qt::AlignCenter);
-    ui()->watchListTable->horizontalHeader()->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
-    ui()->watchListTable->setButtons(OptionsWidget::view | OptionsWidget::del);
+    ui()->watchListWidget->linkSearchEdit(ui()->watchListSearch);
 
-    ui()->watchListTable->setDeletionColumnData(0);
-    connect(ui()->watchListTable, &OptionsTableWidget::viewItemPressed, this, [&](QStandardItem *item) {
-        auto index     = ui()->watchListTable->getItemIndexFromSource(item);
-        QString symbol = ui()->watchListTable->getItemIndex(index.row(), 0).data(Qt::DisplayRole).toString();
-        QString source = ui()->watchListTable->getItemIndex(index.row(), 4).data(Qt::DisplayRole).toString();
-        auto actions   = _impl->exchangeMenuActions[uuid { source.toStdString() }];
+    connect(ui()->watchListWidget, &WatchlistWidget::mouseRightClick, this, [&](const QPoint &pt) {
+        const auto &[symbol, source] = ui()->watchListWidget->sourceFromPoint(pt);
+
+        if (symbol.isEmpty() || source.isEmpty())
+            return;
+
+        QPoint menuPoint = ui()->watchListWidget->mapToGlobal(pt);
+
+        auto actions = _impl->exchangeMenuActions[uuid { source.toStdString() }];
 
         QMenu menu(this);
 
@@ -596,11 +576,56 @@ void CentaurApp::initializeInterface() noexcept
             menu.addAction(action);
         }
 
-        auto top   = ui()->watchListTable->mapToGlobal(ui()->watchListTable->visualRect(index).topLeft()); // To get the top
-        auto right = ui()->watchListTable->mapToGlobal(ui()->watchListTable->frameGeometry().topRight());  // To get the right
-
-        menu.exec({ right.x(), top.y() });
+        menu.exec(menuPoint);
     });
+
+    _impl->sevenDayGraph = new QChartView(this);
+    _impl->sevenDayGraph->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::Dialog);
+    _impl->sevenDayGraph->setStyleSheet(R"(QFrame{
+background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 1  rgba(53,61,66,50), stop: 0 rgba(79,85,90,50));
+border-top-left-radius: 10px;
+border-top-right-radius: 10px;
+border-bottom-left-radius: 10px;
+border-bottom-right-radius: 10px;
+border: 0px;
+})");
+#ifdef Q_OS_MAC
+    _impl->sevenDayGraph->setAttribute(Qt::WA_TranslucentBackground);
+#endif
+
+    connect(ui()->watchListWidget, &WatchlistWidget::itemHover, this, [&](const QString &symbol, const QString &source) {
+        if (symbol.isEmpty() || source.isEmpty())
+        {
+            _impl->sevenDayGraph->hide();
+            return;
+        }
+
+        auto itemIter = _impl->exchangeList.find(uuid(source.toStdString()));
+        if (itemIter == _impl->exchangeList.end())
+        {
+            logError("wlOrderbookSend", QString("Watchlist item for the symbol %1 was not found").arg(symbol));
+            return;
+        }
+
+        const auto &exchInfo = itemIter->second;
+        auto origin          = ui()->watchListWidget->mapToGlobal(ui()->watchListWidget->frameGeometry().topRight()); // To get the right
+
+        plotSevenDaysChart(symbol, exchInfo.exchange->get7dayData(symbol));
+
+        _impl->sevenDayGraph->setGeometry(
+            origin.x(),
+            origin.y(),
+            400, 400);
+
+        _impl->sevenDayGraph->show();
+    });
+
+    connect(ui()->watchListWidget, &WatchlistWidget::mouseLeave, this, [&]() {
+        _impl->sevenDayGraph->hide();
+    });
+
+    /*
+
 
     connect(ui()->watchListTable, &OptionsTableWidget::deleteItemPressed, this, [&](C_UNUSED const QString &itemData) {
         onRemoveWatchList(ui()->watchListTable->getRemovedItem());
@@ -622,15 +647,15 @@ void CentaurApp::initializeInterface() noexcept
                 onSetWatchlistSelection(source, symbol);
             }
         });
-
+*/
     // Init Last-7-day chart
     _impl->last7Chart = new QChart;
     _impl->last7Chart->setAnimationOptions(QChart::AllAnimations);
     _impl->last7Chart->setBackgroundPen(Qt::NoPen);
-    _impl->last7Chart->setBackgroundBrush(Qt::NoBrush);
+    _impl->last7Chart->setBackgroundBrush(QColor(3, 12, 19));
     _impl->last7Chart->setTitleBrush(QColor(200, 200, 200));
-    ui()->sevenDayGraph->setChart(_impl->last7Chart);
-    ui()->sevenDayGraph->setRenderHint(QPainter::Antialiasing);
+    _impl->sevenDayGraph->setChart(_impl->last7Chart);
+    _impl->sevenDayGraph->setRenderHint(QPainter::Antialiasing);
     _impl->last7SevenLowSeries  = new QSplineSeries;
     _impl->last7SevenUpSeries   = new QSplineSeries;
     _impl->last7SevenAreaSeries = new QAreaSeries(_impl->last7SevenLowSeries, _impl->last7SevenUpSeries);
@@ -677,12 +702,6 @@ void CentaurApp::saveInterfaceState() noexcept
     settings.setValue("state", saveState());
     settings.endGroup();
 
-    settings.beginGroup("watchlistListState");
-    settings.setValue("geometry", ui()->watchListTable->saveGeometry());
-    settings.setValue("h-geometry", ui()->watchListTable->horizontalHeader()->saveGeometry());
-    settings.setValue("state", ui()->watchListTable->horizontalHeader()->saveState());
-    settings.endGroup();
-
     settings.beginGroup("LogDialog");
     settings.setValue("geometry", _impl->logDialog->saveGeometry());
     settings.endGroup();
@@ -719,12 +738,6 @@ void CentaurApp::loadInterfaceState() noexcept
     settings.beginGroup("mainWindow");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-
-    settings.beginGroup("watchlistListState");
-    ui()->watchListTable->restoreGeometry(settings.value("geometry").toByteArray());
-    ui()->watchListTable->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    ui()->watchListTable->horizontalHeader()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
     settings.beginGroup("Splitter0");
@@ -844,14 +857,19 @@ void CentaurApp::startLoggingService() noexcept
 
 void CentaurApp::startCommunicationsServer() noexcept
 {
-    /*
-    m_serverStatus = new QLabel("Server", ui()->statusBar);
-    ui()->statusBar->addPermanentWidget(m_serverStatus, 0);
     m_server = std::make_unique<ProtocolServer>(this);
+    QIcon icon;
     if (m_server->isListening())
-        m_serverStatus->setStyleSheet(g_statusGreen);
+    {
+        icon.addFile(QString::fromUtf8(":/img/server_green"), QSize(), QIcon::Normal, QIcon::Off);
+        ui()->serverStatusButton->setIcon(icon);
+    }
     else
-        m_serverStatus->setStyleSheet(g_statusRed);*/
+    {
+
+        icon.addFile(QString::fromUtf8(":/img/server_red"), QSize(), QIcon::Normal, QIcon::Off);
+        ui()->serverStatusButton->setIcon(icon);
+    }
 }
 
 void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept
@@ -869,28 +887,11 @@ void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, 
     auto watchInterface = interface->second.exchange;
 
     // Generate a unique-id
-    const int id = ++m_sessionIds;
-
-    if (watchInterface->addSymbolToWatchlist(symbol, id))
+    if (watchInterface->addSymbolToWatchlist(symbol))
     {
-        auto itemSymbol  = new QStandardItem(symbol);
-        auto itemPrice   = new QStandardItem("$ 0.00");
-        auto itemSource  = new QStandardItem(interface->second.listName);
-        auto itemLatency = new QStandardItem("0");
-        auto itemUUID    = new QStandardItem(interface->second.uuid.to_string().c_str());
-
-        itemSymbol->setData(id, Qt::UserRole + 1); // To find the item
-        itemPrice->setData(0., Qt::UserRole + 1);  // To compare to previous values
-
-        itemSymbol->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemPrice->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        itemSource->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        itemLatency->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-
-        ui()->watchListTable->insertRowWithOptions(
-            ui()->watchListTable->getRowCount(),
-            { itemSymbol, itemPrice, itemSource, itemLatency, itemUUID, new QStandardItem() },
-            false);
+        QPixmap icon;
+        g_globals->symIcons.find(32, watchInterface->getBaseFromSymbol(symbol), &icon);
+        ui()->watchListWidget->insertItem(icon, symbol, sender, 0.0, 0.0, 0);
 
         // Add to the database
         if (addToDatabase)
@@ -910,9 +911,15 @@ void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, 
 
         auto dataList = watchInterface->getWatchlist24hrPriceChange();
 
-        std::transform(dataList.begin(), dataList.end(), dataList.begin(), [](const std::pair<qreal, QString> &data) -> std::pair<qreal, QString> {
-            return { data.first, QString(R"(<font size="12"><b>%1</b></font><br>%2 %)").arg(data.second).arg(data.first, 'f', '4') };
-        });
+        std::transform(dataList.begin(), dataList.end(), dataList.begin(),
+            [&symbol, &sender, &ui = _impl->ui](const std::tuple<qreal, qreal, QString> &data) -> std::tuple<qreal, qreal, QString> {
+                ui->watchListWidget->updateDifference(symbol, sender, std::get<1>(data));
+                return { std::get<0>(data),
+                    std::get<1>(data),
+                    QString(R"(<font size="12"><b>%1</b></font><br><font size="11"><b>$ %2</b><br>%3 %</font>)")
+                        .arg(std::get<2>(data), QLocale(QLocale::English).toString(std::get<0>(data), 'f', 2))
+                        .arg(std::get<1>(data), 'f', '2') };
+            });
 
         ui()->widget->setData(dataList, gr_n, gr_p);
     }
@@ -921,72 +928,13 @@ void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, 
         logError("watchlist", QString("Symbol %1 was not added to the watchlist").arg(symbol));
     }
 }
-void CentaurApp::onTickerUpdate(const QString &symbol, int id, quint64 receivedTime, double price) noexcept
+
+void CentaurApp::onTickerUpdate(const QString &symbol, const QString &source, quint64 receivedTime, double price) noexcept
 {
-    QString source;
-    QStandardItem *item = nullptr;
-    for (int r = 0; r < ui()->watchListTable->getRowCount(); ++r)
-    {
-        item = ui()->watchListTable->getModel()->item(r, 0);
+    const auto ms        = static_cast<qint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    const qint64 latency = static_cast<qint64>(receivedTime) > ms ? 0ll : ms - static_cast<qint64>(receivedTime);
 
-        if (item->data() == id)
-        {
-            source = ui()->watchListTable->getModel()->item(r, 4)->text();
-            break;
-        }
-    }
-    if (item == nullptr)
-    {
-        logError("wlTickerUpdate", QString("Watchlist item for the symbol '%1' was not found").arg(symbol));
-        return;
-    }
-
-    const int itemRow = ui()->watchListTable->getItemIndexFromSource(item).row();
-
-    if (itemRow == -1)
-    {
-        // Item is not visible
-        return;
-    }
-
-    const double previousPrice = ui()->watchListTable->getItemData(itemRow, 1, Qt::UserRole + 1).toReal();
-
-    if (price > previousPrice)
-    {
-        item->setIcon(g_globals->icons.upArrow);
-        ui()->watchListTable->setItemData(itemRow, 1, Qt::ForegroundRole, QBrush(QColor(0, 255, 0)));
-    }
-    else if (price < previousPrice)
-    {
-        item->setIcon(g_globals->icons.downArrow);
-        ui()->watchListTable->setItemData(itemRow, 1, Qt::ForegroundRole, QBrush(QColor(255, 129, 112)));
-    }
-    else
-    {
-        item->setIcon(g_globals->icons.downArrow);
-        ui()->watchListTable->setItemData(itemRow, 1, Qt::ForegroundRole, QBrush(QColor(238, 238, 238)));
-    }
-
-    ui()->watchListTable->setItemText(itemRow, 1, "$ " + QLocale(QLocale::English).toString(price, 'f', 2));
-    ui()->watchListTable->setItemData(itemRow, 1, Qt::UserRole + 1, price); // Store the current since it will become the previous in the next call
-
-    // Calculate latency
-    const auto ms      = static_cast<quint64>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    const auto latency = receivedTime > ms ? 0ull : ms - receivedTime;
-
-    if (latency <= 85)
-    {
-        ui()->watchListTable->setItemData(itemRow, 3, Qt::ForegroundRole, QBrush(QColor(0, 255, 0)));
-    }
-    else if (latency >= 86 && latency <= 185)
-    {
-        ui()->watchListTable->setItemData(itemRow, 3, Qt::ForegroundRole, QBrush(QColor(255, 215, 0)));
-    }
-    else if (latency >= 186 && latency <= 10000000)
-    {
-        ui()->watchListTable->setItemData(itemRow, 3, Qt::ForegroundRole, QBrush(QColor(255, 129, 112)));
-    }
-    ui()->watchListTable->setItemText(itemRow, 3, QString("%1 ms").arg(latency));
+    ui()->watchListWidget->updatePriceAndLatency(symbol, source, price, latency);
 
     // Determinate if the OrderBook dialog is being shown
     QString orderBookObjectName = QString("%1%2orderbook").arg(source, symbol);
@@ -1003,39 +951,39 @@ void CentaurApp::onTickerUpdate(const QString &symbol, int id, quint64 receivedT
 void CentaurApp::onRemoveWatchList(const QModelIndex &index) noexcept
 {
     logTrace("watchlist", "CentaurApp::onRemoveWatchList");
-    /// Retrieve the IExchange from the row based on the 5 column which has the PluginUUID Source
+    // Retrieve the IExchange from the row based on the 5 column which has the PluginUUID Source
+    /*
+        ui()->watchListTable->getItemText(index.row(), 0);
 
-    ui()->watchListTable->getItemText(index.row(), 0);
+        QString itemSymbol = ui()->watchListTable->getItemText(index.row(), 0);
+        QString itemSource = ui()->watchListTable->getItemText(index.row(), 4);
 
-    QString itemSymbol = ui()->watchListTable->getItemText(index.row(), 0);
-    QString itemSource = ui()->watchListTable->getItemText(index.row(), 4);
+        auto interfaceIter = _impl->exchangeList.find(uuid(itemSource.toStdString()));
+        if (interfaceIter == _impl->exchangeList.end())
+        {
+            QString message = QString(tr("Failed to locate the symbol interface."));
+            logError("wlRemove", message);
+            QMessageBox box;
+            box.setText(tr("Could remove the symbol"));
+            box.setInformativeText(message);
+            box.setIcon(QMessageBox::Critical);
+            box.exec();
+            return;
+        }
 
-    auto interfaceIter = _impl->exchangeList.find(uuid(itemSource.toStdString()));
-    if (interfaceIter == _impl->exchangeList.end())
-    {
-        QString message = QString(tr("Failed to locate the symbol interface."));
-        logError("wlRemove", message);
-        QMessageBox box;
-        box.setText(tr("Could remove the symbol"));
-        box.setInformativeText(message);
-        box.setIcon(QMessageBox::Critical);
-        box.exec();
-        return;
-    }
+        // Call the plugin to inform that it must not send data of the symbol anymore
+        auto &exchInfo = interfaceIter->second;
 
-    // Call the plugin to inform that it must not send data of the symbol anymore
-    auto &exchInfo = interfaceIter->second;
+        exchInfo.exchange->removeSymbolFromWatchlist(itemSymbol);
 
-    exchInfo.exchange->removeSymbolFromWatchlist(itemSymbol);
-
-    // Remove the row
-    if (!ui()->watchListTable->removeItemRow(index))
-        logError("watchlist", QString(tr("%1 was not removed from the UI list")).arg(itemSymbol));
-    else
-    {
-        logInfo("watchlist", QString(tr("%1 was removed from the UI list")).arg(itemSymbol));
-        m_sqlFavorites->del(itemSymbol, itemSource);
-    }
+        // Remove the row
+        if (!ui()->watchListTable->removeItemRow(index))
+            logError("watchlist", QString(tr("%1 was not removed from the UI list")).arg(itemSymbol));
+        else
+        {
+            logInfo("watchlist", QString(tr("%1 was removed from the UI list")).arg(itemSymbol));
+            m_sqlFavorites->del(itemSymbol, itemSource);
+        }*/
 }
 
 void CentaurApp::onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept

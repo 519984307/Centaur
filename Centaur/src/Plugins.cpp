@@ -6,11 +6,13 @@
 
 // General aspects of plugins
 
+#include "../../Library/cui/include/OptionsTableWidget.hpp"
 #include "../ui/ui_CentaurApp.h"
 #include "CentaurApp.hpp"
 #include "SplashDialog.hpp"
 #include <QDir>
 #include <QFile>
+#include <QHeaderView>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPluginLoader>
@@ -168,7 +170,7 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
     mapExchangePlugin(uuid, ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first });
 
     // clang-format off
-    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,int,quint64,double)), this, SLOT(onTickerUpdate(QString,int,quint64,double)));
+    connect(exchange->getPluginObject(), SIGNAL(snTickerUpdate(QString,QString,quint64,double)), this, SLOT(onTickerUpdate(QString,QString,quint64,double)));
     // clang-format on
 
     mapExchangePluginViewMenus(uuid, exchange->dynamicWatchListMenuItems());

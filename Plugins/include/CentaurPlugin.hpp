@@ -224,10 +224,8 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
         /// \brief addSymbolToWatchlist Add a symbol to watchlist
         /// \param name Name of the symbol
-        /// \param item Keep track of this variable and link it to the symbol and pass
-        /// it with updateSymbol. NEVER CHANGE IT'S VALUE \return True on success;
-        /// false on error
-        C_NODISCARD virtual bool addSymbolToWatchlist(const QString &name, int item) noexcept = 0;
+        /// \return True on success; false on error
+        C_NODISCARD virtual bool addSymbolToWatchlist(const QString &name) noexcept = 0;
 
         /// \brief removeSymbolFromWatchlist The symbol was removed from the watchlist in the UI
         /// \param name Name of the symbol deleted
@@ -258,10 +256,10 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         C_NODISCARD virtual QList<QAction *> dynamicWatchListMenuItems() noexcept = 0;
 
         /// \brief Retrieve the 24hr ticker price for the watchlist
-        /// \return A list with the name and the percentage in % of 24hr change
+        /// \return A list with the price, the percentage in % of 24hr change and the symbol name (in that order)
         /// \remarks The Information is used to create the Squarify Tremap.
         /// \remarks This function will be called in very remove/insertion to the watchlist.
-        C_NODISCARD virtual QList<std::pair<qreal, QString>> getWatchlist24hrPriceChange() noexcept = 0;
+        C_NODISCARD virtual QList<std::tuple<qreal, qreal, QString>> getWatchlist24hrPriceChange() noexcept = 0;
 
         /// \brief Call by the UI when an item in the Watchlist is clicked
         /// \param symbol Symbol that is requested
@@ -278,7 +276,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     signals:
          \brief Emit to the UI to update the ticker
          receivedTime will be used to calculate the latency
-        void sgTickerUpdate(const QString &symbol, const int &symbolId, const quint64 &receivedTime, const double &price);
+        void sgTickerUpdate(const QString &symbol, const QString &sourceUUID, const quint64 &receivedTime, const double &price);
 
          \brief Emit to the UI to update the orderbook list
         void sgOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks);

@@ -1045,109 +1045,10 @@ border: 2px solid #56aff6;
                          </widget>
                         </item>
                         <item>
-                         <widget class="CENTAUR_NAMESPACE::OptionsTableWidget" name="watchListTable">
-                          <property name="font">
-                           <font>
-                            <pointsize>11</pointsize>
-                           </font>
-                          </property>
+                         <widget class="WatchlistWidget" name="watchListWidget">
                           <property name="styleSheet">
-                           <string notr="true">QTableView {
-    color: white;
-    background-color: rgba(46,53,59, 0);
-    border: 0px;
-}
-
-QTableView QTableCornerButton::section {
-    background: #5299D4;
-    border: 0px;
-}
-
-QTableView::item {
-    border: 0px;
-    height: 20px;
-}
-
-QTableView::item:hover{
-    background-color: rgb(79,85,90);
-}
-
-QTableView::item:hover:selected{
-    background-color: rgb(104,109,113);
-	font-weight: 800;
-}
-
-QTableView::item:selected{
-    color: white;
-	font-weight: 600;
-    background-color: rgb(91,97,102);
-}
-
-QHeaderView::section:checked
-{
-    background-color:  #3387CD;
-    color: white;
-}
-
-
-QHeaderView::section {
-    font: normal 800 12px Roboto;
-    padding-left: 4px;
-    border: 0px;
-    height: 20px;
-    background-color: #0069c0;
-    color: white;
-    padding-left: 4px;
-    border: 0px;
-}
-
-QHeaderView::section:hover
-{
-    background-color: #5299D4;
-    color: white;
-}
-
-</string>
+                           <string notr="true"/>
                           </property>
-                          <property name="editTriggers">
-                           <set>QAbstractItemView::NoEditTriggers</set>
-                          </property>
-                          <property name="selectionMode">
-                           <enum>QAbstractItemView::SingleSelection</enum>
-                          </property>
-                          <property name="selectionBehavior">
-                           <enum>QAbstractItemView::SelectItems</enum>
-                          </property>
-                          <property name="iconSize">
-                           <size>
-                            <width>12</width>
-                            <height>12</height>
-                           </size>
-                          </property>
-                          <property name="showGrid">
-                           <bool>false</bool>
-                          </property>
-                          <property name="gridStyle">
-                           <enum>Qt::NoPen</enum>
-                          </property>
-                          <property name="sortingEnabled">
-                           <bool>true</bool>
-                          </property>
-                          <property name="cornerButtonEnabled">
-                           <bool>false</bool>
-                          </property>
-                          <attribute name="horizontalHeaderMinimumSectionSize">
-                           <number>26</number>
-                          </attribute>
-                          <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-                           <bool>true</bool>
-                          </attribute>
-                          <attribute name="horizontalHeaderStretchLastSection">
-                           <bool>true</bool>
-                          </attribute>
-                          <attribute name="verticalHeaderVisible">
-                           <bool>false</bool>
-                          </attribute>
                          </widget>
                         </item>
                        </layout>
@@ -2041,129 +1942,6 @@ background-color: #9D9EA4;
                 <zorder>buttonsStackedFrame</zorder>
                </widget>
               </item>
-              <item>
-               <widget class="QFrame" name="sevenDayGraphFrame">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>50</height>
-                 </size>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QFrame{
-background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, 
-							stop: 1  rgba(53,61,66,50), stop: 0 rgba(79,85,90,50));
-border-top-left-radius: 10px;
-border-top-right-radius: 10px;
-border-bottom-left-radius: 10px;
-border-bottom-right-radius: 10px;
-border: 0px;
-}</string>
-                </property>
-                <property name="frameShape">
-                 <enum>QFrame::StyledPanel</enum>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Raised</enum>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_2">
-                 <property name="spacing">
-                  <number>5</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>5</number>
-                 </property>
-                 <item>
-                  <widget class="CENTAUR_NAMESPACE::ChevronButton" name="sevenDayGraphButton">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">
-
-QPushButton{
-font-size: 14px;
-font-weight: 600;
-color:  #cccccc;
-border: 0px;
-border-top-left-radius: 10px;
-border-top-right-radius: 10px;
-border-bottom-left-radius: 0px;
-border-bottom-right-radius: 0px;
-background-color: rgba(28,35,43, 0);
-text-align: left;
-padding:  0 0 0 15;
-}
-
-QPushButton:default{
-font-weight: 800;
-color:  #0d3C61;
-border: 0px;
-border-radius:  5px;
-border: 2px solid rgba(144,203,249,100);
-background-color: #2196f3;
-}
-
-
-
-QPushButton:hover, QPushButton:hover:default{
-	background-color:  rgb(55,61,68);
-}
-
-QPushButton:pressed{
-background-color: rgb(62,68,75);
-}
-
-QPushButton::on{
-background-color: rgb(51,57,64);
-}
-
-
-QPushButton:pressed:default{
-background-color:  rgb(51,57,64);
-}
-
-QPushButton:disabled{
-color: #c0c0c0;
-background-color: #9D9EA4;
-}
-</string>
-                   </property>
-                   <property name="text">
-                    <string>7-day graph</string>
-                   </property>
-                   <property name="checkable">
-                    <bool>true</bool>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QChartView" name="sevenDayGraph" native="true"/>
-                 </item>
-                </layout>
-               </widget>
-              </item>
              </layout>
             </widget>
             <widget class="QFrame" name="middeleFrame">
@@ -2461,12 +2239,6 @@ border-bottom-right-radius: 10px;
    <header>../../Library/cui/include/SystemPushButton.hpp</header>
   </customwidget>
   <customwidget>
-   <class>QChartView</class>
-   <extends>QWidget</extends>
-   <header>QtCharts/QChartView</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>CENTAUR_NAMESPACE::ChevronButton</class>
    <extends>QPushButton</extends>
    <header>../../Library/cui/include/ChevronButton.hpp</header>
@@ -2477,15 +2249,15 @@ border-bottom-right-radius: 10px;
    <header>../../Library/cui/include/SearchLineEdit.hpp</header>
   </customwidget>
   <customwidget>
-   <class>CENTAUR_NAMESPACE::OptionsTableWidget</class>
-   <extends>QTableView</extends>
-   <header>../../Library/cui/include/OptionsTableWidget.hpp</header>
-  </customwidget>
-  <customwidget>
    <class>CENTAUR_NAMESPACE::SquarifyWidget</class>
    <extends>QWidget</extends>
    <header>../../Library/cui/include/SquarifyWidget.hpp</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WatchlistWidget</class>
+   <extends>QListView</extends>
+   <header>../include/WatchlistWidget.hpp</header>
   </customwidget>
  </customwidgets>
  <resources>
