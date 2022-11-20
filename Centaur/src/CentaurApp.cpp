@@ -229,9 +229,7 @@ CentaurApp::CentaurApp(QWidget *parent) :
 
 #endif /*Q_OS_MAC*/
 
-    g_globals->paths.installPath = "/Volumes/RicardoESSD/Projects/Centaur/local";
-
-    g_globals->paths.resPath = g_globals->paths.installPath + "/Resources";
+    g_globals->paths.resPath = g_globals->paths.appPath + "/Contents/Resources";
 
     // Start logging service
     startLoggingService();
@@ -536,6 +534,19 @@ void CentaurApp::initializeInterface() noexcept
         }
     });
 
+    ui()->porfolioList->linkSearchEdit(ui()->porfolioSearch);
+    QPixmap pm;
+    g_globals->symIcons.find(32, "BTC", &pm);
+    ui()->porfolioList->insertItem(pm, "Bitcoin", "Binance SPOT", "BTC", "$ 45.02 USD", "0.023 BTC");
+    g_globals->symIcons.find(32, "ETH", &pm);
+    ui()->porfolioList->insertItem(pm, "Ethereum", "Binance SPOT", "ETH", "$ 450.31 USD", "0.25 ETH");
+    g_globals->symIcons.find(32, "BNB", &pm);
+    ui()->porfolioList->insertItem(pm, "Binance Coin", "Binance BNB", "BNB", "$ 125.02 USD", "0.505 BNB");
+    g_globals->symIcons.find(32, "TRX", &pm);
+    ui()->porfolioList->insertItem(pm, "Tron", "Binance SPOT", "TRX", "$ 85.97 USD", "1250.2548 TRX");
+    g_globals->symIcons.find(32, "DOT", &pm);
+    ui()->porfolioList->insertItem(pm, "Polkadot", "Binance SPOT", "DOT", "$ 0.23 USD", "0.0023 DOT");
+
     ui()->watchListWidget->linkSearchEdit(ui()->watchListSearch);
 
     connect(ui()->watchListWidget, &WatchlistWidget::mouseRightClick, this, [&](const QPoint &pt) {
@@ -682,13 +693,6 @@ border: 0px;
     _impl->last7SevenAreaSeries->attachAxis(axisY);
 
     _impl->last7Chart->setMargins(QMargins(0, 0, 0, 0));
-
-    /* TODO: THIS
-    // Balances Tree
-    ui()->ctrlBalances->setHeaderLabels({ LS("ui-docks-balances-name"), LS("ui-docks-balances-value") });
-    ui()->ctrlBalances->setIconSize(QSize(28, 28));
-
-     */
 }
 
 void CentaurApp::saveInterfaceState() noexcept
@@ -717,15 +721,7 @@ void CentaurApp::saveInterfaceState() noexcept
     settings.setValue("state", ui()->splitter->saveState());
     settings.endGroup();
 
-    /* TODO: THIS
-    settings.beginGroup("BalancesTreeState");
-    settings.setValue("geometry", ui()->ctrlBalances->saveGeometry());
-    settings.setValue("h-geometry", ui()->ctrlBalances->header()->saveGeometry());
-    settings.setValue("state", ui()->ctrlBalances->header()->saveState());
-    settings.endGroup();
 
-
-*/
     logInfo("app", "UI state saved");
 }
 
@@ -745,14 +741,6 @@ void CentaurApp::loadInterfaceState() noexcept
     ui()->splitter->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 
-    /* TODO: THIS
-    settings.beginGroup("BalancesTreeState");
-    ui()->ctrlBalances->restoreGeometry(settings.value("geometry").toByteArray());
-    ui()->ctrlBalances->header()->restoreGeometry(settings.value("h-geometry").toByteArray());
-    ui()->ctrlBalances->header()->restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-
-*/
     logInfo("app", "UI state loaded");
 }
 
