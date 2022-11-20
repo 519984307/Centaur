@@ -21,11 +21,6 @@
 
 BEGIN_CENTAUR_NAMESPACE
 
-namespace Ui
-{
-    class WatchlistWidget;
-}
-
 class WatchlistWidget : public QListView
 {
     Q_OBJECT

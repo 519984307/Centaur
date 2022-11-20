@@ -33,17 +33,13 @@ public:
         IconRole
     };
 
-    static constexpr int PRICE_UPDATE   = 0x00000001;
-    static constexpr int LATENCY_UPDATE = 0x00000002;
-    static constexpr int DIFF_UPDATE    = 0x00000004;
-
 public:
     explicit WatchlistModel(QObject *parent = nullptr);
     ~WatchlistModel() override;
 
 public:
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
+    C_NODISCARD int rowCount(const QModelIndex &parent) const override;
+    C_NODISCARD QVariant data(const QModelIndex &index, int role) const override;
 
 public:
     void insertWatchListElement(const QPixmap &icon, const QString &symbol, const QString &source, qreal price, qreal diff, qint64 lat);
@@ -54,10 +50,8 @@ public:
     void updatePriceAndLatency(const QString &symbol, const QString &source, qreal price, qint64 lat);
 
 public:
-    std::pair<QString, QString> sourceFromIndex(const QModelIndex &index) noexcept;
+    C_NODISCARD std::pair<QString, QString> sourceFromIndex(const QModelIndex &index) noexcept;
 
-protected:
-    qint64 indexFromSymbol(const QString &symbol, const QString source);
 
 private:
     struct Impl;

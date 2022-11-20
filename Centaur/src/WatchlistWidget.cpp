@@ -38,7 +38,7 @@ namespace
             redDiffPen { QColor(255, 129, 112, 200) },
             grayPen { QColor(238, 238, 238) },
             yellowPen { QColor(255, 215, 0) },
-            selectedPen { QColor(33, 150, 243) }
+            selectedPen { QColor(185, 214, 238) }
         {
             symbolNameFont.setWeight(QFont::Weight::Black);
             symbolNameFont.setPointSize(13);
@@ -238,16 +238,17 @@ namespace
         QPen selectedPen;
     };
 } // namespace
+
 struct WatchlistWidget::Impl
 {
     inline Impl()  = default;
     inline ~Impl() = default;
 
-    WatchlistModel *sourceModel {};
-    QItemSelectionModel *selectionModel {};
+    WatchlistModel *sourceModel { nullptr };
+    QItemSelectionModel *selectionModel { nullptr };
 
-    QModelIndex mouseHoverIndex;
-    QSortFilterProxyModel *sortProxyModel;
+    QModelIndex mouseHoverIndex {};
+    QSortFilterProxyModel *sortProxyModel { nullptr };
 };
 
 WatchlistWidget::WatchlistWidget(QWidget *parent) :
