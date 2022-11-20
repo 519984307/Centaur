@@ -59,7 +59,10 @@ SET(CENT_SOURCE
         src/TOTP.cpp
         src/OrderbookDialog.cpp
         src/DepthChartDialog.cpp
-        src/WatchlistWidget.cpp src/WatchlistModel.cpp)
+        src/WatchlistWidget.cpp
+        src/WatchlistModel.cpp
+        src/PortfolioWidget.cpp
+        src/PortfolioModel.cpp)
 
 SET(CENT_INCLUDE
         include/CentaurApp.hpp
@@ -91,7 +94,10 @@ SET(CENT_INCLUDE
         include/TOTP.hpp
         include/OrderbookDialog.hpp
         include/DepthChartDialog.hpp
-        include/WatchlistWidget.hpp include/WatchListModel.hpp)
+        include/WatchlistWidget.hpp
+        include/WatchListModel.hpp
+        include/PortfolioModel.hpp
+        include/PortfolioWidget.hpp)
 
 SET(CENT_UI
         ui/CentaurApp.ui

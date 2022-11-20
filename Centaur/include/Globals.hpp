@@ -38,7 +38,6 @@ namespace CENTAUR_NAMESPACE
 
     struct Globals
     {
-
         struct SessionData
         {
             QString user;
@@ -52,7 +51,6 @@ namespace CENTAUR_NAMESPACE
         struct Paths
         {
             QString appPath;
-            QString installPath;
             QString pluginsPath;
             QString resPath;
         } paths;
@@ -80,48 +78,11 @@ namespace CENTAUR_NAMESPACE
 
         } symIcons;
 
-        struct Locale
-        {
-            enum class ErrorDetail
-            {
-                noError = 0,
-                localeFileError,
-                xmlDocumentInvalid,
-                emptyDocument,
-                langError
-            };
-            C_NODISCARD auto loadLocale(const QString &language) noexcept -> ErrorDetail;
 
-            C_NODISCARD auto get(uint64_t crc) const -> const QString &;
-
-        protected:
-            std::unordered_map<uint64_t, QString> m_locale;
-        } locale;
-
-        struct VisualsUI
-        {
-            enum class ErrorDetail
-            {
-                noError = 0,
-                visualsFileError,
-                xmlDocumentInvalid
-            };
-
-            struct VisualsFont
-            {
-                QString name { "Arial" };
-                int size { 13 };
-                int weight { 400 };
-                bool italic { false };
-                qreal spacing { 0.0 };
-            };
-
-        } visuals;
     };
 
     extern Globals *g_globals;
 } // namespace CENTAUR_NAMESPACE
 
-#define LS(x) g_globals->locale.get(CRC64_STR(x))
 
 #endif // CENTAUR_GLOBALS_HPP

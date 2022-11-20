@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QStandardPaths>
 #include <QTranslator>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
@@ -123,8 +124,9 @@ void CENTAUR_NAMESPACE::CentaurLogger::dispatch() noexcept
 
 void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::CentaurApp *app)
 {
-    auto logFile = g_globals->paths.installPath + "/Log/log0.db";
-    m_app        = app;
+    const QString appDataLocation = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    auto logFile                  = appDataLocation + "/Log/log0.db";
+    m_app                         = app;
 
     bool recoverDb = false;
 
@@ -147,7 +149,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::Centaur
     {
         if (recoverDb)
         {
-            auto recoveryFile = g_globals->paths.resPath + "/Repair/logdb.sql";
+            auto recoveryFile = g_globals->paths.appPath + "/Contents/Repair/logdb.sql";
             QFile file(recoveryFile);
             if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
                 throw std::runtime_error("recovery file not located");

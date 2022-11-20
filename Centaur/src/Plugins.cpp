@@ -362,7 +362,7 @@ bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView)
 
         if (meta->indexOfSignal(QMetaObject::normalizedSignature("snRealTimeCandleUpdate(const cen::uuid &, quint64, cen::plugin::ICandleView::Timestamp, const cen::plugin::ICandleView::CandleData &)")) == -1)
         {
-            logError("plugins", QString(LS("error-candle-plugin-signature-update")).arg(candleView->getPluginName()));
+            logError("plugins", QString(tr("The plugin with name ##F2FEFF#%1# does not have the update candle signature. Plugin will be unloaded")).arg(candleView->getPluginName()));
             return false;
         }
 

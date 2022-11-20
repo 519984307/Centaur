@@ -88,13 +88,13 @@ CENTAUR_NAMESPACE::FavoritesDialog::FavoritesDialog(QWidget *parent) noexcept :
     model->setTable("favorites");
     model->setEditStrategy(QSqlTableModel::EditStrategy::OnManualSubmit);
     model->select();
-    model->setHeaderData(0, Qt::Horizontal, LS("ui-dialog-fav-id"));
-    model->setHeaderData(1, Qt::Horizontal, LS("ui-dialog-fav-symbol"));
-    model->setHeaderData(2, Qt::Horizontal, LS("ui-dialog-fav-plugin"));
+    model->setHeaderData(0, Qt::Horizontal, tr("id"));
+    model->setHeaderData(1, Qt::Horizontal, tr("Symbol name"));
+    model->setHeaderData(2, Qt::Horizontal, tr("Plugin"));
 
     if (model->lastError().isValid())
     {
-        logError("app", QString(LS("error-fav-dialog-db-select")).arg(model->lastError().text()));
+        logError("app", QString(tr("Could not select the data from the favorites DB. %1")).arg(model->lastError().text()));
     }
     else
     {
@@ -157,10 +157,10 @@ void CENTAUR_NAMESPACE::FavoritesDialog::onDelete() noexcept
 
     if (model->lastError().isValid())
     {
-        QString message = QString(LS("error-fav-dialog-db-delete")).arg(model->lastError().text());
+        QString message = QString(tr("Could not delete the data from the favorites DB. %1")).arg(model->lastError().text());
         logError("app", message);
         QMessageBox::critical(this,
-            LS("error-error"),
+            tr("Error"),
             message);
     }
 }

@@ -197,92 +197,9 @@ auto AESSym::decrypt(const QString &text, const QByteArray &key) -> QString
 
 END_CENTAUR_NAMESPACE
 
-auto CENTAUR_NAMESPACE::Globals::Locale::loadLocale(const QString &language) noexcept -> ErrorDetail
-{
-    /*
-    assert(g_globals != nullptr);
-    const QString localeFile = QString("%1/Locale/%2.xml").arg(g_globals->paths.installPath, language);
-    {
-        // make the unique_ptr's being release before the call to terminate
-        std::unique_ptr<xercesc::XercesDOMParser> parser = std::make_unique<xercesc::XercesDOMParser>();
-        parser->setValidationScheme(xercesc::XercesDOMParser::Val_Always);
-        parser->setDoSchema(true);
-        parser->setDoNamespaces(true);
-
-        //  std::unique_ptr<xercesc::ErrorHandler> errHandler { static_cast<xercesc::ErrorHandler *>(new xercesc::HandlerBase()) };
-        //   parser->setErrorHandler(errHandler.get());
-
-        if (!QFile::exists(localeFile))
-            return ErrorDetail::localeFileError;
-        try
-        {
-
-            char *xmlFile = localeFile.toLatin1().data();
-            parser->parse(xmlFile);
-            auto doc = parser->getDocument();
-
-            auto docElement = doc->getDocumentElement();
-
-            if (docElement == nullptr)
-                return ErrorDetail::emptyDocument;
-
-            auto langAttribute = docElement->getAttribute(XMLStr { "lang" });
-
-            if (langAttribute == nullptr || QString { StrXML { langAttribute } } != language)
-                return ErrorDetail::langError;
-
-            XMLStr localeName { "locale" };
-            XMLStr idName { "id" };
-
-            auto nodes     = docElement->getElementsByTagName(localeName);
-            const auto len = nodes->getLength();
-
-            for (auto idx = 0ull; idx < len; ++idx)
-            {
-                auto node = nodes->item(idx);
-
-                auto attributes  = node->getAttributes();
-                auto idAttribute = attributes->getNamedItem(idName);
-                if (idAttribute != nullptr)
-                {
-                    StrXML idValue { idAttribute->getNodeValue() };
-
-                    auto textNode = node->getFirstChild();
-                    if (textNode != nullptr && textNode->getNodeType() == xercesc::DOMNode::NodeType::TEXT_NODE)
-                    {
-                        auto valueNode = dynamic_cast<xercesc::DOMText *>(textNode);
-                        StrXML localeValue { valueNode->getNodeValue() };
-
-                        const uint64_t crc64 = CENTAUR_NAMESPACE::crc64::compute(idValue, strlen(idValue));
-                        if (m_locale.contains(crc64))
-                        {
-                            qDebug() << "CRC64 for " << idValue << "already exists";
-                        }
-                        else
-                            m_locale[crc64] = localeValue;
-                    }
-                }
-                else
-                {
-                    logWarn("app", QString("Locale tag %1 does not have the id attribute").arg(QString { StrXML { node->getNodeName() } }));
-                }
-            }
-        } catch (const xercesc::XMLException &ex)
-        {
-            char *message = xercesc::XMLString::transcode(ex.getMessage());
-            qDebug() << "Exception message is: \n"
-                     << message << "\n";
-            xercesc::XMLString::release(&message);
-            return ErrorDetail::xmlDocumentInvalid;
-        }
-    }
-*/
-    return ErrorDetail::noError;
-}
-
 namespace
 {
-    // clang-format off
+// clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF("-Wexit-time-destructors")
@@ -295,14 +212,6 @@ namespace
 #endif
 
 } // namespace
-
-auto cen::Globals::Locale::get(uint64_t crc) const -> const QString &
-{
-    auto key = m_locale.find(crc);
-    if (key == m_locale.end())
-        return emptyString;
-    return key->second;
-}
 
 cen::Globals::SymbolsIcons::SymbolsIcons()
 {
