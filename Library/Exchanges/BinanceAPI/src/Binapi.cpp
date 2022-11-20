@@ -177,7 +177,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::getCandlesTimesAndLimits(BinanceTimeIntervals
     const uint64_t lastItems       = totalExpected % 1000;
     const uint64_t itemsFittedIn1K = totalExpected / 1000ull;
 
-    auto timeCounter               = startTime;
+    auto timeCounter = startTime;
     for (auto i = 0ull; i < itemsFittedIn1K; ++i)
     {
         data.emplace_back(timeCounter, timeCounter + (msInterval * 1001), 1000);
@@ -204,7 +204,7 @@ auto BINAPI_NAMESPACE::BinanceAPI::request(const local::BinanceAPIRequest &reque
     if (secure)
     {
         // Do proper changes to the data
-        // secureRequest(session, parameters, *session.GetCurlHolder(), request.preventSignatureWhenSigned);
+        secureRequest(session, parameters, *session.GetCurlHolder(), request.preventSignatureWhenSigned);
     }
 
     session.SetUrl(url);
@@ -311,7 +311,9 @@ auto BINAPI_NAMESPACE::BinanceAPI::request(const local::BinanceAPIRequest &reque
 
 auto BINAPI_NAMESPACE::BinanceAPI::secureRequest(cpr::Session &session, cpr::Parameters &parameters, const cpr::CurlHolder &cprCurlHolder, bool preventSignature) noexcept -> void
 {
-    cpr::Header header = cpr::Header { { "X-MBX-APIKEY", m_binanceKeys->apiKey } };
+    cpr::Header header = cpr::Header {
+        {"X-MBX-APIKEY", m_binanceKeys->apiKey}
+    };
     session.SetHeader(header);
 
     const auto parametersContent = parameters.GetContent(cprCurlHolder);
