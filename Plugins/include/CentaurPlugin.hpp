@@ -79,6 +79,55 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         return !(pi1 == pi2);
     }
 
+    /// \brief All charts can have 4320 candles at most. This means 72 minutes in candles of one seconds, 72-hours(3-days) in candles of 1 minute or 18-days on 1 hour candles
+    /// \remarks No more than candleLimit is going to be held in the UI. Is up to the Plugin to keep more information on memory if that is considered prudent.
+    /// Remember that calls to getCandlesByPeriod are not asynchronous
+    static constexpr uint64_t candleLimit = 4320;
+
+    /// \brief When an interface emits snRealTimeCandleUpdate without a previous request this is the limit before a disconnection will be set
+    /// \related See the documentation for snRealTimeCandleUpdate and acquire and disengage
+    static constexpr uint64_t unwantedSignalLimit = 1000;
+
+    /// \brief SupportedTimeFrames indicates the timeframes supported by the UI. This not necessarily means that this is supported
+    /// by the exchange
+    enum class TimeFrame
+    {
+        nullTime, // When returning from supportedTimeFrames you can use this enumerator to insert a Menu separator
+        Seconds_1,
+        Seconds_5,
+        Seconds_10,
+        Seconds_30,
+        Seconds_45,
+        Minutes_1,
+        Minutes_2,
+        Minutes_3,
+        Minutes_5,
+        Minutes_10,
+        Minutes_15,
+        Minutes_30,
+        Minutes_45,
+        Hours_1,
+        Hours_2,
+        Hours_4,
+        Hours_6,
+        Hours_8,
+        Hours_12,
+        Days_1,
+        Days_3,
+        Weeks_1,
+        Months_1
+    };
+
+    /// \brief Data for plotting the Candles
+    struct CandleData
+    {
+        double high;
+        double open;
+        double close;
+        double low;
+        double volume;
+    };
+
     struct IBase
     {
         virtual ~IBase() = default;
@@ -90,11 +139,11 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
         /// \brief The plugin name to be displayed in the plugins list in the the main app
         /// \return A String containing the plugin name
-        C_NODISCARD virtual QString getPluginName() noexcept = 0;
+        C_NODISCARD virtual QString getPluginName() const noexcept = 0;
 
         /// \brief The version string returned will be used to populate the plugins list in the main App
         /// \return A string containing the plugin version: example: "1.0.0" or "2.3.520.12323" or "2.3.rc1"
-        C_NODISCARD virtual QString getPluginVersionString() noexcept = 0;
+        C_NODISCARD virtual QString getPluginVersionString() const noexcept = 0;
 
         /// \brief init the logger and the configuration interfaces
         /// \param logger Use to communicate plugin logs in the user interface
@@ -104,7 +153,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
         /// \brief Get the plugin UUID
         /// \return Beware that versions are check in order to run the plugin
-        virtual uuid getPluginUUID() noexcept = 0;
+        virtual uuid getPluginUUID() const noexcept = 0;
     };
 
     /// \brief Provides access to the status bar
@@ -206,8 +255,11 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     /// Controls the Balances list
     /// Controls the Orderbook list
     /// Controls the Watchlist
-    struct IExchange : public IBase
+    struct IExchange : public IStatus
     {
+        /// \brief All timestamps must be in milliseconds
+        using Timestamp = uint64_t;
+
         ~IExchange() override = default;
 
         /// \brief Initialize the plugin
@@ -271,83 +323,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// If the list size is less than 7, it will consider an empty list
         virtual QList<std::pair<quint64, qreal>> get7dayData(const QString &symbol) noexcept = 0;
 
-        /**
-         *
-    signals:
-         \brief Emit to the UI to update the ticker
-         receivedTime will be used to calculate the latency
-        void sgTickerUpdate(const QString &symbol, const QString &sourceUUID, const quint64 &receivedTime, const double &price);
+        // CANDLE DATA
 
-         \brief Emit to the UI to update the orderbook list
-        void sgOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks);
-         */
-    };
-
-    /// \brief Handles the necessary data to access the candles chart view
-    /// Each ICandleView object is a candle object
-    struct ICandleView : public IBase
-    {
-        /// \brief All charts can have 4320 candles at most. This means 72 minutes in candles of one seconds, 72-hours(3-days) in candles of 1 minute or 18-days on 1 hour candles
-        /// \remarks No more than candleLimit is going to be held in the UI. Is up to the Plugin to keep more information on memory if that is considered prudent.
-        /// Remember that calls to getCandlesByPeriod are not asynchronous
-        static constexpr uint64_t candleLimit = 4320;
-
-        /// \brief When an interface emits snRealTimeCandleUpdate without a previous request this is the limit before a disconnection will be set
-        /// \related See the documentation for snRealTimeCandleUpdate and acquire and disengage
-        static constexpr uint64_t unwantedSignalLimit = 1000;
-
-        /// \brief All timestamps must be in milliseconds
-        using Timestamp = uint64_t;
-
-        /// \brief SupportedTimeFrames indicates the timeframes supported by the UI. This not necessarily means that this is supported
-        /// by the exchange
-        enum class TimeFrame
-        {
-            nullTime, // When returning from supportedTimeFrames you can use this enumerator to insert a Menu separator
-            Seconds_1,
-            Seconds_5,
-            Seconds_10,
-            Seconds_30,
-            Seconds_45,
-            Minutes_1,
-            Minutes_2,
-            Minutes_3,
-            Minutes_5,
-            Minutes_10,
-            Minutes_15,
-            Minutes_30,
-            Minutes_45,
-            Hours_1,
-            Hours_2,
-            Hours_4,
-            Hours_6,
-            Hours_8,
-            Hours_12,
-            Days_1,
-            Days_3,
-            Weeks_1,
-            Months_1
-        };
-
-        /// \brief Data for plotting the Candles
-        struct CandleData
-        {
-            double high;
-            double open;
-            double close;
-            double low;
-            double volume;
-        };
-
-        /// \brief This information will be used to create a menu in the Watchlist table with all possible timeframes.
-        /// The menu will be linked to a table item that has an uuid equal to the returned in this function.
-        /// If there are more than one plugin linked to an IExchange item, the last plugin to load is the one that will receive all I/O
-        /// The actual menu items are get from supportedTimeFrames()
-        /// \return A List of supported plugins
-        C_NODISCARD virtual QList<PluginInformation> supportedExchanges() noexcept = 0;
-
-        /// \brief Must return a list of the timeframes supported by this interface.
-        /// This information will be used to set the names in the menu
+        /// \brief This is the way to inform the UI what candlestick timeframes support this IExchange interface
         /// \return The list of time frames
         C_NODISCARD virtual QList<TimeFrame> supportedTimeFrames() noexcept = 0;
 
@@ -376,12 +354,12 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// To safely free the memory of the candle data when disengage is called IF the plugin indeed saved this information, otherwise is safe to ignore this function
         virtual void resetStoredZoom(const uuid &id) noexcept = 0;
 
-        /// \brief When zooming, this function will be called to asked the interface for the necessary to populate the CandleView Chart.
+        /// \brief When zooming, this function will be called to ask the interface for the necessary data to populate the CandleView Chart.
         /// \param symbol Name of the symbol to update
         /// \param start Start of the requested time
         /// \param end End of the requester period of time
         /// \param frame Time frame requested
-        /// \return Must return a list with the data requested. If the requested candle of an specific timestamp is not available, do not put it in the list
+        /// \return Must return a list with the data requested. If the requested candle of a specific timestamp is not available, do not put it in the list
         /// \remarks 0. Although, zooming is a user-based input, the start and end are calculated by the UI
         /// \remarks 1. Calls to getCandlesByPeriod are meant to retrieve contiguous chunks of candle information based on the time frame.
         /// If the information in the UI are fragmented expect multiple calls to getCandlesByPeriod to fill in the gaps
@@ -402,20 +380,31 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         /// \param frame New timeframe
         virtual void reframe(TimeFrame frame) noexcept = 0;
 
+        // signals:
         /**
-        signals:
-           /// \brief Emit this signal to notify the UI that a candle must be update
-           /// \param uuid The id sent by acquire
-           /// \param Timestamp This is the candle to be updated. however, internally, the UI will access the last element directly
-           /// \param CandleData New candle data
-           /// \remarks 0. The UI will assume that the Timestamp is always the last one in the internal candle buffer
-           /// \remarks 1. If this signal is emitted without a previous acquire called the signal will be disconnected from the interface when unwantedSignalLimit is reached
-           /// nd the interface can't do anything to reconnect.
-           /// \remarks 2. The same case applies if a call to disengage is made and the interface keeps pushing the data
-           /// \remarks 3. IMPORTANT: MAKE SURE YOUR SIGNAL HAS THIS EXACT SIGNATURE, OTHERWISE, THE UI WILL FAILED TO LOAD THE PLUGIN
-           void snRealTimeCandleUpdate(const cen::uuid &, quint64 eventTime, cen::plugin::ICandleView::Timestamp , const cen::plugin::ICandleView::CandleData &);
+         *
+         * \brief Emit to the UI to update the ticker receivedTime will be used to calculate the latency
+         */
+        // void sgTickerUpdate(const QString &symbol, const QString &sourceUUID, const quint64 &receivedTime, const double &price);
 
-        */
+        /**
+         * \brief Emit to the UI to update the orderbook list
+         */
+        // void sgOrderbookUpdate(const QString &source, const QString &symbol, const quint64 &receivedTime, const QMap<QString, QPair<QString, QString>> &bids, const QMap<QString, QPair<QString, QString>> &asks);
+
+        /**
+           \brief Emit this signal to notify the UI that a candle must be updated
+           \param uuid The id sent by acquire
+           \param Timestamp This is the candle to be updated. however, internally, the UI will access the last element directly
+           \param CandleData New candle data
+           \remarks 0. The UI will assume that the Timestamp is always the last one in the internal candle buffer
+           \remarks 1. If this signal is emitted without a previous acquire called the signal will be disconnected from the interface when unwantedSignalLimit is reached
+           nd the interface can't do anything to reconnect.
+           \remarks 2. The same case applies if a call to disengage is made and the interface keeps pushing the data
+           \remarks 3. IMPORTANT: MAKE SURE YOUR SIGNAL HAS THIS EXACT SIGNATURE, OTHERWISE, THE UI WILL FAIL TO LOAD THE PLUGIN
+           */
+
+        // void snRealTimeCandleUpdate(const cen::uuid &, quint64 eventTime, cen::plugin::ICandleView::Timestamp , const cen::plugin::ICandleView::CandleData &);
     };
 
     /// \brief Implements a ToolBar-like in the
@@ -457,9 +446,6 @@ Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IExchangeRate, IExchangeRate_iid)
 
 #define IExchange_iid "com.centaur-project.plugin.IExchange/1.0"
 Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IExchange, IExchange_iid)
-
-#define ICandleView_iid "com.centaur-project.plugin.ICandleView/1.0"
-Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::ICandleView, ICandleView_iid)
 
 #define IDrawingGroup_iid "com.centaur-project.plugin.IDrawingGroup/1.0"
 Q_DECLARE_INTERFACE(CENTAUR_PLUGIN_NAMESPACE::IDrawingGroup, IDrawingGroup_iid)
