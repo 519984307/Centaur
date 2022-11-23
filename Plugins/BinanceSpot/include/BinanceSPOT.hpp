@@ -38,7 +38,7 @@ namespace CENTAUR_NAMESPACE
         Q_OBJECT
 
         Q_PLUGIN_METADATA(IID "com.centaur-project.plugin.BinanceSpotPlugin/1.0")
-        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IExchange)
+        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IExchange CENTAUR_PLUGIN_NAMESPACE::IStatus)
 
     public:
         explicit BinanceSpotPlugin(QObject *parent = nullptr);
@@ -47,13 +47,16 @@ namespace CENTAUR_NAMESPACE
     protected:
         void runMarketWS(const QString &symbol) noexcept;
 
+    protected:
+        C_NODISCARD QString getUUIDString() const noexcept;
+
         // IBase
     public:
         QObject *getPluginObject() noexcept override;
         void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
-        QString getPluginName() noexcept override;
-        QString getPluginVersionString() noexcept override;
-        uuid getPluginUUID() noexcept override;
+        QString getPluginName() const noexcept override;
+        QString getPluginVersionString() const noexcept override;
+        uuid getPluginUUID() const noexcept override;
 
         // IExchange
     public:
@@ -69,6 +72,22 @@ namespace CENTAUR_NAMESPACE
         QList<QAction *> dynamicWatchListMenuItems() noexcept override;
         QList<std::tuple<qreal, qreal, QString>> getWatchlist24hrPriceChange() noexcept override;
         QList<std::pair<quint64, qreal>> get7dayData(const QString &symbol) noexcept override;
+        QList<CENTAUR_PLUGIN_NAMESPACE::TimeFrame> supportedTimeFrames() noexcept override;
+        void acquire(const plugin::PluginInformation &pi, const QString &symbol, plugin::TimeFrame frame, const uuid &id) noexcept override;
+        void disengage(const uuid &id, uint64_t lastTimeframeStart, uint64_t lastTimeframeEnd) noexcept override;
+        void resetStoredZoom(const uuid &id) noexcept override;
+        QList<QPair<Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> getCandlesByPeriod(const QString &symbol, Timestamp start, Timestamp end, plugin::TimeFrame frame) noexcept override;
+        bool realtimePlotAllowed() noexcept override;
+        bool dynamicReframePlot() noexcept override;
+        void reframe(plugin::TimeFrame frame) noexcept override;
+
+    public:
+        DisplayMode initialize() noexcept override;
+        QString text() noexcept override;
+        QPixmap image() noexcept override;
+        QFont font() noexcept override;
+        QBrush brush(DisplayRole role) noexcept override;
+        QAction *action(const QPoint &pt) noexcept override;
 
     public slots:
         void onTickerUpdate(const QString &symbol, quint64 receivedTime, double price) noexcept;
@@ -115,7 +134,6 @@ namespace CENTAUR_NAMESPACE
         QMap<QString, QList<std::pair<quint64, qreal>>> m_sevenDayCache;
 
     protected:
-        uuid m_globalPluginUuid;
         std::map<int, QString> m_wsIds;
         std::unordered_set<QString> m_symbolsWatch;
         std::unordered_map<QString, std::pair<bool, uint64_t>> m_symbolOrderbookSnapshot;
@@ -123,6 +141,10 @@ namespace CENTAUR_NAMESPACE
     protected:
         BINAPI_NAMESPACE::AllCoinsInformation m_coinInformation;
         BINAPI_NAMESPACE::SpotTradingFees m_fees;
+
+        // IStatus data
+    protected:
+        QPixmap m_image;
     };
 
     class SpotMarketWS : public BINAPI_NAMESPACE::ws::WSSpotBinanceAPI

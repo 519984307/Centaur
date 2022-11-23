@@ -160,29 +160,29 @@ private:
 
 CandleViewTimeFrameActions::CandleViewTimeFrameActions(QObject *parent) :
     actions {
-        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1,   new QAction(QCoreApplication::tr("1 second"), parent)},
-        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5, new QAction(QCoreApplication::tr(" 5 seconds"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10, new QAction(QCoreApplication::tr("10 seconds"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30, new QAction(QCoreApplication::tr("30 seconds"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45, new QAction(QCoreApplication::tr("45 seconds"), parent)},
-        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1,   new QAction(QCoreApplication::tr("1 minute"), parent)},
-        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2,  new QAction(QCoreApplication::tr("2 minutes"), parent)},
-        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3,  new QAction(QCoreApplication::tr("3 minutes"), parent)},
-        { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5,  new QAction(QCoreApplication::tr("5 minutes"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10, new QAction(QCoreApplication::tr("10 minutes"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15, new QAction(QCoreApplication::tr("15 minutes"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30, new QAction(QCoreApplication::tr("30 minutes"), parent)},
-        {CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45, new QAction(QCoreApplication::tr("45 minutes"), parent)},
-        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1,     new QAction(QCoreApplication::tr("1 hour"), parent)},
-        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2,    new QAction(QCoreApplication::tr("2 hours"), parent)},
-        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4,    new QAction(QCoreApplication::tr("4 hours"), parent)},
-        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6,    new QAction(QCoreApplication::tr("6 hours"), parent)},
-        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8,    new QAction(QCoreApplication::tr("8 hours"), parent)},
-        {  CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12,   new QAction(QCoreApplication::tr("12 hours"), parent)},
-        {    CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1,      new QAction(QCoreApplication::tr("1 day"), parent)},
-        {    CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3,     new QAction(QCoreApplication::tr("3 days"), parent)},
-        {   CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1,     new QAction(QCoreApplication::tr("1 week"), parent)},
-        {  CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1,    new QAction(QCoreApplication::tr("1 month"), parent)}
+        { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_1,   new QAction(QCoreApplication::tr("1 second"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_5, new QAction(QCoreApplication::tr(" 5 seconds"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_10, new QAction(QCoreApplication::tr("10 seconds"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_30, new QAction(QCoreApplication::tr("30 seconds"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_45, new QAction(QCoreApplication::tr("45 seconds"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_1,   new QAction(QCoreApplication::tr("1 minute"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_2,  new QAction(QCoreApplication::tr("2 minutes"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_3,  new QAction(QCoreApplication::tr("3 minutes"), parent)},
+        { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_5,  new QAction(QCoreApplication::tr("5 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_10, new QAction(QCoreApplication::tr("10 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_15, new QAction(QCoreApplication::tr("15 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_30, new QAction(QCoreApplication::tr("30 minutes"), parent)},
+        {CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_45, new QAction(QCoreApplication::tr("45 minutes"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_1,     new QAction(QCoreApplication::tr("1 hour"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_2,    new QAction(QCoreApplication::tr("2 hours"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_4,    new QAction(QCoreApplication::tr("4 hours"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_6,    new QAction(QCoreApplication::tr("6 hours"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_8,    new QAction(QCoreApplication::tr("8 hours"), parent)},
+        {  CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_12,   new QAction(QCoreApplication::tr("12 hours"), parent)},
+        {    CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_1,      new QAction(QCoreApplication::tr("1 day"), parent)},
+        {    CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_3,     new QAction(QCoreApplication::tr("3 days"), parent)},
+        {   CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Weeks_1,     new QAction(QCoreApplication::tr("1 week"), parent)},
+        {  CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Months_1,    new QAction(QCoreApplication::tr("1 month"), parent)}
 }
 {
 }
@@ -720,7 +720,6 @@ void CentaurApp::saveInterfaceState() noexcept
     settings.setValue("geometry", ui()->splitter->saveGeometry());
     settings.setValue("state", ui()->splitter->saveState());
     settings.endGroup();
-
 
     logInfo("app", "UI state saved");
 }

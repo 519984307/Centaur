@@ -30,10 +30,14 @@ SET(SOURCE_FILE
         src/BinanceSPOT.cpp
         src/SpotMarketWS.cpp
         ../../Library/Helpers/src/OptionsWidget.cpp
+        src/StatusDialog.cpp
         src/CoinInfoDialog.cpp
         src/NetworkAddressDialog.cpp
         src/AssetDetailDialog.cpp
-        src/FeesDialog.cpp)
+        src/FeesDialog.cpp
+        src/BinanceSPOT_IStatus.cpp
+        src/BinnaceSPOT_IBase.cpp
+        src/BinanceSPOT_IExchange.cpp)
 
 SET(INCLUDE_FILE
         include/BinanceSPOT.hpp
@@ -44,6 +48,7 @@ SET(INCLUDE_FILE
         include/NetworkAddressDialog.hpp
         include/AssetDetailDialog.hpp
         include/FeesDialog.hpp
+        include/StatusDialog.hpp
         )
 
 SET(UI_FILES
@@ -52,6 +57,7 @@ SET(UI_FILES
         ui/FeesDialog.ui
         ui/NetworkAddress.ui
         ui/NetworksDialog.ui
+        ui/StatusDialog.ui
         ../../Library/Helpers/qrc/options.qrc
         qrc/resource.qrc
         )

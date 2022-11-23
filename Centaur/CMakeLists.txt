@@ -185,18 +185,7 @@ if (${APPLE_PLATFORM})
             COMMAND ${CMAKE_COMMAND}
             ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/lib/libBinanceSPOT.dylib ${BUNDLE_BUILTIN_PLUGINS}/libBinanceSPOT.dylib
             VERBATIM)
-
-    ADD_CUSTOM_COMMAND(TARGET Centaur
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND}
-            ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/lib/libBinanceSpotStatus.dylib ${BUNDLE_BUILTIN_PLUGINS}/libBinanceSpotStatus.dylib
-            VERBATIM)
-
-    ADD_CUSTOM_COMMAND(TARGET Centaur
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND}
-            ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/lib/libBinanceCS.dylib ${BUNDLE_BUILTIN_PLUGINS}/libBinanceCS.dylib
-            VERBATIM)
+    
 
     ADD_CUSTOM_COMMAND(TARGET Centaur
             POST_BUILD
