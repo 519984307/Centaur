@@ -7,6 +7,7 @@
 #include "Logger.hpp"
 #include "LogDialog.hpp"
 #include <QApplication>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
@@ -143,29 +144,36 @@ void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::Centaur
             throw std::runtime_error("file not located");
     }
 
+    QString recoverQuery;
+    if (recoverDb)
+    {
+        QFileInfo fileInformation(logFile);
+        auto logFileInfoDir = fileInformation.dir();
+
+        logFileInfoDir.mkpath(logFileInfoDir.absolutePath());
+
+        auto recoveryFile = g_globals->paths.appPath + "/Contents/Repair/logdb.sql";
+        QFile file(recoveryFile);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            throw std::runtime_error("recovery file not located");
+
+        QTextStream text(&file);
+        recoverQuery = text.readAll();
+    }
+
     if (int err = sqlite3_open(logFile.toStdString().c_str(), &m_sql); err != SQLITE_OK)
         throw(std::runtime_error(sqlite3_errstr(err)));
-    else
+
+    if (recoverDb)
     {
-        if (recoverDb)
+        char *errStr;
+        int err = sqlite3_exec(m_sql, recoverQuery.toStdString().c_str(), sqlExec, nullptr, &errStr);
+
+        if (err != SQLITE_OK)
         {
-            auto recoveryFile = g_globals->paths.appPath + "/Contents/Repair/logdb.sql";
-            QFile file(recoveryFile);
-            if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-                throw std::runtime_error("recovery file not located");
-
-            QTextStream text(&file);
-            QString query = text.readAll();
-
-            char *errStr;
-            int err = sqlite3_exec(m_sql, query.toStdString().c_str(), sqlExec, nullptr, &errStr);
-
-            if (err != SQLITE_OK)
-            {
-                std::string str { errStr };
-                sqlite3_free(errStr);
-                throw std::runtime_error(str);
-            }
+            std::string str { errStr };
+            sqlite3_free(errStr);
+            throw std::runtime_error(str);
         }
     }
 }
