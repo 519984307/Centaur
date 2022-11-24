@@ -15,6 +15,7 @@
 
 #include <CentaurInterface.hpp>
 #include <CentaurPlugin.hpp>
+#include <QThread>
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -40,6 +41,24 @@
 
 namespace CENTAUR_PLUGIN_NAMESPACE
 {
+    class ValueThread : public QThread
+    {
+        Q_OBJECT
+    public:
+        ValueThread(const QString &qte, const QString &bse, qreal qteQty, QObject *parent) noexcept;
+        ~ValueThread() override = default;
+
+    public:
+        void run() override;
+
+    signals:
+        void newValue(qreal val);
+
+    private:
+        QString quote;
+        QString base;
+        qreal quoteQuantity;
+    };
     class ExchangeRatePlugin : public QObject,
                                public CENTAUR_PLUGIN_NAMESPACE::IExchangeRate
     {
@@ -79,9 +98,15 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
     protected:
         void loadData() noexcept;
-        void loadUserData() noexcept;
         void acquireFromCache() noexcept;
         void acquireFromInternet() noexcept;
+        void storeData() noexcept;
+
+    protected:
+        void onReloadData(bool threading) noexcept;
+
+    protected slots:
+        void onValueUpdate(qreal val) noexcept;
 
     private:
         rapidjson::Document pluginSettings;
@@ -98,6 +123,8 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         QList<QPair<QString, QString>> m_currencySupported;
 
     private:
+        int64_t m_updateMilliseconds;
+        int64_t m_lastUpdateTimeStamp;
         bool m_configurationLoaded { false };
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
         CENTAUR_INTERFACE_NAMESPACE::IConfiguration *m_config { nullptr };

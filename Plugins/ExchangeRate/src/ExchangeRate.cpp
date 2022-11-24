@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QObject>
 #include <QTextStream>
+#include <QTimer>
 
 #ifdef __clang__
 #pragma clang diagnostic push #pragma clang diagnostic ignored "-Wold-style-cast"
@@ -51,6 +52,59 @@ namespace
     constexpr char g_uuidString[]                = "{f77ecf55-8162-5570-a9dc-3a79c6757c72}";
 
 } // namespace
+
+CENTAUR_PLUGIN_NAMESPACE::ValueThread::ValueThread(const QString &qte, const QString &bse, qreal qteQty, QObject *parent) noexcept :
+    QThread(parent),
+    quote { qte },
+    base { bse },
+    quoteQuantity { qteQty }
+{
+}
+
+void CENTAUR_PLUGIN_NAMESPACE::ValueThread::run()
+{
+    QString parameters = QString("from=%1&to=%2&amount=%3").arg(quote, base).arg(quoteQuantity, 0, 'f');
+
+    cpr::Url url { QString("https://api.exchangerate.host/convert?%1").arg(parameters).toStdString() };
+
+    cpr::Session session;
+    session.SetUrl(url);
+    session.SetUserAgent("CPP_interface_api/curl-openssl/7.70.0/Richard");
+
+    cpr::Response apiCall;
+    apiCall = session.Get();
+
+#ifndef NDEBUG
+    qDebug() << "ValueThread::acquireFromInternet Elapsed time: " << apiCall.elapsed;
+#endif // NDEBUG
+
+    // CURL Checking
+    if (apiCall.error.code != cpr::ErrorCode::OK)
+    {
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. Data was not acquire\n%1")).arg(QString::fromStdString(apiCall.error.message)));
+        return;
+    }
+
+    // HTTP Error checking
+    if (apiCall.status_code != 200)
+    {
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEX. Data was not acquire\n%1")).arg(QString::fromStdString(apiCall.reason)));
+        return;
+    }
+
+    rapidjson::Document jsonDoc;
+    jsonDoc.Parse(apiCall.text.c_str());
+    if (jsonDoc.HasParseError())
+    {
+        QString errorFormat = QString("%1. At offset: %2").arg(rapidjson::GetParseError_En(jsonDoc.GetParseError())).arg(jsonDoc.GetErrorOffset());
+        QMessageBox::critical(nullptr, tr("Failed to acquire data"), QString(tr("CurEx. The data had errors\n%1")).arg(errorFormat));
+        return;
+    }
+
+    auto itResult = jsonDoc.FindMember("result");
+    if (itResult != jsonDoc.MemberEnd())
+        emit newValue(itResult->value.GetDouble());
+}
 
 CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::ExchangeRatePlugin(QObject *parent) :
     QObject(parent),
@@ -97,6 +151,22 @@ cen::plugin::IStatus::DisplayMode cen::plugin::ExchangeRatePlugin::initialize() 
         return DisplayMode::OnlyIcon;
     }
 
+    m_updateMilliseconds = [&]() -> int64_t {
+        if (auto iter = pluginSettings.FindMember("reload-timer"); iter != pluginSettings.MemberEnd())
+        {
+            const auto time = iter->value.GetInt64();
+            logTrace("ExchangeRatePlugin", QString("Timer will be set to: %1").arg(time));
+            return time;
+        }
+        logWarn("ExchangeRatePlugin", "Timer will be set to default: 1 hour");
+        return 3'600'000ll;
+    }();
+
+    auto *reloadDataTimer = new QTimer(this);
+    connect(reloadDataTimer, &QTimer::timeout, this, [&]() {
+        onReloadData(true);
+    });
+    reloadDataTimer->start(static_cast<int>(m_updateMilliseconds));
     m_configurationLoaded = true;
     loadData();
 
@@ -158,7 +228,6 @@ qreal cen::plugin::ExchangeRatePlugin::convert(const QString &quote, const QStri
 
 qreal cen::plugin::ExchangeRatePlugin::convert(const QString &quote, const QString &base, qreal quoteQuantity, QDate *date) noexcept
 {
-
     QString parameters = QString("from=%1&to=%2&amount=%3").arg(quote, base).arg(quoteQuantity, 0, 'f');
     QString dateString;
     if (date != nullptr)
@@ -343,8 +412,13 @@ void cen::plugin::ExchangeRatePlugin::loadData() noexcept
         acquireFromCache();
     }
 
-    loadUserData();
+    onReloadData(false);
 
+    storeData();
+}
+
+void cen::plugin::ExchangeRatePlugin::storeData() noexcept
+{
     rapidjson::StringBuffer jsonBuffer;
     rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(jsonBuffer);
     pluginSettings.Accept(writer);
@@ -358,15 +432,94 @@ void cen::plugin::ExchangeRatePlugin::loadData() noexcept
     }
 }
 
-void cen::plugin::ExchangeRatePlugin::loadUserData() noexcept
+void cen::plugin::ExchangeRatePlugin::onReloadData(bool threading) noexcept
 {
+    const auto reloadFromInternet = [&]() -> bool {
+        const auto currentTime = QDateTime::currentMSecsSinceEpoch();
+        if (auto iter = pluginSettings.FindMember("value-timestamp"); iter != pluginSettings.MemberEnd())
+        {
+            int64_t data { iter->value.GetInt64() };
+            if (data)
+            {
+                const auto difference = currentTime - data;
+                if (!(difference >= m_updateMilliseconds))
+                    return false;
+            }
+            iter->value.SetInt64(currentTime);
+        }
+        else
+        {
+            pluginSettings.AddMember("value-timestamp", currentTime, pluginSettings.GetAllocator());
+        }
+
+        return true;
+    }();
+
     m_defaultQuote = pluginSettings["default"]["quote"].GetString();
     m_defaultBase  = pluginSettings["default"]["base"].GetString();
 
-    m_defaultValue = value(m_defaultQuote, m_defaultBase);
+    m_defaultValue = [&]() -> qreal {
+        auto iter = pluginSettings.FindMember("value-cache");
+
+        if (reloadFromInternet || iter == pluginSettings.MemberEnd())
+        {
+            if (!threading)
+            {
+                auto defValue = value(m_defaultQuote, m_defaultBase);
+
+                if (iter != pluginSettings.MemberEnd())
+                {
+                    iter->value.SetDouble(defValue);
+                }
+                else
+                {
+                    pluginSettings.AddMember("value-cache", defValue, pluginSettings.GetAllocator());
+                }
+
+                return defValue;
+            }
+            else
+            {
+                auto *valueThread = new ValueThread(m_defaultQuote, m_defaultBase, 1.0, this);
+                connect(valueThread, &ValueThread::newValue, this, &ExchangeRatePlugin::onValueUpdate);
+                connect(valueThread, &ValueThread::finished, valueThread, &QObject::deleteLater);
+                valueThread->start();
+
+                return -1;
+            }
+        }
+        else
+        {
+            return iter->value.GetDouble();
+        }
+    }();
+
+    storeData();
 
     for (auto &available : pluginSettings["available"].GetArray())
     {
         m_currencySupported.emplace_back(available["b"].GetString(), available["q"].GetString());
     }
+
+    emit displayChange(plugin::IStatus::DisplayRole::Text);
+}
+
+void cen::plugin::ExchangeRatePlugin::onValueUpdate(qreal val) noexcept
+{
+    m_defaultValue = val;
+
+    auto iter = pluginSettings.FindMember("value-cache");
+
+    if (iter != pluginSettings.MemberEnd())
+    {
+        iter->value.SetDouble(val);
+    }
+    else
+    {
+        pluginSettings.AddMember("value-cache", val, pluginSettings.GetAllocator());
+    }
+
+    storeData();
+
+    emit displayChange(plugin::IStatus::DisplayRole::Text);
 }
