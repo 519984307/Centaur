@@ -205,9 +205,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         virtual QBrush brush(DisplayRole role) noexcept = 0;
 
         /// \brief This function will be use from the UI to perform an action
-        /// \param pt Point of the Top-left of the UI status button in screen coordinates. Useful to display menus
         /// \return The default action you want the UI to perform when icon is pressed
-        virtual QAction *action(const QPoint &pt) noexcept = 0;
+        /// \remarks The action data will have the top-left point in screen coordinates of the button created in the status bar
+        virtual QAction *action() noexcept = 0;
 
         /// \brief void displayChange(IStatus::DisplayRole);
         /// \attention How to use: emit this signal and the UI will call text(), icon(), font() or brush() respectively according to the display role

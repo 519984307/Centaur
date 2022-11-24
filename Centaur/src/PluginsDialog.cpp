@@ -73,7 +73,7 @@ namespace
                         bool loaded = false;
                         auto plid   = this->index(index.row(), 3);
 
-                        for (auto &loadedPlugins : g_app->m_pluginsData)
+                        for (auto &loadedPlugins : g_app->getPluginBase())
                         {
                             QString strPlid { loadedPlugins->getPluginUUID().to_string().c_str() };
                             if (strPlid == plid.data())

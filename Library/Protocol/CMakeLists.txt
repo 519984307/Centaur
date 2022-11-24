@@ -18,7 +18,8 @@ add_library(protocol SHARED
 
 target_include_directories(protocol PRIVATE
         include
-        ../../include)
+        ../../include
+        )
 
 
 target_link_libraries(protocol PRIVATE fmt::fmt)

@@ -101,7 +101,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
             {
                 splash->setDisplayText(QString(tr("Initializing: %1 (%2)")).arg(baseInterface->getPluginName(), baseInterface->getPluginVersionString()));
 
-                m_pluginsData.push_back(baseInterface);
+                mapPluginBase(baseInterface);
 
                 logInfo("plugin", QString(tr("Plugin found in file: ##F2FEFF#%1#")).arg(plFile));
 
@@ -125,21 +125,13 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
                         logWarn("plugin", QString(tr("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded")).arg(plFile));
                     }
                 }
-                else if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
+
+                if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                 {
                     logInfo("plugin", QString(tr("IStatus plugin found in file: ##F2FEFF#%1#")).arg(plFile));
                     // Init the plugin
                     initStatusPlugin(stInterface);
                 }
-                else if (auto cvInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::ICandleView *>(plugin); cvInterface)
-                {
-                    logInfo("plugin", QString(tr("ICandleView plugin found in file: ##F2FEFF#%1#")).arg(plFile));
-                    if (!initCandleViewPlugin(cvInterface))
-                    {
-                        loader->unload();
-                    }
-                }
-
                 if (loader->isLoaded())
                 {
                     mapPluginInstance(loader);
@@ -165,7 +157,7 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
         return false;
     }
 
-    auto list = populateExchangeSymbolList(exchange, uuid.to_string().c_str());
+    auto list = populateExchangeSymbolList(exchange);
 
     mapExchangePlugin(uuid, ExchangeInformation { uuid, exchange, list, exchange->getSymbolListName().first });
 
@@ -178,7 +170,7 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
     return true;
 }
 
-CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange, const QString &uuidString) noexcept
+CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateExchangeSymbolList(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
 {
     logTrace("plugins", "CentaurApp::populateExchangeSymbolList");
 
@@ -351,6 +343,7 @@ QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:
     mapStatusPlugins(status->getPluginUUID(), status, button, mode);
 }
 
+/*
 #include <QMetaMethod>
 bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView) noexcept
 {
@@ -378,6 +371,7 @@ bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView)
 
     return true;
 }
+ */
 
 CENTAUR_PLUGIN_NAMESPACE::PluginInformation cen::CentaurApp::pluginInformationFromBase(cen::plugin::IBase *base)
 {

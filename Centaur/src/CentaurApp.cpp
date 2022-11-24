@@ -59,7 +59,7 @@ struct CandleViewTimeFrameActions
     explicit CandleViewTimeFrameActions(QObject *parent);
 
 public:
-    std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame, QAction *> actions;
+    std::map<CENTAUR_PLUGIN_NAMESPACE::TimeFrame, QAction *> actions;
 };
 
 struct CentaurApp::Impl
@@ -76,14 +76,17 @@ struct CentaurApp::Impl
 
     std::unique_ptr<Ui::CentaurApp> ui;
     std::unique_ptr<CandleViewTimeFrameActions> candleActions;
+    std::unique_ptr<std::thread> loggerThread { nullptr };
+    std::unique_ptr<ProtocolServer> server;
 
     LogDialog *logDialog { nullptr };
     QChart *last7Chart { nullptr };
-
-    QChartView *sevenDayGraph;
+    QChartView *sevenDayGraph { nullptr };
 
     QAction *orderbookDepth;
     QAction *depthChart;
+
+    std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> pluginsData;
 
     std::pair<QString, QString> currentWatchListSelection;
 
@@ -92,7 +95,6 @@ struct CentaurApp::Impl
     QList<QPluginLoader *> pluginInstances;        /// All instances of the plugins
     std::map<uuid, QList<QAction *>> exchangeMenuActions;
     std::map<uuid, std::tuple<CENTAUR_PLUGIN_NAMESPACE::IStatus *, QToolButton *, CENTAUR_PLUGIN_NAMESPACE::IStatus::DisplayMode>> statusPlugins;
-    std::map<CENTAUR_PLUGIN_NAMESPACE::ICandleView *, CandleViewSupport> candleViewSupport; /// Map of every ICandleView plugins with their supported timeframes and IExchange(s)
 
     QAreaSeries *last7SevenAreaSeries { nullptr };
     QSplineSeries *last7SevenLowSeries { nullptr };
@@ -203,17 +205,11 @@ CentaurApp::CentaurApp(QWidget *parent) :
     g_globals = new Globals;
 
     qRegisterMetaType<uuid>("uuid");
-    qRegisterMetaType<plugin::ICandleView::CandleData>("plugin::ICandleView::CandleData");
-    qRegisterMetaType<plugin::ICandleView::TimeFrame>("plugin::ICandleView::TimeFrame");
-    qRegisterMetaType<plugin::ICandleView::Timestamp>("plugin::ICandleView::Timestamp");
+    // qRegisterMetaType<cen::plugin::CandleData>("plugin::ICandleView::CandleData");
+    qRegisterMetaType<cen::plugin::TimeFrame>("plugin::ICandleView::TimeFrame");
+    qRegisterMetaType<cen::plugin::IExchange::Timestamp>("plugin::ICandleView::Timestamp");
     qRegisterMetaType<plugin::IStatus::DisplayRole>("plugin::IStatus::DisplayRole");
 
-    installEventFilter(this);
-
-    /* TODO: THIS
-    ui()->bidsChart->installEventFilter(this);
-    ui()->asksChart->installEventFilter(this);
-*/
 #ifdef Q_OS_MAC
     CFURLRef appUrlRef       = CFBundleCopyBundleURL(CFBundleGetMainBundle());
     CFStringRef macPath      = CFURLCopyFileSystemPath(appUrlRef, kCFURLPOSIXPathStyle);
@@ -262,6 +258,7 @@ CentaurApp::CentaurApp(QWidget *parent) :
     splashScreen->setDisplayText(tr("Adding favorites watchlist"));
     loadFavoritesWatchList();
     splashScreen->step();
+
 
     /*
                         onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
@@ -313,7 +310,7 @@ CentaurApp::~CentaurApp()
     if (g_logger != nullptr)
     {
         g_logger->terminate();
-        m_loggerThread->join();
+        _impl->loggerThread->join();
     }
 
     delete g_globals;
@@ -327,6 +324,11 @@ Ui::CentaurApp *CentaurApp::ui()
 LogDialog *CentaurApp::logDialog() noexcept
 {
     return _impl->logDialog;
+}
+
+void CentaurApp::mapPluginBase(CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
+{
+    _impl->pluginsData.emplace_back(base);
 }
 
 void CentaurApp::mapConfigurationInterface(const uuid &id, PluginConfiguration *config)
@@ -353,42 +355,18 @@ void CentaurApp::mapStatusPlugins(const uuid &plugin, CENTAUR_PLUGIN_NAMESPACE::
 {
     _impl->statusPlugins[plugin] = { status, button, mode };
 }
-
-void CentaurApp::mapCandleViewSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *candle, const CandleViewSupport &view)
+std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> &CentaurApp::getPluginBase() const noexcept
 {
-    _impl->candleViewSupport[candle] = view;
-}
-
-CENTAUR_PLUGIN_NAMESPACE::ICandleView *CentaurApp::getSupportedCandleViewPlugins(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &id)
-{
-    for (auto &cvs : _impl->candleViewSupport)
-    {
-        for (auto &spexch : cvs.second.info)
-        {
-            if (spexch == id)
-                return cvs.first;
-        }
-    }
-
-    return nullptr;
-}
-
-std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> CentaurApp::getCandleViewTimeframeSupport(CENTAUR_PLUGIN_NAMESPACE::ICandleView *id) const
-{
-    auto it = _impl->candleViewSupport.find(id);
-    if (it == _impl->candleViewSupport.end())
-        return std::nullopt;
-
-    return std::optional<std::reference_wrapper<const QList<CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame>>> { std::cref(it->second.timeframes) };
+    return _impl->pluginsData;
 }
 
 void CentaurApp::closeEvent(QCloseEvent *event)
 {
-    if (m_server)
+    if (_impl->server)
     {
         // Stop the server
-        m_server->close();
-        m_server.reset();
+        _impl->server->close();
+        _impl->server.reset();
     }
 
     for (const auto &plugins : _impl->pluginInstances)
@@ -400,28 +378,6 @@ void CentaurApp::closeEvent(QCloseEvent *event)
     saveInterfaceState();
 
     event->accept();
-}
-
-bool CentaurApp::eventFilter(QObject *obj, QEvent *event)
-{
-    /* TODO: THIS
-    if (obj == ui()->bidsChart && event->type() == QEvent::Resize && ui()->bidsChart->chart() != nullptr)
-    {
-        auto resize    = dynamic_cast<QResizeEvent *>(event);
-        auto bidsChart = ui()->bidsChart->chart();
-        auto size      = resize->size();
-        bidsChart->setPlotArea(QRectF(70, 0, static_cast<qreal>(size.width()) - 70, static_cast<qreal>(size.height()) - 20));
-    }
-
-    if (obj == ui()->asksChart && event->type() == QEvent::Resize && ui()->asksChart->chart() != nullptr)
-    {
-        auto resize    = dynamic_cast<QResizeEvent *>(event);
-        auto asksChart = ui()->asksChart->chart();
-        auto size      = resize->size();
-        asksChart->setPlotArea(QRectF(0, 0, static_cast<qreal>(size.width()) - 70, static_cast<qreal>(size.height()) - 20));
-    }
-*/
-    return QObject::eventFilter(obj, event);
 }
 
 void CentaurApp::initializeDatabaseServices() noexcept
@@ -561,14 +517,11 @@ void CentaurApp::initializeInterface() noexcept
 
         QMenu menu(this);
 
-        auto exchBase = dynamic_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(_impl->exchangeList[uuid { source.toStdString() }].exchange);
+        auto exchBase = _impl->exchangeList[uuid { source.toStdString() }].exchange;
         if (exchBase != nullptr)
         {
             const auto pluginInformation = pluginInformationFromBase(exchBase);
-            auto *candleView             = getSupportedCandleViewPlugins(pluginInformation);
-            if (candleView != nullptr)
-            {
-            }
+            auto candleView              = exchBase->supportedTimeFrames();
         }
 
         OrderBookDepthInformation obdi { symbol, source };
@@ -826,7 +779,7 @@ void CentaurApp::startLoggingService() noexcept
 {
     g_logger = new CentaurLogger;
     // Init the logger
-    m_loggerThread = std::make_unique<std::thread>(&CentaurLogger::run, g_logger);
+    _impl->loggerThread = std::make_unique<std::thread>(&CentaurLogger::run, g_logger);
     try
     {
         g_logger->setApplication(this);
@@ -844,9 +797,9 @@ void CentaurApp::startLoggingService() noexcept
 
 void CentaurApp::startCommunicationsServer() noexcept
 {
-    m_server = std::make_unique<ProtocolServer>(this);
+    _impl->server = std::make_unique<ProtocolServer>(this);
     QIcon icon;
-    if (m_server->isListening())
+    if (_impl->server->isListening())
     {
         icon.addFile(QString::fromUtf8(":/img/server_green"), QSize(), QIcon::Normal, QIcon::Off);
         ui()->serverStatusButton->setIcon(icon);
@@ -1122,75 +1075,6 @@ void CentaurApp::updateUserInformationStatus() noexcept
 void CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
 {
     m_sqlFavorites->add(symbol, sender);
-}
-
-CENTAUR_PLUGIN_NAMESPACE::IExchange *CentaurApp::exchangeFromWatchlistRow(int row) noexcept
-{
-    // TODO: THIS
-    // const QString itemSource = m_watchlistItemModel->item(row, 4)->text();
-    // return exchangeFromWatchlistRow(itemSource);
-
-    return nullptr;
-}
-
-CENTAUR_PLUGIN_NAMESPACE::IExchange *CentaurApp::exchangeFromWatchlistRow(const QString &sender) noexcept
-{
-    /*
-    auto interface = m_exchangeList.find(sender);
-
-    if (interface == m_exchangeList.end())
-    {
-        logError("watchlist", QString(tr("The sender '%1' is not registered.")).arg(sender));
-        return nullptr;
-    }
-
-    return interface->second.exchange;*/
-    return nullptr;
-}
-
-void CentaurApp::onCandleView(const QString &symbol, plugin::ICandleView *view, plugin::ICandleView::TimeFrame tf, const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter) noexcept
-{ /* TODO: THIS
-     auto subWindow = new QMdiSubWindow;
-
-     bool unique = false;
-     uuid uid { uuid::generate() };
-
-     while (!unique)
-     {
-         if (m_candleViewDisplay.contains(uid))
-             uid = uuid::generate();
-         else
-         {
-             m_candleViewDisplay[uid] = { subWindow, symbol, view, tf };
-             unique                   = true;
-         }
-     }
-
-     subWindow->setWidget(new CandleViewWidget(emitter, uid, symbol, view, tf, subWindow));
-
-     subWindow->setAttribute(Qt::WA_DeleteOnClose);
-     ui()->mdiArea->addSubWindow(subWindow);
-     subWindow->show();
-     */
-}
-
-void CentaurApp::onRealTimeCandleUpdate(const uuid &id, quint64 eventTime, plugin::ICandleView::Timestamp ts, const plugin::ICandleView::CandleData &cd) noexcept
-{
-    auto iter = m_candleViewDisplay.find(id);
-    if (iter == m_candleViewDisplay.end())
-    {
-        logError("onRealTimeCandleUpdate", tr("Can not find the CandleView"));
-        return;
-    }
-    auto &info  = iter->second;
-    auto widget = std::get<0>(info)->widget();
-
-    QMetaObject::invokeMethod(widget,
-        "onUpdateCandle",
-        Qt::QueuedConnection,
-        Q_ARG(quint64, eventTime),
-        Q_ARG(plugin::ICandleView::Timestamp, ts),
-        Q_ARG(plugin::ICandleView::CandleData, cd));
 }
 
 END_CENTAUR_NAMESPACE

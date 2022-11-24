@@ -338,15 +338,17 @@ TEST_CASE("Protocol: Private Encrypt/Public decrypt")
 {
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
 
-    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/local/Resources/Private/{c9c99ff8-c074-5697-b5ad-80bb6fe7337a}.pem"));
-    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/local/Plugin/Private/{c9c99ff8-c074-5697-b5ad-80bb6fe7337a}.pem"));
+    CHECK_NOTHROW(ec.loadPrivateKey("/Volumes/RicardoESSD/Projects/Centaur/build/debug/bin/Centaur.app/Contents/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
+    CHECK_NOTHROW(ec.loadPublicKey("/Volumes/RicardoESSD/Projects/Centaur/build/debug/bin/Centaur.app/Contents/Plugins/Private/{85261bc6-8f92-57ca-802b-f08b819031db}.pem"));
 
-    std::string text = "text";
+    std::string text = "jJ0qvKfhEQQHduoKifoYpDhJGcS7paQWowqcKCGntYQl5BmzDBOpFLj3anW6who0";
 
     std::string base64, decBase64;
 
     CHECK_NOTHROW((base64 = ec.encryptPrivate(text, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
     CHECK_NOTHROW((decBase64 = ec.decryptPrivate(base64, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64)));
+
+    std::cout << base64 << "\n";
 
     CHECK(decBase64 != text);
 

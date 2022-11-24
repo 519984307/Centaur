@@ -6,7 +6,7 @@
 #include "CandleChart/TimeAxisItem.hpp"
 #include <QPainter>
 
-cen::TimeAxisItem::TimeAxisItem(double height, double candleWidth, double candleSpacing, double labelSpacing, uint64_t min, uint64_t max, cen::plugin::ICandleView::TimeFrame tf, QGraphicsItem *parent) :
+cen::TimeAxisItem::TimeAxisItem(double height, double candleWidth, double candleSpacing, double labelSpacing, uint64_t min, uint64_t max, cen::plugin::TimeFrame tf, QGraphicsItem *parent) :
     QGraphicsRectItem(parent),
     m_height { height },
     m_candleWidth { candleWidth },
@@ -23,41 +23,41 @@ cen::TimeAxisItem::TimeAxisItem(double height, double candleWidth, double candle
 {
 }
 
-uint64_t cen::TimeAxisItem::timeFrameToMilliseconds(cen::plugin::ICandleView::TimeFrame tf) noexcept
+uint64_t cen::TimeAxisItem::timeFrameToMilliseconds(cen::plugin::TimeFrame tf) noexcept
 {
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp sec   = 1000;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp min   = sec * 60;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp hr    = min * 60;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp day   = hr * 24;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp week  = day * 7;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp month = day * 365 / 12;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp sec   = 1000;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp min   = sec * 60;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp hr    = min * 60;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp day   = hr * 24;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp week  = day * 7;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp month = day * 365 / 12;
 
     switch (tf)
     {
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::nullTime: return 0;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1: return sec;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5: return sec * 5;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10: return sec * 10;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30: return sec * 30;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45: return sec * 45;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1: return min;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2: return min * 2;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3: return min * 3;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5: return min * 5;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10: return min * 10;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15: return min * 15;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30: return min * 30;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45: return min * 45;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1: return hr;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2: return hr * 2;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4: return hr * 4;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6: return hr * 6;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8: return hr * 8;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12: return hr * 12;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1: return day;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3: return day * 3;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1: return week;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1: return month;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime: return 0;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_1: return sec;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_5: return sec * 5;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_10: return sec * 10;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_30: return sec * 30;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_45: return sec * 45;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_1: return min;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_2: return min * 2;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_3: return min * 3;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_5: return min * 5;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_10: return min * 10;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_15: return min * 15;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_30: return min * 30;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_45: return min * 45;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_1: return hr;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_2: return hr * 2;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_4: return hr * 4;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_6: return hr * 6;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_8: return hr * 8;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_12: return hr * 12;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_1: return day;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_3: return day * 3;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Weeks_1: return week;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Months_1: return month;
     }
 }
 
@@ -122,7 +122,7 @@ void cen::TimeAxisItem::setTimestampRange(uint64_t min, uint64_t max) noexcept
     update();
 }
 
-void cen::TimeAxisItem::setTimeFrame(cen::plugin::ICandleView::TimeFrame tf) noexcept
+void cen::TimeAxisItem::setTimeFrame(cen::plugin::TimeFrame tf) noexcept
 {
     m_tf = tf;
     recalculateAxisLabels();
@@ -235,7 +235,7 @@ void cen::TimeAxisItem::recalculateAxisLabels() noexcept
     auto firstTimeShiftSteps = static_cast<uint64_t>((rectTest / 2));
     auto timeShifts          = static_cast<uint64_t>(rectTest);
 
-    const auto startTime     = m_min + (timeFrameToMilliseconds(m_tf) * firstTimeShiftSteps);
+    const auto startTime = m_min + (timeFrameToMilliseconds(m_tf) * firstTimeShiftSteps);
 
     // Now the shift must reduce from the total width of the axis, otherwise, we can be painting outside the axis
     const double maxLabels  = (thisRect.width() - shift) / maxWidth; // Number of labels
@@ -270,36 +270,36 @@ double cen::TimeAxisItem::getAxisLabelsWidth(bool retrievingMode, QList<QPair<QS
     switch (m_tf)
     {
 
-        case plugin::ICandleView::TimeFrame::nullTime: labelFormat = ""; break;
-        case plugin::ICandleView::TimeFrame::Seconds_1: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Seconds_5: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Seconds_10: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Seconds_30: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Seconds_45:
+        case plugin::TimeFrame::nullTime: labelFormat = ""; break;
+        case plugin::TimeFrame::Seconds_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_5: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_10: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_30: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_45:
             labelFormat = "mm:ss";
             break;
-        case plugin::ICandleView::TimeFrame::Minutes_1: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_2: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_3: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_5: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_10: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_15: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_30: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Minutes_45: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Hours_1: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Hours_2: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Hours_4: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Hours_6: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Hours_8: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Hours_12:
+        case plugin::TimeFrame::Minutes_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_2: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_3: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_5: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_10: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_15: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_30: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_45: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_2: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_4: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_6: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_8: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_12:
             labelFormat = "HH:mm";
             break;
-        case plugin::ICandleView::TimeFrame::Days_1: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Days_3: C_FALLTHROUGH;
-        case plugin::ICandleView::TimeFrame::Weeks_1:
+        case plugin::TimeFrame::Days_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Days_3: C_FALLTHROUGH;
+        case plugin::TimeFrame::Weeks_1:
             labelFormat = "dd";
             break;
-        case plugin::ICandleView::TimeFrame::Months_1:
+        case plugin::TimeFrame::Months_1:
             labelFormat = "MMM";
             break;
     }
@@ -320,7 +320,7 @@ double cen::TimeAxisItem::getAxisLabelsWidth(bool retrievingMode, QList<QPair<QS
     // Generate a set of strings to determine the largest
     const QString cacheFormat = labelFormat;
     QFont *fontUsed;
-    int widestFrame        = 0;
+    int widestFrame = 0;
 
     const uint64_t startAt = [&]() {
         if (!retrievingMode)
@@ -426,9 +426,9 @@ void cen::TimeAxisItem::setCursorPos(uint64_t timestamp) noexcept
     }();
 
     // const auto &time       = m_candleRects.at(m_cursorIndex);
-    QDateTime dt           = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(timestamp));
-    m_infoLabel            = dt.toString(timeFormat);
-    auto size              = metrics.size(Qt::TextSingleLine, m_infoLabel);
+    QDateTime dt = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(timestamp));
+    m_infoLabel  = dt.toString(timeFormat);
+    auto size    = metrics.size(Qt::TextSingleLine, m_infoLabel);
 
     const auto width       = static_cast<qreal>(size.width());
     const auto &candleRect = m_candleRects.at(timestamp);
@@ -449,7 +449,7 @@ void cen::TimeAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGrap
 {
     const QRectF &thisRect = rect();
 
-    if (m_tf == CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::nullTime)
+    if (m_tf == CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime)
     {
         // No paint
         QGraphicsRectItem::paint(painter, option, widget);

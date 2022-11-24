@@ -6,11 +6,7 @@
         <file alias="glass">../res/search_gray_48dp.svg</file>
         <file alias="copy">../res/content_copy_FILL0_wght400_GRAD0_opsz48.svg</file>
     </qresource>
-
-    <qresource prefix="icon">
-        <file alias="red">../res/currency_exchange_red_48dp.svg</file>
-        <file alias="blue">../res/currency_exchange_blue_48dp.svg</file>
-    </qresource>
+    
 
     <qresource prefix="status">
         <file alias="icon">../res/BinancePlugin.png</file>

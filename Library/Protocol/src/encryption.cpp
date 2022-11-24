@@ -97,9 +97,27 @@ CENTAUR_WARN_POP()
         return ret;
     }
 
+    /*RSA *rsa= NULL;
+BIO *keybio ;
+keybio = BIO_new_mem_buf(key, -1);
+if (keybio==NULL)
+{
+    printf( "Failed to create key BIO");
+    return 0;
+}
+if(public)
+{
+    rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+}
+else
+{
+    rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+}*/
+
 public:
     inline auto loadPrivateKey(const std::string &file) -> void
     {
+
         FILE *fp;
 #ifdef WIN32
         auto ret = fopen(&fp, file.cstr(), "r+");
@@ -113,15 +131,34 @@ public:
         {
             throw fmt::system_error(errno, "could not open the file: {}", file);
         }
-#endif /*WIN32*/
+#endif  /*WIN32*/
+        /*
+                fseek(fp, 0, SEEK_END);
+                auto size = ftell(fp);
+                fseek(fp, 0, SEEK_SET);
+
+                if (size == -1)
+                {
+
+                    fclose(fp);
+                    throw fmt::system_error(errno, "could not read the file: {}", file);
+                }
+
+                char *fileData = reinterpret_cast<char *>(malloc(static_cast<std::size_t>(size + 1)));
+                fread(reinterpret_cast<void *>(fileData), sizeof(char), static_cast<std::size_t>(size), fp);
+                fileData[static_cast<std::size_t>(size)] = 0;
+
+                fclose(fp);
+
+                RSA *rsa { nullptr };
+                auto keyBIO = BIO_new_mem_buf(fileData, static_cast<int>(size));*/
+
         m_privateKey = RSA_new();
 
         if (PEM_read_RSAPrivateKey(fp, &m_privateKey, nullptr, nullptr) == nullptr)
         {
             throw std::runtime_error(fmt::format("invalid key in: {}", file));
         }
-
-        fclose(fp);
     }
 
     inline auto loadPublicKey(const std::string &file) -> void

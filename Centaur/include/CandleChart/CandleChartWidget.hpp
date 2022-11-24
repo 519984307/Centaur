@@ -35,7 +35,7 @@ namespace CENTAUR_NAMESPACE
 
     public:
         /// \brief Set the chart timeframe
-        void setChartTimeFrame(CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf);
+        void setChartTimeFrame(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf);
         /// \brief Updating a non-existent candle will add the candle
         void updateCandle(quint64 timestamp, double open, double close, double high, double low) noexcept;
         /// \brief Adding an existing timestamp will call to updateCandle
@@ -125,7 +125,7 @@ namespace CENTAUR_NAMESPACE
 
         int m_pricePrecision;
 
-        CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame m_tf;
+        CENTAUR_PLUGIN_NAMESPACE::TimeFrame m_tf;
 
         bool m_showHorzGridLines;
         bool m_showVertGridLines;

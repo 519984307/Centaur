@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-
-<RCC>
-    <qresource prefix="main">
-        <file alias="icon">BinancePlugin.png</file>
-    </qresource>
-</RCC>

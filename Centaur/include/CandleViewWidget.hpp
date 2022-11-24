@@ -13,9 +13,9 @@
 #ifndef CENTAUR_CANDLEVIEWWIDGET_HPP
 #define CENTAUR_CANDLEVIEWWIDGET_HPP
 
-#include "Centaur.hpp"
 #include "../ui/ui_CandleViewWidget.h"
 #include "CandleChart/CandleChartWidget.hpp"
+#include "Centaur.hpp"
 #include "CentaurPlugin.hpp"
 #include "Globals.hpp"
 
@@ -58,12 +58,12 @@ namespace CENTAUR_NAMESPACE
 
         struct CandleWindow
         {
-            CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp begin;
-            CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end;
+            CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp begin {};
+            CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp end {};
         };
 
     public:
-        CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter, const uuid &id, const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf, QWidget *parent = nullptr);
+        CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter, const uuid &id, const QString &symbol, cen::plugin::TimeFrame tf, QWidget *parent = nullptr);
         ~CandleViewWidget() override = default;
 
     protected:
@@ -78,13 +78,13 @@ namespace CENTAUR_NAMESPACE
         void loadLastTimeWindow() noexcept;
 
     signals:
-        void snRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end);
+        void snRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp end);
         void snUpdateSeries();
 
     public slots:
-        void onRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp end) noexcept;
+        void onRetrieveCandles(CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp start, CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp end) noexcept;
         void onUpdateSeries() noexcept;
-        void onUpdateCandle(quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept;
+        void onUpdateCandle(quint64 eventTime, CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp ts, const CENTAUR_PLUGIN_NAMESPACE::CandleData &cd) noexcept;
         void onUpdateCandleMousePosition(uint64_t timestamp);
 
     protected:
@@ -92,10 +92,10 @@ namespace CENTAUR_NAMESPACE
 
         // Information
     protected:
+        CENTAUR_PLUGIN_NAMESPACE::IExchange *m_view;
         uuid m_uuid;
         QString m_symbol;
-        cen::plugin::ICandleView *m_view;
-        cen::plugin::ICandleView::TimeFrame m_tf;
+        cen::plugin::TimeFrame m_tf;
         CENTAUR_PLUGIN_NAMESPACE::PluginInformation m_pi;
 
         // General data
@@ -110,13 +110,13 @@ namespace CENTAUR_NAMESPACE
 
     private:
         // Builds a string identifier with: symbol@@pluginName@@timeFrame!!
-        static QString buildSettingsGroupName(const QString &symbol, const QString &pluginName, cen::plugin::ICandleView::TimeFrame tf) noexcept;
-        static QString timeFrameToString(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        static QString buildSettingsGroupName(const QString &symbol, const QString &pluginName, cen::plugin::TimeFrame tf) noexcept;
+        static QString timeFrameToString(cen::plugin::TimeFrame tf) noexcept;
         // Converts the timeframes to ms. For example: 1 seconds = 1000 ms; 60 min = 360,000 ms
-        static CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp timeFrameToMilliseconds(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        static CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp timeFrameToMilliseconds(cen::plugin::TimeFrame tf) noexcept;
         /// \brief Calculate the beginning and the end based on current timestamp
         /// \return [begin, end] timestamps
-        static CandleWindow getClosedCandlesTimes(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        static CandleWindow getClosedCandlesTimes(cen::plugin::TimeFrame tf) noexcept;
         static QPair<double, double> calculateMinMaxVerticalAxis(double highestHigh, double lowestLow) noexcept;
     };
 } // namespace CENTAUR_NAMESPACE

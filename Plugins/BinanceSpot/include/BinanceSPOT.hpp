@@ -22,6 +22,7 @@
 #include <QMetaType>
 #include <QObject>
 #include <QPair>
+#include <QThread>
 #include <future>
 #include <memory>
 #include <thread>
@@ -30,7 +31,27 @@
 
 namespace CENTAUR_NAMESPACE
 {
+    // This class will handle all loading in a separate thread
+    class BinanceSpotPlugin;
+    class LoaderThread : public QThread
+    {
+        Q_OBJECT
+    public:
+        LoaderThread(BinanceSpotPlugin *plugin, CENTAUR_INTERFACE_NAMESPACE::ILogger *logger);
+        ~LoaderThread() override = default;
+
+    public:
+        void run() override;
+
+    signals:
+        void loadFinish(bool status);
+
+    private:
+        BinanceSpotPlugin *plugin;
+        CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };
+    };
     class SpotMarketWS;
+
     class BinanceSpotPlugin : public QObject,
                               public CENTAUR_PLUGIN_NAMESPACE::IExchange
     {
@@ -87,7 +108,7 @@ namespace CENTAUR_NAMESPACE
         QPixmap image() noexcept override;
         QFont font() noexcept override;
         QBrush brush(DisplayRole role) noexcept override;
-        QAction *action(const QPoint &pt) noexcept override;
+        QAction *action() noexcept override;
 
     public slots:
         void onTickerUpdate(const QString &symbol, quint64 receivedTime, double price) noexcept;
@@ -103,10 +124,17 @@ namespace CENTAUR_NAMESPACE
         void onDisplayCoinAssetDepositAddress(const QString &asset) noexcept;
         void onDisplayAssetDetail(const QString &asset) noexcept;
         void onShowFees(const QString &symbol = "") noexcept;
+        void onLoaderFinished(bool load) noexcept;
+        void onStatusButtonClicked(bool status) noexcept;
+
+    public:
+        BINAPI_NAMESPACE::BinanceAPISpot *getAPI() noexcept;
+        void setExchangeInformation(const BINAPI_NAMESPACE::SPOT::ExchangeInformation &data);
 
     signals:
         void snTickerUpdate(const QString &symbol, const QString &sourceUUID, quint64 receivedTime, double price);
         void snOrderbookUpdate(const QString &source, const QString &symbol, quint64 receivedTime, const QMap<qreal, QPair<qreal, qreal>> &bids, const QMap<qreal, QPair<qreal, qreal>> &asks);
+        void displayChange(plugin::IStatus::DisplayRole dr);
 
         // Resources
     protected:
@@ -123,10 +151,14 @@ namespace CENTAUR_NAMESPACE
         CENTAUR_PLUGIN_NAMESPACE::StringIconVector m_symbols;
 
     private:
-        std::unique_ptr<BINAPI_NAMESPACE::BinanceAPISpot> m_api { nullptr };
+        std::unique_ptr<BINAPI_NAMESPACE::BinanceAPISpot> m_bAPI { nullptr };
         BINAPI_NAMESPACE::SPOT::ExchangeInformation m_exchInfo;
         BINAPI_NAMESPACE::BinanceLimits m_limits;
         BINAPI_NAMESPACE::BinanceKeys m_keys;
+
+    private:
+        std::atomic_bool m_initState { false };
+        std::atomic_bool m_loader { false };
 
         // SEVEN-DAY CACHE CHART
     private:
@@ -145,6 +177,7 @@ namespace CENTAUR_NAMESPACE
         // IStatus data
     protected:
         QPixmap m_image;
+        QAction *m_statusAction;
     };
 
     class SpotMarketWS : public BINAPI_NAMESPACE::ws::WSSpotBinanceAPI

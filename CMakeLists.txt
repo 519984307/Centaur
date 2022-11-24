@@ -35,7 +35,6 @@ add_subdirectory(Library/Exchanges/BinanceAPI)
 #Plugins
 add_subdirectory(Plugins/ExchangeRate)
 add_subdirectory(Plugins/BinanceSpot)
-add_subdirectory(Plugins/BinanceSpotStatus)
 add_subdirectory(Plugins/BinanceCS)
 
 #tests

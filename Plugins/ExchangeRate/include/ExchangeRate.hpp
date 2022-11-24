@@ -53,27 +53,29 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         explicit ExchangeRatePlugin(QObject *parent = nullptr);
         ~ExchangeRatePlugin() override = default;
 
+        // IStatus
     public:
         DisplayMode initialize() noexcept override;
         QString text() noexcept override;
         QPixmap image() noexcept override;
         QFont font() noexcept override;
         QBrush brush(DisplayRole role) noexcept override;
-        QAction *action(const QPoint &pt) noexcept override;
+        QAction *action() noexcept override;
 
-        // IStatus
+        // IExchangeRate
     public:
         QList<QString> listSupported() noexcept override;
         qreal value(const QString &quote, const QString &base) noexcept override;
         qreal convert(const QString &quote, const QString &base, qreal quoteQuantity) noexcept override;
         qreal convert(const QString &quote, const QString &base, qreal quoteQuantity, QDate *date) noexcept override;
 
+        // IBase
     public:
         QObject *getPluginObject() noexcept override;
-        QString getPluginName() noexcept override;
-        QString getPluginVersionString() noexcept override;
+        QString getPluginName() const noexcept override;
+        QString getPluginVersionString() const noexcept override;
         void setPluginInterfaces(CENTAUR_INTERFACE_NAMESPACE::ILogger *logger, CENTAUR_INTERFACE_NAMESPACE::IConfiguration *config) noexcept override;
-        uuid getPluginUUID() noexcept override;
+        uuid getPluginUUID() const noexcept override;
 
     protected:
         void loadData() noexcept;
@@ -83,6 +85,9 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
     private:
         rapidjson::Document pluginSettings;
+
+    signals:
+        void displayChange(plugin::IStatus::DisplayRole dr);
 
     private:
         QString m_defaultQuote;

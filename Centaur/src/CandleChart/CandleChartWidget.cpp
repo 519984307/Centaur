@@ -19,7 +19,7 @@ cen::CandleChartWidget::CandleChartWidget(QWidget *parent) :
     m_scene { new QGraphicsScene(this) },
     m_scalingFactor { 1.0 },
     m_pricePrecision { 0 },
-    m_tf { CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::nullTime },
+    m_tf { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime },
     m_showHorzGridLines { true },
     m_showVertGridLines { true },
     m_precisionOverride { false }
@@ -121,7 +121,7 @@ void cen::CandleChartWidget::updateCandle(quint64 timestamp, double open, double
         const auto openPrecision  = getPriceMaxFloatingPrecisionPoint(open);
         const auto closePrecision = getPriceMaxFloatingPrecisionPoint(close);
 
-        m_pricePrecision          = std::max({ lowPrecision, highPrecision, openPrecision, closePrecision });
+        m_pricePrecision = std::max({ lowPrecision, highPrecision, openPrecision, closePrecision });
     }
 
     if (m_candles.size() > 1)
@@ -140,10 +140,10 @@ void cen::CandleChartWidget::updateItemRectangle(cen::CandleItem *item) noexcept
     const double resol    = viewport()->height() /* * m_scalingFactor */;
     const double relation = (getMaxPrice() - getMinPrice()) / (getMaxPrice() + getMinPrice());
 
-    //const QPointF origin
+    // const QPointF origin
 
-    const double minAxis  = getMinPrice() /* * m_scalingFactor */;
-    const double maxAxis  = getMaxPrice() /* * m_scalingFactor */;
+    const double minAxis = getMinPrice() /* * m_scalingFactor */;
+    const double maxAxis = getMaxPrice() /* * m_scalingFactor */;
 
     // Candle positions
     const double itemWidth = getCandleWidth() + getCandleSpacing();
@@ -167,7 +167,7 @@ void cen::CandleChartWidget::updateItemRectangle(cen::CandleItem *item) noexcept
 
     // qDebug() << minAxis << maxAxis << minAxis * 1000 << (maxAxis - minAxis) * 1000;
 
-    const auto &sceneRect   = scene()->sceneRect();
+    const auto &sceneRect = scene()->sceneRect();
 
     const QRectF candleRect = {
         xPosition,
@@ -337,43 +337,43 @@ uint64_t cen::CandleChartWidget::timeFrameMilliseconds() noexcept
     1 year (365.24 days) 	 31556926 seconds
     */
 
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp sec   = 1000;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp min   = sec * 60;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp hr    = min * 60;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp day   = hr * 24;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp week  = day * 7;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp month = 2'629'743'000;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp sec   = 1000;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp min   = sec * 60;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp hr    = min * 60;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp day   = hr * 24;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp week  = day * 7;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp month = 2'629'743'000;
 
     switch (m_tf)
     {
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::nullTime: return 0;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1: return sec;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5: return sec * 5;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10: return sec * 10;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30: return sec * 30;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45: return sec * 45;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1: return min;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2: return min * 2;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3: return min * 3;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5: return min * 5;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10: return min * 10;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15: return min * 15;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30: return min * 30;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45: return min * 45;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1: return hr;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2: return hr * 2;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4: return hr * 4;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6: return hr * 6;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8: return hr * 8;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12: return hr * 12;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1: return day;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3: return day * 3;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1: return week;
-        case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1: return month;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime: return 0;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_1: return sec;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_5: return sec * 5;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_10: return sec * 10;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_30: return sec * 30;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_45: return sec * 45;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_1: return min;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_2: return min * 2;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_3: return min * 3;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_5: return min * 5;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_10: return min * 10;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_15: return min * 15;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_30: return min * 30;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_45: return min * 45;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_1: return hr;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_2: return hr * 2;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_4: return hr * 4;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_6: return hr * 6;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_8: return hr * 8;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_12: return hr * 12;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_1: return day;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_3: return day * 3;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Weeks_1: return week;
+        case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Months_1: return month;
     }
 }
 
-void cen::CandleChartWidget::setChartTimeFrame(cen::plugin::ICandleView::TimeFrame tf)
+void cen::CandleChartWidget::setChartTimeFrame(cen::plugin::TimeFrame tf)
 {
     m_tf                        = tf;
     m_originParameters.timeDiff = timeFrameMilliseconds();
@@ -531,15 +531,15 @@ void cen::CandleChartWidget::updateCrossHair(const QPointF &pt) noexcept
 
     getHCrossHair()->setLine({ horzOrigin, horzFinal });
 
-    const auto width     = getCandleWidth() + getCandleSpacing();
-    const auto position  = std::floor(pts.x() / width);
-    const auto XdW_1     = static_cast<int64_t>(position) * static_cast<int64_t>(m_originParameters.timeDiff);
+    const auto width    = getCandleWidth() + getCandleSpacing();
+    const auto position = std::floor(pts.x() / width);
+    const auto XdW_1    = static_cast<int64_t>(position) * static_cast<int64_t>(m_originParameters.timeDiff);
 
     const auto timestamp = XdW_1 > 0
                                ? m_originParameters.timestamp + XdW_1
                                : m_originParameters.timestamp - static_cast<uint64_t>(-XdW_1);
 
-    auto candle          = getCandleItem(timestamp);
+    auto candle = getCandleItem(timestamp);
     emit snUpdateCandleMousePosition(timestamp);
 
     double vertX = 0;

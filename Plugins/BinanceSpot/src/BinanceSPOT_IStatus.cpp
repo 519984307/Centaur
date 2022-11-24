@@ -7,7 +7,9 @@
 // IStatus Implementation
 
 #include "BinanceSPOT.hpp"
+#include "StatusDialog.hpp"
 #include <QApplication>
+#include <QMessageBox>
 
 cen::plugin::IStatus::DisplayMode cen::BinanceSpotPlugin::initialize() noexcept
 {
@@ -42,7 +44,26 @@ QBrush cen::BinanceSpotPlugin::brush(cen::plugin::IStatus::DisplayRole role) noe
     }
 }
 
-QAction *cen::BinanceSpotPlugin::action(const QPoint &pt) noexcept
+QAction *cen::BinanceSpotPlugin::action() noexcept
 {
-    return nullptr;
+    return m_statusAction;
+}
+
+void cen::BinanceSpotPlugin::onStatusButtonClicked(C_UNUSED bool status) noexcept
+{
+    try
+    {
+        auto permissions = getAPI()->getAPIKeyPermission();
+        auto status      = getAPI()->accountAPITradingStatus();
+        StatusDialog dlg(
+            &permissions,
+            &status,
+            tr("Account status available"),
+            nullptr);
+        dlg.exec();
+
+    } catch (C_UNUSED const std::exception &ex)
+    {
+        QMessageBox::critical(nullptr, tr("Error"), tr("API trading status is not available"), QMessageBox::Ok);
+    }
 }

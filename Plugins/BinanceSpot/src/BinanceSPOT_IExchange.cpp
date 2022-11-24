@@ -15,6 +15,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <fmt/core.h>
+#include <rapidjson/istreamwrapper.h>
 
 #define CATCH_API_EXCEPTION()                                                                                                                                              \
     switch (ex.type())                                                                                                                                                     \
@@ -65,6 +66,38 @@
             break;                                                                                                                                                         \
     }
 
+CENTAUR_NAMESPACE::LoaderThread::LoaderThread(BinanceSpotPlugin *plg, CENTAUR_INTERFACE_NAMESPACE::ILogger *logger) :
+    QThread(plg),
+    plugin { plg },
+    m_logger { logger } { }
+
+void CENTAUR_NAMESPACE::LoaderThread::run()
+{
+    try
+    {
+        plugin->getAPI()->ping();
+
+        if (!plugin->getAPI()->getExchangeStatus())
+        {
+            logError("BinanceSpotPlugin", "Binance Server is under maintenance");
+            emit loadFinish(false);
+            return;
+        }
+
+        logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
+        plugin->setExchangeInformation(plugin->getAPI()->getExchangeInformation());
+        logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(plugin->getAPI()->getLastCallTime()));
+
+        emit loadFinish(true);
+        return;
+    } catch (const BINAPI_NAMESPACE::APIException &ex)
+    {
+        CATCH_API_EXCEPTION()
+    }
+
+    loadFinish(false);
+}
+
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::initialization");
@@ -72,55 +105,83 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
     CENTAUR_PROTOCOL_NAMESPACE::Encryption ec;
     auto publicKeyFile = m_config->getPluginPublicKeyPath();
 
+    std::ifstream input(m_config->getConfigurationFileName());
+    rapidjson::IStreamWrapper isw(input);
+    rapidjson::Document pluginSettings;
+
+    if (pluginSettings.ParseStream(isw).HasParseError())
+    {
+        QString str = QString(tr("%1 at %2")).arg(rapidjson::GetParseError_En(pluginSettings.GetParseError())).arg(pluginSettings.GetErrorOffset());
+        logError("BinanceSpotPlugin", QString("Settings contain JSON errors. %1").arg(str));
+        return false;
+    }
+
     try
     {
         ec.loadPublicKey(publicKeyFile);
     } catch (const std::exception &ex)
     {
         logError("BinanceSpotPlugin", QString("Could not load the plugin public key. %1").arg(ex.what()));
-        //  return false;
+        return false;
     }
-    /*
-        bool apiError, secError;
-        const auto apiKeyCip = m_config->getValue("apiKey", &apiError);
-        const auto secKeyCip = m_config->getValue("secretKey", &secError);*/
-    /*
-        if (!apiError || !secError)
-        {
-            logError("BinanceSpotPlugin", "Either the API Key or the secret key are empty on the plugins configuration file.");
-            return false;
-        }
 
-        const auto apiKey = ec.decryptPublic(apiKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
-        const auto secKey = ec.decryptPublic(secKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
+    auto apiKeyCip = std::string(pluginSettings["api"].GetString());
+    auto secKeyCip = std::string(pluginSettings["secret"].GetString());
 
-        if (apiKey.empty() || secKey.empty())
-        {
-            logError("BinanceSpotPlugin", "Could not decrypt the binance keys");
-            return false;
-        }
+    fmt::print("{}\n", apiKeyCip);
+    // apiKeyCip.replace(QString("\\n"), QString("\n"));
+    // secKeyCip.replace(QString("\\n"), QString("\n"));
 
-        // set the keys
-        m_keys.apiKey    = apiKey;
-        m_keys.secretKey = secKey;
-    */
-    m_api = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
-
-    try
+    if (apiKeyCip.empty() || secKeyCip.empty())
     {
+        logError("BinanceSpotPlugin", "Either the API Key or the secret key are empty on the plugins configuration file.");
+        return false;
+    }
 
-        m_api->ping();
-        logInfo("BinanceSpotPlugin", "Binance Server SPOT ping correctly");
-        if (!m_api->getExchangeStatus())
-        {
-            logError("BinanceSpotPlugin", "Binance Server is under maintenance");
-            return false;
-        }
+    const auto apiKey = ec.decryptPublic(apiKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
+    const auto secKey = ec.decryptPublic(secKeyCip, CENTAUR_PROTOCOL_NAMESPACE::Encryption::BinaryBase::Base64);
 
-        logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
-        m_exchInfo = m_api->getExchangeInformation();
-        logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(m_api->getLastCallTime()));
+    if (apiKey.empty() || secKey.empty())
+    {
+        logError("BinanceSpotPlugin", "Could not decrypt the binance keys");
+        return false;
+    }
 
+    // set the keys
+    m_keys.apiKey    = apiKey;
+    m_keys.secretKey = secKey;
+    m_bAPI           = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
+
+    auto *loaderThread = new LoaderThread(this, m_logger);
+    connect(loaderThread, &LoaderThread::loadFinish, this, &BinanceSpotPlugin::onLoaderFinished);
+    connect(loaderThread, &LoaderThread::finished, loaderThread, &QObject::deleteLater);
+    loaderThread->start();
+
+    return true;
+}
+
+BINAPI_NAMESPACE::BinanceAPISpot *CENTAUR_NAMESPACE::BinanceSpotPlugin::getAPI() noexcept
+{
+    if (!m_initState)
+        return m_bAPI.get();
+    else
+    {
+        while (!m_loader)
+            return m_bAPI.get();
+    }
+}
+
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::setExchangeInformation(const BINAPI_NAMESPACE::SPOT::ExchangeInformation &data)
+{
+    m_exchInfo = data;
+}
+
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::onLoaderFinished(bool load) noexcept
+{
+    m_initState = true;
+    m_loader    = load;
+    if (load)
+    {
         m_limits.setAPIRequestsLimits(m_exchInfo.limitWeight.limit, m_exchInfo.limitWeight.seconds);
         m_limits.setAPIOrderLimitLow(m_exchInfo.limitOrderSecond.limit, m_exchInfo.limitOrderSecond.seconds);
         m_limits.setAPIOrderLimitHigh(m_exchInfo.limitOrderDay.limit, m_exchInfo.limitOrderDay.seconds);
@@ -132,13 +193,9 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
             if (info.permissions.test(BINAPI_NAMESPACE::SPOT::AccountPermissions::spot))
                 m_symbols.push_back({ QString { info.symbol.c_str() }, &m_cryptoIcon });
         }
+
         logInfo("BinanceSpotPlugin", QString("Symbols handled: ##00FFFF#%1#").arg(m_symbols.size()));
-    } catch (const BINAPI_NAMESPACE::APIException &ex)
-    {
-        CATCH_API_EXCEPTION()
-        return false;
     }
-    return true;
 }
 
 CENTAUR_PLUGIN_NAMESPACE::StringIcon CENTAUR_NAMESPACE::BinanceSpotPlugin::getSymbolListName() const noexcept
@@ -370,7 +427,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
 
         try
         {
-            auto orderbook                    = m_api->getOrderBook(symbol.toStdString(), 1000);
+            auto orderbook                    = getAPI()->getOrderBook(symbol.toStdString(), 1000);
             m_symbolOrderbookSnapshot[symbol] = { true, lastUpdateId };
             lastUpdateId                      = orderbook.lastUpdateId;
             logInfo("BinanceSpotPlugin", QString("Orderbook snapshot successfully taken for %1").arg(symbol));
@@ -420,7 +477,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotStatus() noexcept
     QString message;
     try
     {
-        if (m_api->getExchangeStatus())
+        if (getAPI()->getExchangeStatus())
             message = "System status: Normal";
         else
             message = "System status: System maintenance";
@@ -440,7 +497,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onCoinInformation() noexcept
     {
         try
         {
-            m_coinInformation = m_api->getAllCoinsInformation();
+            m_coinInformation = getAPI()->getAllCoinsInformation();
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -490,27 +547,27 @@ QList<QAction *> CENTAUR_NAMESPACE::BinanceSpotPlugin::dynamicWatchListMenuItems
     auto *symbolFees        = new QAction("Get Symbol Fees", this);
 
     connect(baseAsset, &QAction::triggered, this, [&, baseAsset](C_UNUSED bool checked = false) {
-        onDisplayBaseAssetInfo(baseAsset->data().toString());
+        onDisplayBaseAssetInfo(getBaseFromSymbol(baseAsset->data().toString()));
     });
 
     connect(quoteAsset, &QAction::triggered, this, [&, quoteAsset](C_UNUSED bool checked = false) {
-        onDisplayBaseAssetInfo(quoteAsset->data().toString());
+        onDisplayBaseAssetInfo(getQuoteFromSymbol(quoteAsset->data().toString()));
     });
 
     connect(baseAssetDeposit, &QAction::triggered, this, [&, baseAssetDeposit](C_UNUSED bool checked = false) {
-        onDisplayCoinAssetDepositAddress(baseAssetDeposit->data().toString());
+        onDisplayCoinAssetDepositAddress(getBaseFromSymbol(baseAssetDeposit->data().toString()));
     });
 
     connect(quoteAssetDeposit, &QAction::triggered, this, [&, quoteAssetDeposit](C_UNUSED bool checked = false) {
-        onDisplayCoinAssetDepositAddress(quoteAssetDeposit->data().toString());
+        onDisplayCoinAssetDepositAddress(getQuoteFromSymbol(quoteAssetDeposit->data().toString()));
     });
 
     connect(baseAssetDetails, &QAction::triggered, this, [&, baseAssetDetails](C_UNUSED bool checked = false) {
-        onDisplayAssetDetail(baseAssetDetails->data().toString());
+        onDisplayAssetDetail(getBaseFromSymbol(baseAssetDetails->data().toString()));
     });
 
     connect(quoteAssetDetails, &QAction::triggered, this, [&, quoteAssetDetails](C_UNUSED bool checked = false) {
-        onDisplayAssetDetail(quoteAssetDetails->data().toString());
+        onDisplayAssetDetail(getQuoteFromSymbol(quoteAssetDetails->data().toString()));
     });
 
     connect(symbolFees, &QAction::triggered, this, [&, symbolFees](C_UNUSED bool checked = false) {
@@ -539,7 +596,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayBaseAssetInfo(const QString 
     {
         try
         {
-            m_coinInformation = m_api->getAllCoinsInformation();
+            m_coinInformation = getAPI()->getAllCoinsInformation();
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -563,7 +620,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(cons
     {
         try
         {
-            m_coinInformation = m_api->getAllCoinsInformation();
+            m_coinInformation = getAPI()->getAllCoinsInformation();
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -571,7 +628,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(cons
     }
     QApplication::restoreOverrideCursor();
 
-    NetworkAddressDialog dlg(m_api.get(), &m_coinInformation, m_config, asset);
+    NetworkAddressDialog dlg(getAPI(), &m_coinInformation, m_config, asset);
     dlg.setModal(true);
     dlg.exec();
 }
@@ -582,7 +639,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayAssetDetail(const QString &a
 
     try
     {
-        const auto assetDetail = m_api->assetDetail(asset.toStdString());
+        const auto assetDetail = getAPI()->assetDetail(asset.toStdString());
         AssetDetailDialog dlg(assetDetail, asset, m_config, nullptr);
         dlg.setModal(true);
         dlg.exec();
@@ -600,7 +657,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onShowFees(const QString &symbol) noe
     {
         try
         {
-            m_fees = m_api->tradeFee("" /*Retrieve all*/);
+            m_fees = getAPI()->tradeFee("" /*Retrieve all*/);
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -623,7 +680,7 @@ try
     for (const auto &id : m_symbolsWatch)
         list.emplace_back(id.toStdString());
 
-    auto data = m_api->tickerPriceChangeStatistics24hr(list);
+    auto data = getAPI()->tickerPriceChangeStatistics24hr(list);
 
     for (const auto &[sym, data] : data)
         ret.emplace_back(data.lastPrice, data.priceChangePercent, QString::fromStdString(sym));
@@ -655,7 +712,7 @@ QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QStri
     const auto todayMS = binapi::BinanceAPI::getTime();
     const auto today   = (todayMS - (todayMS % dayMS));
 
-    auto data = m_api->candlestickData(symbol.toStdString(),
+    auto data = getAPI()->candlestickData(symbol.toStdString(),
         binapi::BinanceTimeIntervals::i1d,
         today - dayMS * 7,
         today,
@@ -674,29 +731,43 @@ QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QStri
 
 QList<CENTAUR_PLUGIN_NAMESPACE::TimeFrame> cen::BinanceSpotPlugin::supportedTimeFrames() noexcept
 {
-    return QList<CENTAUR_PLUGIN_NAMESPACE::TimeFrame>();
+    using CENTAUR_PLUGIN_NAMESPACE::TimeFrame;
+    return {
+        TimeFrame::Minutes_1, TimeFrame::Minutes_3, TimeFrame::Minutes_5, TimeFrame::Minutes_15, TimeFrame::Minutes_30, TimeFrame::nullTime,
+        TimeFrame::Hours_1, TimeFrame::Hours_2, TimeFrame::Hours_4, TimeFrame::Hours_6, TimeFrame::Hours_8, TimeFrame::Hours_12, TimeFrame::nullTime,
+        TimeFrame::Days_1, TimeFrame::Days_3, TimeFrame::nullTime,
+        TimeFrame::Weeks_1, TimeFrame::nullTime,
+        TimeFrame::Months_1
+    };
 }
+
 void cen::BinanceSpotPlugin::acquire(const cen::plugin::PluginInformation &pi, const QString &symbol, cen::plugin::TimeFrame frame, const cen::uuid &id) noexcept
 {
 }
+
 void cen::BinanceSpotPlugin::disengage(const cen::uuid &id, uint64_t lastTimeframeStart, uint64_t lastTimeframeEnd) noexcept
 {
 }
+
 void cen::BinanceSpotPlugin::resetStoredZoom(const cen::uuid &id) noexcept
 {
 }
+
 QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> cen::BinanceSpotPlugin::getCandlesByPeriod(const QString &symbol, cen::plugin::IExchange::Timestamp start, cen::plugin::IExchange::Timestamp end, cen::plugin::TimeFrame frame) noexcept
 {
     return QList<QPair<Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>>();
 }
+
 bool cen::BinanceSpotPlugin::realtimePlotAllowed() noexcept
 {
     return false;
 }
+
 bool cen::BinanceSpotPlugin::dynamicReframePlot() noexcept
 {
     return false;
 }
+
 void cen::BinanceSpotPlugin::reframe(cen::plugin::TimeFrame frame) noexcept
 {
 }

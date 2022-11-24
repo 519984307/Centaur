@@ -23,11 +23,11 @@ namespace CENTAUR_NAMESPACE
 
     class TimeAxisItem : public QGraphicsRectItem
     {
-        using Timeframe = CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame;
+
 
     public:
         /// Labels will be set based on the timeframe
-        TimeAxisItem(double height, double candleWidth, double candleSpacing, double labelSpacing, uint64_t min, uint64_t max, CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf, QGraphicsItem *parent = nullptr);
+        TimeAxisItem(double height, double candleWidth, double candleSpacing, double labelSpacing, uint64_t min, uint64_t max, CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf, QGraphicsItem *parent = nullptr);
         ~TimeAxisItem() override = default;
 
     public:
@@ -37,7 +37,7 @@ namespace CENTAUR_NAMESPACE
         void setCandleParameters(double width, double spacing) noexcept;
         void setLabelSpacing(double spacing) noexcept;
         void setTimestampRange(uint64_t min, uint64_t max) noexcept;
-        void setTimeFrame(CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame tf) noexcept;
+        void setTimeFrame(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
         /// The timestamp can be the uint64_t parameter returned by isXPointInCandleFrame
         void setCursorPos(uint64_t timestamp) noexcept;
 
@@ -71,7 +71,7 @@ namespace CENTAUR_NAMESPACE
         void recalculateAxisLabels() noexcept;
 
     public:
-        static uint64_t timeFrameToMilliseconds(cen::plugin::ICandleView::TimeFrame tf) noexcept;
+        static uint64_t timeFrameToMilliseconds(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
 
     public:
         inline double getHeight() const noexcept { return m_height; }
@@ -90,7 +90,7 @@ namespace CENTAUR_NAMESPACE
         uint64_t m_min;
         uint64_t m_max;
         uint64_t m_absoluteMin;
-        Timeframe m_tf;
+        CENTAUR_PLUGIN_NAMESPACE::TimeFrame m_tf;
         uint64_t m_cursorIndex;
         bool m_mouseInScene;
 

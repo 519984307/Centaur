@@ -39,32 +39,34 @@ cen::CandleViewWidget::CandleViewTimeFrameToolBarActions::CandleViewTimeFrameToo
 {
 }
 
-cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter, const uuid &id, const QString &symbol, cen::plugin::ICandleView *view, cen::plugin::ICandleView::TimeFrame tf, QWidget *parent) :
+cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginInformation &emitter, const uuid &id, const QString &symbol, cen::plugin::TimeFrame tf, QWidget *parent) :
     QWidget(parent),
     m_uuid { id },
     m_symbol { symbol },
-    m_view { view },
     m_tf { tf },
     m_pi { emitter },
     m_ui { new Ui::CandleViewWidget }
 {
     m_ui->setupUi(this);
-    m_ui->graphicsView->setEnabled(true);
+
+   // m_ui->graphicsView->setEnabled(true);
     setWindowTitle(symbol);
 
     connect(this, &CandleViewWidget::snRetrieveCandles, this, &CandleViewWidget::onRetrieveCandles);
     connect(this, &CandleViewWidget::snUpdateSeries, this, &CandleViewWidget::onUpdateSeries);
 
+    /*
     if (view->realtimePlotAllowed())
     {
         initToolBar();
-    }
+    }                                          */
 
     initChart();
 
     m_ui->graphicsView->setChartTimeFrame(tf);
     // Inform the plugin that the user wants to start acquiring the data
-    view->acquire(emitter, symbol, tf, m_uuid);
+
+    ///view->acquire(emitter, symbol, tf, m_uuid);
 
     // Load the last window of times for the specific timeframe and symbol
     loadLastTimeWindow();
@@ -92,96 +94,96 @@ void cen::CandleViewWidget::initToolBar() noexcept
     {
         switch (stf)
         {
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::nullTime: m_toolbar->addSeparator(); break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_1:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime: m_toolbar->addSeparator(); break;
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_1:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aSeconds_1);
                 connect(m_candleViewTimeFrameToolBarActions->aSeconds_1, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_5:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_5:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aSeconds_5);
                 connect(m_candleViewTimeFrameToolBarActions->aSeconds_5, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_10:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_10:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aSeconds_10);
                 connect(m_candleViewTimeFrameToolBarActions->aSeconds_10, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_30:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_30:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aSeconds_30);
                 connect(m_candleViewTimeFrameToolBarActions->aSeconds_30, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Seconds_45:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Seconds_45:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aSeconds_45);
                 connect(m_candleViewTimeFrameToolBarActions->aSeconds_45, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_1:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_1:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_1);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_1, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_2:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_2:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_2);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_2, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_3:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_3:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_3);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_3, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_5:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_5:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_5);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_5, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_10:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_10:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_10);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_10, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_15:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_15:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_15);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_15, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_30:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_30:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_30);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_30, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Minutes_45:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Minutes_45:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMinutes_45);
                 connect(m_candleViewTimeFrameToolBarActions->aMinutes_45, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_1:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_1:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aHours_1);
                 connect(m_candleViewTimeFrameToolBarActions->aHours_1, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_2:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_2:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aHours_2);
                 connect(m_candleViewTimeFrameToolBarActions->aHours_2, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_4:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_4:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aHours_4);
                 connect(m_candleViewTimeFrameToolBarActions->aHours_4, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_6:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_6:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aHours_6);
                 connect(m_candleViewTimeFrameToolBarActions->aHours_6, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_8:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_8:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aHours_8);
                 connect(m_candleViewTimeFrameToolBarActions->aHours_8, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Hours_12:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Hours_12:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aHours_12);
                 connect(m_candleViewTimeFrameToolBarActions->aHours_12, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_1:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_1:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aDays_1);
                 connect(m_candleViewTimeFrameToolBarActions->aDays_1, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Days_3:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Days_3:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aDays_3);
                 connect(m_candleViewTimeFrameToolBarActions->aDays_3, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Weeks_1:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Weeks_1:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aWeeks_1);
                 connect(m_candleViewTimeFrameToolBarActions->aWeeks_1, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
-            case CENTAUR_PLUGIN_NAMESPACE::ICandleView::TimeFrame::Months_1:
+            case CENTAUR_PLUGIN_NAMESPACE::TimeFrame::Months_1:
                 m_toolbar->addAction(m_candleViewTimeFrameToolBarActions->aMonths_1);
                 connect(m_candleViewTimeFrameToolBarActions->aMonths_1, &QAction::triggered, this, [&]() { m_view->reframe(stf); });
                 break;
@@ -189,82 +191,82 @@ void cen::CandleViewWidget::initToolBar() noexcept
     }
 }
 
-QString cen::CandleViewWidget::buildSettingsGroupName(const QString &symbol, const QString &pluginName, cen::plugin::ICandleView::TimeFrame tf) noexcept
+QString cen::CandleViewWidget::buildSettingsGroupName(const QString &symbol, const QString &pluginName, cen::plugin::TimeFrame tf) noexcept
 {
     return QString("%1@@%2@@%3!!").arg(symbol, pluginName, timeFrameToString(tf));
 }
 
-QString cen::CandleViewWidget::timeFrameToString(cen::plugin::ICandleView::TimeFrame tf) noexcept
+QString cen::CandleViewWidget::timeFrameToString(cen::plugin::TimeFrame tf) noexcept
 {
     switch (tf)
     {
-        case plugin::ICandleView::TimeFrame::nullTime: return "0";
-        case plugin::ICandleView::TimeFrame::Seconds_1: return "1s";
-        case plugin::ICandleView::TimeFrame::Seconds_5: return "5s";
-        case plugin::ICandleView::TimeFrame::Seconds_10: return "10s";
-        case plugin::ICandleView::TimeFrame::Seconds_30: return "30s";
-        case plugin::ICandleView::TimeFrame::Seconds_45: return "45s";
-        case plugin::ICandleView::TimeFrame::Minutes_1: return "1m";
-        case plugin::ICandleView::TimeFrame::Minutes_2: return "2m";
-        case plugin::ICandleView::TimeFrame::Minutes_3: return "3m";
-        case plugin::ICandleView::TimeFrame::Minutes_5: return "5m";
-        case plugin::ICandleView::TimeFrame::Minutes_10: return "10m";
-        case plugin::ICandleView::TimeFrame::Minutes_15: return "15m";
-        case plugin::ICandleView::TimeFrame::Minutes_30: return "30m";
-        case plugin::ICandleView::TimeFrame::Minutes_45: return "45m";
-        case plugin::ICandleView::TimeFrame::Hours_1: return "1H";
-        case plugin::ICandleView::TimeFrame::Hours_2: return "2H";
-        case plugin::ICandleView::TimeFrame::Hours_4: return "4H";
-        case plugin::ICandleView::TimeFrame::Hours_6: return "6H";
-        case plugin::ICandleView::TimeFrame::Hours_8: return "8H";
-        case plugin::ICandleView::TimeFrame::Hours_12: return "12H";
-        case plugin::ICandleView::TimeFrame::Days_1: return "1H";
-        case plugin::ICandleView::TimeFrame::Days_3: return "3H";
-        case plugin::ICandleView::TimeFrame::Weeks_1: return "1W";
-        case plugin::ICandleView::TimeFrame::Months_1: return "1M";
+        case plugin::TimeFrame::nullTime: return "0";
+        case plugin::TimeFrame::Seconds_1: return "1s";
+        case plugin::TimeFrame::Seconds_5: return "5s";
+        case plugin::TimeFrame::Seconds_10: return "10s";
+        case plugin::TimeFrame::Seconds_30: return "30s";
+        case plugin::TimeFrame::Seconds_45: return "45s";
+        case plugin::TimeFrame::Minutes_1: return "1m";
+        case plugin::TimeFrame::Minutes_2: return "2m";
+        case plugin::TimeFrame::Minutes_3: return "3m";
+        case plugin::TimeFrame::Minutes_5: return "5m";
+        case plugin::TimeFrame::Minutes_10: return "10m";
+        case plugin::TimeFrame::Minutes_15: return "15m";
+        case plugin::TimeFrame::Minutes_30: return "30m";
+        case plugin::TimeFrame::Minutes_45: return "45m";
+        case plugin::TimeFrame::Hours_1: return "1H";
+        case plugin::TimeFrame::Hours_2: return "2H";
+        case plugin::TimeFrame::Hours_4: return "4H";
+        case plugin::TimeFrame::Hours_6: return "6H";
+        case plugin::TimeFrame::Hours_8: return "8H";
+        case plugin::TimeFrame::Hours_12: return "12H";
+        case plugin::TimeFrame::Days_1: return "1H";
+        case plugin::TimeFrame::Days_3: return "3H";
+        case plugin::TimeFrame::Weeks_1: return "1W";
+        case plugin::TimeFrame::Months_1: return "1M";
     }
 }
-CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp cen::CandleViewWidget::timeFrameToMilliseconds(cen::plugin::ICandleView::TimeFrame tf) noexcept
+CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp cen::CandleViewWidget::timeFrameToMilliseconds(cen::plugin::TimeFrame tf) noexcept
 {
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp sec   = 1000;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp min   = sec * 60;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp hr    = min * 60;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp day   = hr * 24;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp week  = day * 7;
-    constexpr CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp month = day * 365 / 12;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp sec   = 1000;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp min   = sec * 60;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp hr    = min * 60;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp day   = hr * 24;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp week  = day * 7;
+    constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp month = day * 365 / 12;
 
     switch (tf)
     {
-        case plugin::ICandleView::TimeFrame::nullTime: return 0;
-        case plugin::ICandleView::TimeFrame::Seconds_1: return sec;
-        case plugin::ICandleView::TimeFrame::Seconds_5: return sec * 5;
-        case plugin::ICandleView::TimeFrame::Seconds_10: return sec * 10;
-        case plugin::ICandleView::TimeFrame::Seconds_30: return sec * 30;
-        case plugin::ICandleView::TimeFrame::Seconds_45: return sec * 45;
-        case plugin::ICandleView::TimeFrame::Minutes_1: return min;
-        case plugin::ICandleView::TimeFrame::Minutes_2: return min * 2;
-        case plugin::ICandleView::TimeFrame::Minutes_3: return min * 3;
-        case plugin::ICandleView::TimeFrame::Minutes_5: return min * 5;
-        case plugin::ICandleView::TimeFrame::Minutes_10: return min * 10;
-        case plugin::ICandleView::TimeFrame::Minutes_15: return min * 15;
-        case plugin::ICandleView::TimeFrame::Minutes_30: return min * 30;
-        case plugin::ICandleView::TimeFrame::Minutes_45: return min * 45;
-        case plugin::ICandleView::TimeFrame::Hours_1: return hr;
-        case plugin::ICandleView::TimeFrame::Hours_2: return hr * 2;
-        case plugin::ICandleView::TimeFrame::Hours_4: return hr * 4;
-        case plugin::ICandleView::TimeFrame::Hours_6: return hr * 6;
-        case plugin::ICandleView::TimeFrame::Hours_8: return hr * 8;
-        case plugin::ICandleView::TimeFrame::Hours_12: return hr * 12;
-        case plugin::ICandleView::TimeFrame::Days_1: return day;
-        case plugin::ICandleView::TimeFrame::Days_3: return day * 3;
-        case plugin::ICandleView::TimeFrame::Weeks_1: return week;
-        case plugin::ICandleView::TimeFrame::Months_1: return month;
+        case plugin::TimeFrame::nullTime: return 0;
+        case plugin::TimeFrame::Seconds_1: return sec;
+        case plugin::TimeFrame::Seconds_5: return sec * 5;
+        case plugin::TimeFrame::Seconds_10: return sec * 10;
+        case plugin::TimeFrame::Seconds_30: return sec * 30;
+        case plugin::TimeFrame::Seconds_45: return sec * 45;
+        case plugin::TimeFrame::Minutes_1: return min;
+        case plugin::TimeFrame::Minutes_2: return min * 2;
+        case plugin::TimeFrame::Minutes_3: return min * 3;
+        case plugin::TimeFrame::Minutes_5: return min * 5;
+        case plugin::TimeFrame::Minutes_10: return min * 10;
+        case plugin::TimeFrame::Minutes_15: return min * 15;
+        case plugin::TimeFrame::Minutes_30: return min * 30;
+        case plugin::TimeFrame::Minutes_45: return min * 45;
+        case plugin::TimeFrame::Hours_1: return hr;
+        case plugin::TimeFrame::Hours_2: return hr * 2;
+        case plugin::TimeFrame::Hours_4: return hr * 4;
+        case plugin::TimeFrame::Hours_6: return hr * 6;
+        case plugin::TimeFrame::Hours_8: return hr * 8;
+        case plugin::TimeFrame::Hours_12: return hr * 12;
+        case plugin::TimeFrame::Days_1: return day;
+        case plugin::TimeFrame::Days_3: return day * 3;
+        case plugin::TimeFrame::Weeks_1: return week;
+        case plugin::TimeFrame::Months_1: return month;
     }
 }
 
-cen::CandleViewWidget::CandleWindow cen::CandleViewWidget::getClosedCandlesTimes(cen::plugin::ICandleView::TimeFrame tf) noexcept
+cen::CandleViewWidget::CandleWindow cen::CandleViewWidget::getClosedCandlesTimes(cen::plugin::TimeFrame tf) noexcept
 {
-    const auto end   = static_cast<CENTAUR_PLUGIN_NAMESPACE::ICandleView::Timestamp>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    const auto end   = static_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     const auto ms    = CandleViewWidget::timeFrameToMilliseconds(tf);
     auto times       = 0ull;
     const auto t_end = end - (end % ms);
@@ -293,7 +295,7 @@ QPair<double, double> cen::CandleViewWidget::calculateMinMaxVerticalAxis(double 
 
 void cen::CandleViewWidget::closeEvent(QCloseEvent *event)
 {
-    m_view->disengage(m_uuid, m_candleWindow.begin, m_candleWindow.end);
+    // m_view->disengage(m_uuid, m_candleWindow.begin, m_candleWindow.end);
     storeLastTimeWindow();
     event->accept();
 }
@@ -316,7 +318,7 @@ void cen::CandleViewWidget::loadLastTimeWindow() noexcept
     settings.endGroup();
 }
 
-void cen::CandleViewWidget::onRetrieveCandles(cen::plugin::ICandleView::Timestamp start, cen::plugin::ICandleView::Timestamp end) noexcept
+void cen::CandleViewWidget::onRetrieveCandles(cen::plugin::IExchange::Timestamp start, cen::plugin::IExchange::Timestamp end) noexcept
 {
     auto data            = m_view->getCandlesByPeriod(m_symbol, start, end, m_tf);
     m_candleWindow.begin = start;
@@ -427,6 +429,6 @@ void cen::CandleViewWidget::updateLatency(quint64 event) noexcept
         }*/
 }
 
-void cen::CandleViewWidget::onUpdateCandle(quint64 eventTime, cen::plugin::ICandleView::Timestamp ts, const cen::plugin::ICandleView::CandleData &cd) noexcept
+void cen::CandleViewWidget::onUpdateCandle(quint64 eventTime, cen::plugin::IExchange::Timestamp ts, const cen::plugin::CandleData &cd) noexcept
 {
 }

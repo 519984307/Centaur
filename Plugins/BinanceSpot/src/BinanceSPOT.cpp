@@ -4,15 +4,17 @@
 // Copyright (c) 2021 Ricardo Romero.  All rights reserved.
 //
 
-#include <QObject>
-
 #include "BinanceSPOT.hpp"
+#include <QObject>
 
 CENTAUR_NAMESPACE::BinanceSpotPlugin::BinanceSpotPlugin(QObject *parent) :
     QObject(parent),
-    m_spotWS { nullptr }
+    m_spotWS { nullptr },
+    m_statusAction { new QAction(this) }
 {
     m_sevenDayLastUpdate = QDate::currentDate();
+
+    connect(m_statusAction, &QAction::triggered, this, &BinanceSpotPlugin::onStatusButtonClicked);
 }
 
 CENTAUR_NAMESPACE::BinanceSpotPlugin::~BinanceSpotPlugin()

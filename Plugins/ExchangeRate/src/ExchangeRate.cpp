@@ -63,12 +63,12 @@ QObject *CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginObject() noexcep
     return qobject_cast<QObject *>(this);
 }
 
-QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginName() noexcept
+QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginName() const noexcept
 {
     return g_ExchangeRateName;
 }
 
-QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginVersionString() noexcept
+QString CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginVersionString() const noexcept
 {
     return g_ExchangeRateVersionString;
 }
@@ -80,7 +80,7 @@ void CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::setPluginInterfaces(CENTAUR_I
     logTrace("ExchangeRatePlugin", "ExchangeRatePlugin::setPluginInterfaces");
 }
 
-CENTAUR_NAMESPACE::uuid CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginUUID() noexcept
+CENTAUR_NAMESPACE::uuid CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::getPluginUUID() const noexcept
 {
     return m_thisUUID;
 }
@@ -136,7 +136,7 @@ QBrush cen::plugin::ExchangeRatePlugin::brush(cen::plugin::IStatus::DisplayRole 
     }
 }
 
-QAction *cen::plugin::ExchangeRatePlugin::action(const QPoint &pt) noexcept
+QAction *cen::plugin::ExchangeRatePlugin::action() noexcept
 {
     return nullptr;
 }

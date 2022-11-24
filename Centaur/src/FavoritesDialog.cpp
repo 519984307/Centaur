@@ -35,7 +35,7 @@ namespace CENTAUR_NAMESPACE
                 {
                     if (index.column() == 2)
                     {
-                        for (auto &loadedPlugins : g_app->m_pluginsData)
+                        for (auto &loadedPlugins : g_app->getPluginBase())
                         {
                             QString strPlid { loadedPlugins->getPluginUUID().to_string().c_str() };
                             if (strPlid == value.toString())
