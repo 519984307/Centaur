@@ -340,6 +340,17 @@ QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:
     connect(status->getPluginObject(), SIGNAL(displayChange(plugin::IStatus::DisplayRole)), this, SLOT(onStatusDisplayChanged(plugin::IStatus::DisplayRole)));
     // clang-format on
 
+    if (status->action())
+    {
+        connect(button, &QPushButton::released, this, [status, button]() {
+            // Update the button top left coordinates
+            auto point = button->mapToGlobal(button->geometry().topLeft());
+            status->action()->setData(point);
+
+            emit status->action()->triggered(true);
+        });
+    }
+
     mapStatusPlugins(status->getPluginUUID(), status, button, mode);
 }
 
