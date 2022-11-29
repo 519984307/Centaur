@@ -6,6 +6,7 @@
 
 #include "CentaurApp.hpp"
 #include "../ui/ui_CentaurApp.h"
+#include "CandleChartDialog.hpp"
 #include "CandleViewWidget.hpp"
 #include "DepthChartDialog.hpp"
 #include "FavoritesDialog.hpp"
@@ -68,7 +69,8 @@ struct CentaurApp::Impl
         ui { new Ui::CentaurApp },
         candleActions { new CandleViewTimeFrameActions(parent) },
         orderbookDepth { new QAction(QCoreApplication::tr("Orderbook"), parent) },
-        depthChart { new QAction(QCoreApplication::tr("Depth chart"), parent) }
+        depthChart { new QAction(QCoreApplication::tr("Depth chart"), parent) },
+        removeWatchlist { new QAction(QCoreApplication::tr("Remove from watchlist"), parent) }
     {
         ui->setupUi(parent);
         logDialog = new LogDialog(parent);
@@ -85,6 +87,7 @@ struct CentaurApp::Impl
 
     QAction *orderbookDepth;
     QAction *depthChart;
+    QAction *removeWatchlist;
 
     std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> pluginsData;
 
@@ -244,8 +247,6 @@ CentaurApp::CentaurApp(QWidget *parent) :
     splashScreen->step();
 
     // Start the server
-
-    // Start the server
     splashScreen->setDisplayText(tr("Starting the communication server"));
     startCommunicationsServer();
     splashScreen->step();
@@ -259,10 +260,10 @@ CentaurApp::CentaurApp(QWidget *parent) :
     loadFavoritesWatchList();
     splashScreen->step();
 
-
     /*
                         onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
                     */
+
     END_TIME_SEC(initializationTimeStart, initializationTimeEnd, initializationTime);
     logInfo("app", QString("%1").arg(initializationTime.count(), 0, 'f', 4));
     splashScreen->hide();
@@ -355,6 +356,7 @@ void CentaurApp::mapStatusPlugins(const uuid &plugin, CENTAUR_PLUGIN_NAMESPACE::
 {
     _impl->statusPlugins[plugin] = { status, button, mode };
 }
+
 std::vector<CENTAUR_PLUGIN_NAMESPACE::IBase *> &CentaurApp::getPluginBase() const noexcept
 {
     return _impl->pluginsData;
@@ -408,13 +410,19 @@ void CentaurApp::initializeInterface() noexcept
     ui()->maximizeButton->setButtonClass(SystemPushButton::ButtonClass::maximize);
     ui()->maximizeButton->linkMaximize(ui()->closeButton, ui()->minimizeButton);
 #endif
-    /*
-        ui()->watchListWidget->item(0)->setIcon(QIcon(":/img/on-top"));
-        ui()->watchListWidget->item(1)->setIcon(QIcon(":/img/on-top"));
-    */
+
     connect(ui()->settingsButton, &QPushButton::released, this, &CentaurApp::onShowSettings);
     connect(ui()->pluginsViewButton, &QPushButton::released, this, &CentaurApp::onShowPlugins);
     connect(ui()->logsViewButtton, &QPushButton::released, this, &CentaurApp::onShowLogDialog);
+
+    for (auto &action : _impl->candleActions->actions)
+    {
+        auto &[tf, act] = action;
+        connect(act, &QAction::triggered, this, [&, tf = tf]() {
+            const auto actionData = _impl->orderbookDepth->data().value<OrderBookDepthInformation>();
+            onViewCandleChart(actionData.symbol, actionData.source, tf);
+        });
+    }
 
     // Connect favorites action
     connect(ui()->actionWatchlistFavorites,
@@ -490,6 +498,11 @@ void CentaurApp::initializeInterface() noexcept
         }
     });
 
+    connect(_impl->removeWatchlist, &QAction::triggered, this, [&](C_UNUSED bool trigger) {
+        const auto actionData = _impl->depthChart->data().value<OrderBookDepthInformation>();
+        onRemoveWatchList(actionData.source, actionData.symbol);
+    });
+
     ui()->porfolioList->linkSearchEdit(ui()->porfolioSearch);
     QPixmap pm;
     g_globals->symIcons.find(32, "BTC", &pm);
@@ -518,27 +531,59 @@ void CentaurApp::initializeInterface() noexcept
         QMenu menu(this);
 
         auto exchBase = _impl->exchangeList[uuid { source.toStdString() }].exchange;
-        if (exchBase != nullptr)
-        {
-            const auto pluginInformation = pluginInformationFromBase(exchBase);
-            auto candleView              = exchBase->supportedTimeFrames();
-        }
 
         OrderBookDepthInformation obdi { symbol, source };
 
         _impl->orderbookDepth->setData(QVariant::fromValue(obdi));
         _impl->depthChart->setData(QVariant::fromValue(obdi));
+        _impl->removeWatchlist->setData(QVariant::fromValue(obdi));
 
         menu.addAction(_impl->orderbookDepth);
         menu.addAction(_impl->depthChart);
         menu.addSeparator();
 
+        if (exchBase != nullptr)
+        {
+            const auto pluginInformation = pluginInformationFromBase(exchBase);
+            auto candleView              = exchBase->supportedTimeFrames();
+            if (!candleView.empty())
+            {
+                QMenu *candleMenu = menu.addMenu("Charts");
+
+                for (const auto &cd : candleView)
+                {
+                    if (cd == plugin::TimeFrame::nullTime)
+                        candleMenu->addSeparator();
+                    else
+                    {
+                        auto iter = _impl->candleActions->actions.find(cd);
+                        if (iter != _impl->candleActions->actions.end())
+                        {
+                            iter->second->setData(QVariant::fromValue(obdi));
+                            candleMenu->addAction(iter->second);
+                        }
+                    }
+                }
+                menu.addSeparator();
+            }
+        }
+
         for (auto &action : actions)
         {
             // Update the symbol name
-            action->setData(symbol);
-            menu.addAction(action);
+
+            if (action->isSeparator())
+                menu.addSeparator();
+            else
+            {
+                action->setData(symbol);
+                menu.addAction(action);
+            }
         }
+        if (!actions.isEmpty())
+            menu.addSeparator();
+
+        menu.addAction(_impl->removeWatchlist);
 
         menu.exec(menuPoint);
     });
@@ -588,30 +633,6 @@ border: 0px;
         _impl->sevenDayGraph->hide();
     });
 
-    /*
-
-
-    connect(ui()->watchListTable, &OptionsTableWidget::deleteItemPressed, this, [&](C_UNUSED const QString &itemData) {
-        onRemoveWatchList(ui()->watchListTable->getRemovedItem());
-    });
-
-    ui()->watchListTable->setColumnHidden(4, true);
-
-    connect(ui()->watchListTable, &OptionsTableWidget::itemSelectionChanged, this,
-        [&](const QModelIndex &index) {
-            if (index.isValid())
-            {
-                const auto source    = ui()->watchListTable->getItemIndex(index.row(), 4).data().toString();
-                const QString symbol = [&]() -> QString {
-                    if (index.column() == 0)
-                        return index.data().toString();
-                    else
-                        return ui()->watchListTable->getItemIndex(index.row(), 0).data().toString();
-                }();
-                onSetWatchlistSelection(source, symbol);
-            }
-        });
-*/
     // Init Last-7-day chart
     _impl->last7Chart = new QChart;
     _impl->last7Chart->setAnimationOptions(QChart::AllAnimations);
@@ -831,6 +852,7 @@ void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, 
     {
         QPixmap icon;
         g_globals->symIcons.find(32, watchInterface->getBaseFromSymbol(symbol), &icon);
+        qDebug() << icon << watchInterface->getBaseFromSymbol(symbol);
         ui()->watchListWidget->insertItem(icon, symbol, sender, 0.0, 0.0, 0);
 
         // Add to the database
@@ -888,42 +910,34 @@ void CentaurApp::onTickerUpdate(const QString &symbol, const QString &source, qu
         depthDlg->setPrice(price);
 }
 
-void CentaurApp::onRemoveWatchList(const QModelIndex &index) noexcept
+void CentaurApp::onRemoveWatchList(const QString &itemSource, const QString &itemSymbol) noexcept
 {
     logTrace("watchlist", "CentaurApp::onRemoveWatchList");
     // Retrieve the IExchange from the row based on the 5 column which has the PluginUUID Source
-    /*
-        ui()->watchListTable->getItemText(index.row(), 0);
 
-        QString itemSymbol = ui()->watchListTable->getItemText(index.row(), 0);
-        QString itemSource = ui()->watchListTable->getItemText(index.row(), 4);
+    auto interfaceIter = _impl->exchangeList.find(uuid(itemSource.toStdString()));
+    if (interfaceIter == _impl->exchangeList.end())
+    {
+        QString message = QString(tr("Failed to locate the symbol interface."));
+        logError("wlRemove", message);
+        QMessageBox box;
+        box.setText(tr("Could remove the symbol"));
+        box.setInformativeText(message);
+        box.setIcon(QMessageBox::Critical);
+        box.exec();
+        return;
+    }
 
-        auto interfaceIter = _impl->exchangeList.find(uuid(itemSource.toStdString()));
-        if (interfaceIter == _impl->exchangeList.end())
-        {
-            QString message = QString(tr("Failed to locate the symbol interface."));
-            logError("wlRemove", message);
-            QMessageBox box;
-            box.setText(tr("Could remove the symbol"));
-            box.setInformativeText(message);
-            box.setIcon(QMessageBox::Critical);
-            box.exec();
-            return;
-        }
+    // Call the plugin to inform that it must not send data of the symbol anymore
+    auto &exchInfo = interfaceIter->second;
 
-        // Call the plugin to inform that it must not send data of the symbol anymore
-        auto &exchInfo = interfaceIter->second;
+    exchInfo.exchange->removeSymbolFromWatchlist(itemSymbol);
 
-        exchInfo.exchange->removeSymbolFromWatchlist(itemSymbol);
+    // Remove the row
+    ui()->watchListWidget->removeItem(itemSymbol, itemSource);
 
-        // Remove the row
-        if (!ui()->watchListTable->removeItemRow(index))
-            logError("watchlist", QString(tr("%1 was not removed from the UI list")).arg(itemSymbol));
-        else
-        {
-            logInfo("watchlist", QString(tr("%1 was removed from the UI list")).arg(itemSymbol));
-            m_sqlFavorites->del(itemSymbol, itemSource);
-        }*/
+    logInfo("watchlist", QString(tr("%1 was removed from the UI list")).arg(itemSymbol));
+    m_sqlFavorites->del(itemSymbol, itemSource);
 }
 
 void CentaurApp::onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept
@@ -1075,6 +1089,32 @@ void CentaurApp::updateUserInformationStatus() noexcept
 void CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &sender) noexcept
 {
     m_sqlFavorites->add(symbol, sender);
+}
+
+void CentaurApp::onViewCandleChart(const QString &symbol, const QString &source, cen::plugin::TimeFrame tf) noexcept
+{
+    const QString dlgName = QString("chart_%1_%2_%3").arg(symbol, source).arg(static_cast<int>(tf));
+
+
+
+    auto *dlg = this->findChild<CandleChartDialog *>(dlgName);
+    if (dlg != nullptr)
+    {
+        dlg->show();
+        dlg->setWindowState(Qt::WindowState::WindowActive);
+    }
+    else
+    {
+        auto *newDlg = new CandleChartDialog(tf, symbol, source, this);
+
+        newDlg->setObjectName(dlgName);
+        connect(newDlg, &CandleChartDialog::closeButtonPressed, this, [&, newDlg]() {
+            newDlg->hide();
+            delete newDlg;
+        });
+
+        newDlg->show();
+    }
 }
 
 END_CENTAUR_NAMESPACE

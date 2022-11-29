@@ -40,7 +40,7 @@ QBrush cen::BinanceSpotPlugin::brush(cen::plugin::IStatus::DisplayRole role) noe
         case DisplayRole::Background:
             return Qt::NoBrush;
         case DisplayRole::Foreground:
-            return QBrush(QColor(255, 5, 0));
+            return { QColor(255, 5, 0) };
     }
 }
 
@@ -53,12 +53,12 @@ void cen::BinanceSpotPlugin::onStatusButtonClicked(C_UNUSED bool status) noexcep
 {
     try
     {
-        auto permissions = getAPI()->getAPIKeyPermission();
-        auto status      = getAPI()->accountAPITradingStatus();
+        auto permissions = m_bAPI->getAPIKeyPermission();
+        auto status      = m_bAPI->accountAPITradingStatus();
         StatusDialog dlg(
             &permissions,
             &status,
-            tr("Account status available"),
+            tr("BinanceSPOT Account Status: Normal"),
             nullptr);
         dlg.exec();
 

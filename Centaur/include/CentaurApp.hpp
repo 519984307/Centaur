@@ -107,8 +107,9 @@ private slots:
     void onStatusDisplayChanged(plugin::IStatus::DisplayRole mode);
     void onAddToWatchList(const QString &symbol, const QString &sender, bool addToDatabase) noexcept;
     void onSetWatchlistSelection(const QString &source, const QString &symbol) noexcept;
-    void onRemoveWatchList(const QModelIndex &index) noexcept;
+    void onRemoveWatchList(const QString &itemSource, const QString &itemSymbol) noexcept;
     void onTickerUpdate(const QString &symbol, const QString &uuid, quint64 receivedTime, double price) noexcept;
+    void onViewCandleChart(const QString &symbol, const QString &source, CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
 
 protected:
     Ui::CentaurApp *ui();

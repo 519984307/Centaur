@@ -66,38 +66,39 @@
             break;                                                                                                                                                         \
     }
 
-CENTAUR_NAMESPACE::LoaderThread::LoaderThread(BinanceSpotPlugin *plg, CENTAUR_INTERFACE_NAMESPACE::ILogger *logger) :
-    QThread(plg),
-    plugin { plg },
-    m_logger { logger } { }
-
-void CENTAUR_NAMESPACE::LoaderThread::run()
+namespace
 {
-    try
+    BINAPI_NAMESPACE::BinanceTimeIntervals mapIntervalFromUIToAPI(cen::plugin::TimeFrame tf)
     {
-        plugin->getAPI()->ping();
-
-        if (!plugin->getAPI()->getExchangeStatus())
+        switch (tf)
         {
-            logError("BinanceSpotPlugin", "Binance Server is under maintenance");
-            emit loadFinish(false);
-            return;
+            case cen::plugin::TimeFrame::nullTime: C_FALLTHROUGH;                                        // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Seconds_1: C_FALLTHROUGH;                                       // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Seconds_5: C_FALLTHROUGH;                                       // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Seconds_10: C_FALLTHROUGH;                                      // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Seconds_30: C_FALLTHROUGH;                                      // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Seconds_45: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1m; // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Minutes_1: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1m;
+            case cen::plugin::TimeFrame::Minutes_2: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1m; // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Minutes_3: return BINAPI_NAMESPACE::BinanceTimeIntervals::i3m;
+            case cen::plugin::TimeFrame::Minutes_5: return BINAPI_NAMESPACE::BinanceTimeIntervals::i5m;
+            case cen::plugin::TimeFrame::Minutes_10: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1m; // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Minutes_15: return BINAPI_NAMESPACE::BinanceTimeIntervals::i15m;
+            case cen::plugin::TimeFrame::Minutes_30: return BINAPI_NAMESPACE::BinanceTimeIntervals::i30m;
+            case cen::plugin::TimeFrame::Minutes_45: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1m; // Not valid, however, supportedTimeFrames() must protect us from this case
+            case cen::plugin::TimeFrame::Hours_1: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1h;
+            case cen::plugin::TimeFrame::Hours_2: return BINAPI_NAMESPACE::BinanceTimeIntervals::i2h;
+            case cen::plugin::TimeFrame::Hours_4: return BINAPI_NAMESPACE::BinanceTimeIntervals::i4h;
+            case cen::plugin::TimeFrame::Hours_6: return BINAPI_NAMESPACE::BinanceTimeIntervals::i6h;
+            case cen::plugin::TimeFrame::Hours_8: return BINAPI_NAMESPACE::BinanceTimeIntervals::i8h;
+            case cen::plugin::TimeFrame::Hours_12: return BINAPI_NAMESPACE::BinanceTimeIntervals::i12h;
+            case cen::plugin::TimeFrame::Days_1: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1d;
+            case cen::plugin::TimeFrame::Days_3: return BINAPI_NAMESPACE::BinanceTimeIntervals::i3d;
+            case cen::plugin::TimeFrame::Weeks_1: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1w;
+            case cen::plugin::TimeFrame::Months_1: return BINAPI_NAMESPACE::BinanceTimeIntervals::i1M;
         }
-
-        logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
-        plugin->setExchangeInformation(plugin->getAPI()->getExchangeInformation());
-        logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(plugin->getAPI()->getLastCallTime()));
-
-        emit loadFinish(true);
-        return;
-    } catch (const BINAPI_NAMESPACE::APIException &ex)
-    {
-        CATCH_API_EXCEPTION()
     }
-
-    loadFinish(false);
-}
-
+} // namespace
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::initialization");
@@ -128,10 +129,6 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
     auto apiKeyCip = std::string(pluginSettings["api"].GetString());
     auto secKeyCip = std::string(pluginSettings["secret"].GetString());
 
-    fmt::print("{}\n", apiKeyCip);
-    // apiKeyCip.replace(QString("\\n"), QString("\n"));
-    // secKeyCip.replace(QString("\\n"), QString("\n"));
-
     if (apiKeyCip.empty() || secKeyCip.empty())
     {
         logError("BinanceSpotPlugin", "Either the API Key or the secret key are empty on the plugins configuration file.");
@@ -152,36 +149,21 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
     m_keys.secretKey = secKey;
     m_bAPI           = std::make_unique<BINAPI_NAMESPACE::BinanceAPISpot>(&m_keys, &m_limits);
 
-    auto *loaderThread = new LoaderThread(this, m_logger);
-    connect(loaderThread, &LoaderThread::loadFinish, this, &BinanceSpotPlugin::onLoaderFinished);
-    connect(loaderThread, &LoaderThread::finished, loaderThread, &QObject::deleteLater);
-    loaderThread->start();
-
-    return true;
-}
-
-BINAPI_NAMESPACE::BinanceAPISpot *CENTAUR_NAMESPACE::BinanceSpotPlugin::getAPI() noexcept
-{
-    if (!m_initState)
-        return m_bAPI.get();
-    else
+    try
     {
-        while (!m_loader)
-            return m_bAPI.get();
-    }
-}
+        m_bAPI->ping();
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::setExchangeInformation(const BINAPI_NAMESPACE::SPOT::ExchangeInformation &data)
-{
-    m_exchInfo = data;
-}
+        if (!m_bAPI->getExchangeStatus())
+        {
+            logError("BinanceSpotPlugin", "Binance Server is under maintenance");
+            // emit loadFinish(false);
+            return false;
+        }
 
-void CENTAUR_NAMESPACE::BinanceSpotPlugin::onLoaderFinished(bool load) noexcept
-{
-    m_initState = true;
-    m_loader    = load;
-    if (load)
-    {
+        logInfo("BinanceSpotPlugin", "Acquiring Binance SPOT Exchange Information");
+        setExchangeInformation(m_bAPI->getExchangeInformation());
+        logInfo("BinanceSpotPlugin", QString("Binance SPOT Exchange Information Acquired in ##00FFFF#%1# secs").arg(m_bAPI->getLastCallTime()));
+
         m_limits.setAPIRequestsLimits(m_exchInfo.limitWeight.limit, m_exchInfo.limitWeight.seconds);
         m_limits.setAPIOrderLimitLow(m_exchInfo.limitOrderSecond.limit, m_exchInfo.limitOrderSecond.seconds);
         m_limits.setAPIOrderLimitHigh(m_exchInfo.limitOrderDay.limit, m_exchInfo.limitOrderDay.seconds);
@@ -195,7 +177,18 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onLoaderFinished(bool load) noexcept
         }
 
         logInfo("BinanceSpotPlugin", QString("Symbols handled: ##00FFFF#%1#").arg(m_symbols.size()));
+    } catch (const BINAPI_NAMESPACE::APIException &ex)
+    {
+        CATCH_API_EXCEPTION()
+        return false;
     }
+
+    return true;
+}
+
+void CENTAUR_NAMESPACE::BinanceSpotPlugin::setExchangeInformation(const BINAPI_NAMESPACE::SPOT::ExchangeInformation &data)
+{
+    m_exchInfo = data;
 }
 
 CENTAUR_PLUGIN_NAMESPACE::StringIcon CENTAUR_NAMESPACE::BinanceSpotPlugin::getSymbolListName() const noexcept
@@ -427,7 +420,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDepthUpdate(const QString &symbol, 
 
         try
         {
-            auto orderbook                    = getAPI()->getOrderBook(symbol.toStdString(), 1000);
+            auto orderbook                    = m_bAPI->getOrderBook(symbol.toStdString(), 1000);
             m_symbolOrderbookSnapshot[symbol] = { true, lastUpdateId };
             lastUpdateId                      = orderbook.lastUpdateId;
             logInfo("BinanceSpotPlugin", QString("Orderbook snapshot successfully taken for %1").arg(symbol));
@@ -477,7 +470,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onSpotStatus() noexcept
     QString message;
     try
     {
-        if (getAPI()->getExchangeStatus())
+        if (m_bAPI->getExchangeStatus())
             message = "System status: Normal";
         else
             message = "System status: System maintenance";
@@ -497,7 +490,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onCoinInformation() noexcept
     {
         try
         {
-            m_coinInformation = getAPI()->getAllCoinsInformation();
+            m_coinInformation = m_bAPI->getAllCoinsInformation();
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -535,16 +528,16 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onAccountTradeList() noexcept
 
 QList<QAction *> CENTAUR_NAMESPACE::BinanceSpotPlugin::dynamicWatchListMenuItems() noexcept
 {
+    auto *separator0        = new QAction;
     auto *baseAsset         = new QAction("Get Base Asset Coin information", this);
     auto *quoteAsset        = new QAction("Get Quote Asset Coin information", this);
-    auto *separator0        = new QAction;
     auto *baseAssetDeposit  = new QAction("Get Base Asset deposit address", this);
     auto *quoteAssetDeposit = new QAction("Get Quote Asset deposit address", this);
-    auto *separator1        = new QAction;
     auto *baseAssetDetails  = new QAction("Get Base Asset Details", this);
     auto *quoteAssetDetails = new QAction("Get Quote Asset Details", this);
-    auto *separator3        = new QAction;
     auto *symbolFees        = new QAction("Get Symbol Fees", this);
+
+    separator0->setSeparator(true);
 
     connect(baseAsset, &QAction::triggered, this, [&, baseAsset](C_UNUSED bool checked = false) {
         onDisplayBaseAssetInfo(getBaseFromSymbol(baseAsset->data().toString()));
@@ -580,10 +573,10 @@ QList<QAction *> CENTAUR_NAMESPACE::BinanceSpotPlugin::dynamicWatchListMenuItems
         separator0,
         baseAssetDeposit,
         quoteAssetDeposit,
-        separator1,
+        separator0,
         baseAssetDetails,
         quoteAssetDetails,
-        separator3,
+        separator0,
         symbolFees,
     };
 }
@@ -596,7 +589,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayBaseAssetInfo(const QString 
     {
         try
         {
-            m_coinInformation = getAPI()->getAllCoinsInformation();
+            m_coinInformation = m_bAPI->getAllCoinsInformation();
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -620,7 +613,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(cons
     {
         try
         {
-            m_coinInformation = getAPI()->getAllCoinsInformation();
+            m_coinInformation = m_bAPI->getAllCoinsInformation();
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -628,7 +621,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayCoinAssetDepositAddress(cons
     }
     QApplication::restoreOverrideCursor();
 
-    NetworkAddressDialog dlg(getAPI(), &m_coinInformation, m_config, asset);
+    NetworkAddressDialog dlg(m_bAPI.get(), &m_coinInformation, m_config, asset);
     dlg.setModal(true);
     dlg.exec();
 }
@@ -639,7 +632,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onDisplayAssetDetail(const QString &a
 
     try
     {
-        const auto assetDetail = getAPI()->assetDetail(asset.toStdString());
+        const auto assetDetail = m_bAPI->assetDetail(asset.toStdString());
         AssetDetailDialog dlg(assetDetail, asset, m_config, nullptr);
         dlg.setModal(true);
         dlg.exec();
@@ -657,7 +650,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::onShowFees(const QString &symbol) noe
     {
         try
         {
-            m_fees = getAPI()->tradeFee("" /*Retrieve all*/);
+            m_fees = m_bAPI->tradeFee("" /*Retrieve all*/);
         } catch (const BINAPI_NAMESPACE::APIException &ex)
         {
             CATCH_API_EXCEPTION()
@@ -680,7 +673,7 @@ try
     for (const auto &id : m_symbolsWatch)
         list.emplace_back(id.toStdString());
 
-    auto data = getAPI()->tickerPriceChangeStatistics24hr(list);
+    auto data = m_bAPI->tickerPriceChangeStatistics24hr(list);
 
     for (const auto &[sym, data] : data)
         ret.emplace_back(data.lastPrice, data.priceChangePercent, QString::fromStdString(sym));
@@ -696,6 +689,7 @@ QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QStri
 {
     QDate thisDate = QDate::currentDate();
 
+    // Reacquire data if the day has change
     if (thisDate.day() != m_sevenDayLastUpdate.day())
     {
         // Invalidate caches
@@ -712,7 +706,7 @@ QList<std::pair<quint64, qreal>> cen::BinanceSpotPlugin::get7dayData(const QStri
     const auto todayMS = binapi::BinanceAPI::getTime();
     const auto today   = (todayMS - (todayMS % dayMS));
 
-    auto data = getAPI()->candlestickData(symbol.toStdString(),
+    auto data = m_bAPI->candlestickData(symbol.toStdString(),
         binapi::BinanceTimeIntervals::i1d,
         today - dayMS * 7,
         today,
@@ -755,7 +749,50 @@ void cen::BinanceSpotPlugin::resetStoredZoom(const cen::uuid &id) noexcept
 
 QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> cen::BinanceSpotPlugin::getCandlesByPeriod(const QString &symbol, cen::plugin::IExchange::Timestamp start, cen::plugin::IExchange::Timestamp end, cen::plugin::TimeFrame frame) noexcept
 {
-    return QList<QPair<Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>>();
+    const auto interval = mapIntervalFromUIToAPI(frame);
+
+    uint64_t total;
+    auto data = BINAPI_NAMESPACE::BinanceAPI::getCandlesTimesAndLimits(interval, start, end, total);
+
+    BINAPI_NAMESPACE::BinanceLimits limits;
+    BINAPI_NAMESPACE::BinanceAPISpot spot { nullptr, &limits };
+
+    try
+    {
+        QList<QPair<Timestamp, cen::plugin::CandleData>> cd;
+        for (auto i = 0ull; i < data.size(); ++i)
+        {
+            auto sym     = symbol.toStdString();
+            auto candles = spot.candlestickData(sym.c_str(), interval, std::get<0>(data[i]), std::get<1>(data[i]), std::get<2>(data[i]));
+
+            for (const auto &candle : candles)
+            {
+                if (!candle.isClosed)
+                {
+                    // Do not set the candle
+                    continue;
+                }
+
+                cd.push_back({
+                    candle.openTime,
+                    {.high     = candle.high,
+                               .open   = candle.open,
+                               .close  = candle.close,
+                               .low    = candle.low,
+                               .volume = candle.volume}
+                });
+            }
+        }
+        // Sort the data
+        std::sort(cd.begin(), cd.end(), [](const QPair<Timestamp, cen::plugin::CandleData> &c1, const QPair<Timestamp, cen::plugin::CandleData> &c2) {
+            return c1.first < c2.first;
+        });
+
+        return cd;
+    } catch (const BINAPI_NAMESPACE::APIException &ex)
+    {
+        return {};
+    }
 }
 
 bool cen::BinanceSpotPlugin::realtimePlotAllowed() noexcept
