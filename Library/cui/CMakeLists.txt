@@ -32,7 +32,13 @@ set(INCLUDE_FILES
         include/CentaurLibrary.hpp
         include/ChevronButton.hpp
         include/AnimatedButton.hpp
-        include/SquarifyWidget.hpp)
+        include/SquarifyWidget.hpp
+        include/CandleItem.hpp
+        include/CandleChartWidget.hpp
+        include/CandleChartScene.hpp
+        include/CandlePriceAxisItem.hpp
+        include/CandleTimeAxisItem.hpp
+        )
 
 set(SOURCE_FILES
         src/EditorDelegate.cpp
@@ -47,7 +53,12 @@ set(SOURCE_FILES
         src/SearchLineEdit.cpp
         src/ChevronButton.cpp
         src/AnimatedButton.cpp
-        src/SquarifyWidget.cpp)
+        src/SquarifyWidget.cpp
+        src/CandleItem.cpp
+        src/CandleChartWidget.cpp
+        src/CandleChartScene.cpp
+        src/CandlePriceAxisItem.cpp
+        src/CandleTimeAxisItem.cpp)
 
 set(UI_FILES
         rcc/resources.qrc

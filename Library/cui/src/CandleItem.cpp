@@ -4,9 +4,8 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 
-#include "CandleChart/CandleItem.hpp"
-#include "CandleChart/CandleChartWidget.hpp"
-
+#include "CandleItem.hpp"
+#include "CandleChartWidget.hpp"
 #include <QPainter>
 
 CENTAUR_NAMESPACE::CandleItem::CandleItem(uint64_t timestamp, double open, double close, double high, double low, QGraphicsItem *parent) :
@@ -22,7 +21,7 @@ void CENTAUR_NAMESPACE::CandleItem::hoverEnterEvent(C_UNUSED QGraphicsSceneHover
 {
     auto view = qobject_cast<CandleChartWidget *>(scene()->views().first());
     assert(view != nullptr);
-    view->hoverItem(timestamp());
+    //    view->hoverItem(timestamp());
 
     // qDebug() << event;
 }
@@ -38,7 +37,7 @@ void cen::CandleItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGraphi
 {
     const QRectF &thisRect = rect();
     painter->setBrush(QBrush(QColor(50, 50, 50)));
-    painter->drawRect(thisRect);
+    // painter->drawRect(thisRect);
 
     // painter->drawLines({ m_high, m_low });
 
@@ -64,42 +63,42 @@ void cen::CandleItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGraphi
 }
 
 void cen::CandleItem::updateCandleRect(double openPoint, double closePoint, double highPoint, double lowPoint) noexcept
-{
-    const QRectF &itemRect = rect();
+{ /*
+     const QRectF &itemRect = rect();
 
-    auto view              = qobject_cast<CandleChartWidget *>(scene()->views().first());
-    assert(view != nullptr);
+     auto view = qobject_cast<CandleChartWidget *>(scene()->views().first());
+     assert(view != nullptr);
 
-    const auto &candleWidth = view->getCandleWidth() + view->getCandleSpacing();
-    const auto barLeft      = itemRect.left() + (view->getCandleSpacing() / 2);
+     const auto &candleWidth = view->getCandleWidth() + view->getCandleSpacing();
+     const auto barLeft      = itemRect.left() + (view->getCandleSpacing() / 2);
 
-    m_barRect               = QRectF {
-        barLeft,
-        std::min(openPoint, closePoint),
-        view->getCandleWidth(),
-        std::abs(openPoint - closePoint)
+     m_barRect = QRectF {
+         barLeft,
+         std::min(openPoint, closePoint),
+         view->getCandleWidth(),
+         std::abs(openPoint - closePoint)
 
-    };
+     };
 
-    const auto top       = std::min(highPoint, lowPoint);
-    const auto bottom    = std::max(highPoint, lowPoint);
+     const auto top    = std::min(highPoint, lowPoint);
+     const auto bottom = std::max(highPoint, lowPoint);
 
-    const auto barTop    = m_barRect.top();
-    const auto barBottom = m_barRect.bottom();
+     const auto barTop    = m_barRect.top();
+     const auto barBottom = m_barRect.bottom();
 
-    const auto lineX     = itemRect.left() + (candleWidth / 2);
+     const auto lineX = itemRect.left() + (candleWidth / 2);
 
-    m_high               = QLineF { lineX,
-        top,
-        lineX,
-        std::min(barTop, barBottom) };
+     m_high = QLineF { lineX,
+         top,
+         lineX,
+         std::min(barTop, barBottom) };
 
-    m_low                = QLineF {
-        lineX,
-        bottom,
-        lineX,
-        std::max(barTop, barBottom)
-    };
+     m_low = QLineF {
+         lineX,
+         bottom,
+         lineX,
+         std::max(barTop, barBottom)
+     };*/
 }
 
 /*

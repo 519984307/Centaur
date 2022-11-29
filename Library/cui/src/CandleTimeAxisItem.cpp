@@ -3,27 +3,19 @@
 // Created by Ricardo Romero on 05/07/22.
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
-#include "CandleChart/TimeAxisItem.hpp"
+#include "CandleTimeAxisItem.hpp"
 #include <QPainter>
 
-cen::TimeAxisItem::TimeAxisItem(double height, double candleWidth, double candleSpacing, double labelSpacing, uint64_t min, uint64_t max, cen::plugin::TimeFrame tf, QGraphicsItem *parent) :
-    QGraphicsRectItem(parent),
-    m_height { height },
-    m_candleWidth { candleWidth },
-    m_candleSpacing { candleSpacing },
-    m_labelSpacing { labelSpacing },
-    m_min { min },
-    m_max { max },
-    m_absoluteMin { 0 },
-    m_tf { tf },
-    m_cursorIndex { 0 },
-    m_mouseInScene { false },
-    m_normalFont { "Roboto", 12 },
-    m_boldFont { "Roboto", 12, 800 }
+BEGIN_CENTAUR_NAMESPACE
+
+CandleTimeAxisItem::CandleTimeAxisItem(QGraphicsItem *parent) :
+    QGraphicsRectItem(parent)
 {
 }
 
-uint64_t cen::TimeAxisItem::timeFrameToMilliseconds(cen::plugin::TimeFrame tf) noexcept
+CandleTimeAxisItem::~CandleTimeAxisItem() = default;
+
+uint64_t CandleTimeAxisItem::timeFrameToMilliseconds(plugin::TimeFrame tf) noexcept
 {
     constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp sec   = 1000;
     constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp min   = sec * 60;
@@ -61,13 +53,13 @@ uint64_t cen::TimeAxisItem::timeFrameToMilliseconds(cen::plugin::TimeFrame tf) n
     }
 }
 
-void cen::TimeAxisItem::setHeight(double height) noexcept
+void CandleTimeAxisItem::setHeight(double height) noexcept
 {
     m_height = height;
     update();
 }
 
-void cen::TimeAxisItem::setCandleParameters(double width, double spacing) noexcept
+void CandleTimeAxisItem::setCandleParameters(double width, double spacing) noexcept
 {
     m_candleWidth   = width;
     m_candleSpacing = spacing;
@@ -93,23 +85,23 @@ void cen::TimeAxisItem::setCandleParameters(double width, double spacing) noexce
     update();
 }
 
-void cen::TimeAxisItem::setCandleWidth(double width) noexcept
+void CandleTimeAxisItem::setCandleWidth(double width) noexcept
 {
     setCandleParameters(width, getCandleSpacing());
 }
 
-void cen::TimeAxisItem::setCandleSpacing(double spacing) noexcept
+void CandleTimeAxisItem::setCandleSpacing(double spacing) noexcept
 {
     setCandleParameters(getCandleWidth(), spacing);
 }
 
-void cen::TimeAxisItem::setLabelSpacing(double spacing) noexcept
+void CandleTimeAxisItem::setLabelSpacing(double spacing) noexcept
 {
     m_labelSpacing = spacing;
     update();
 }
 
-void cen::TimeAxisItem::setTimestampRange(uint64_t min, uint64_t max) noexcept
+void CandleTimeAxisItem::setTimestampRange(uint64_t min, uint64_t max) noexcept
 {
     if (min <= m_absoluteMin)
         return;
@@ -122,14 +114,14 @@ void cen::TimeAxisItem::setTimestampRange(uint64_t min, uint64_t max) noexcept
     update();
 }
 
-void cen::TimeAxisItem::setTimeFrame(cen::plugin::TimeFrame tf) noexcept
+void CandleTimeAxisItem::setTimeFrame(plugin::TimeFrame tf) noexcept
 {
     m_tf = tf;
     recalculateAxisLabels();
     update();
 }
 
-uint64_t cen::TimeAxisItem::fit() const
+uint64_t CandleTimeAxisItem::fit() const
 {
     const QRectF &thisRect = rect();
 
@@ -140,13 +132,13 @@ uint64_t cen::TimeAxisItem::fit() const
     return static_cast<uint64_t>(dWidth / maxCandleWidth);
 }
 
-void cen::TimeAxisItem::mouseInScene(bool scene)
+void CandleTimeAxisItem::mouseInScene(bool scene)
 {
     m_mouseInScene = scene;
     update();
 }
 
-QPair<double, uint64_t> cen::TimeAxisItem::isXPointInCandleFrame(double X) noexcept
+QPair<double, uint64_t> CandleTimeAxisItem::isXPointInCandleFrame(double X) noexcept
 {
     const QRectF &thisRect = rect();
 
@@ -162,7 +154,7 @@ QPair<double, uint64_t> cen::TimeAxisItem::isXPointInCandleFrame(double X) noexc
     return { -1, 0 };
 }
 
-void cen::TimeAxisItem::calculateCandleRects() noexcept
+void CandleTimeAxisItem::calculateCandleRects() noexcept
 {
     const QRectF &thisRect = rect();
     m_candleRects.clear();
@@ -181,7 +173,7 @@ void cen::TimeAxisItem::calculateCandleRects() noexcept
     recalculateAxisLabels();
 }
 
-void cen::TimeAxisItem::recalculateAxisLabels() noexcept
+void CandleTimeAxisItem::recalculateAxisLabels() noexcept
 {
     const auto widestFrame = getAxisLabelsWidth();
 
@@ -263,7 +255,7 @@ void cen::TimeAxisItem::recalculateAxisLabels() noexcept
     // qDebug() << ppp << m_labelRects.size();
 }
 
-double cen::TimeAxisItem::getAxisLabelsWidth(bool retrievingMode, QList<QPair<QString, QFont *>> *labels, uint64_t startAtTimestamp, uint64_t numberOfLabels, uint64_t shifts) noexcept
+double CandleTimeAxisItem::getAxisLabelsWidth(bool retrievingMode, QList<QPair<QString, QFont *>> *labels, uint64_t startAtTimestamp, uint64_t numberOfLabels, uint64_t shifts) noexcept
 {
     QString labelFormat {};
 
@@ -410,7 +402,7 @@ double cen::TimeAxisItem::getAxisLabelsWidth(bool retrievingMode, QList<QPair<QS
     return widestFrame;
 }
 
-void cen::TimeAxisItem::setCursorPos(uint64_t timestamp) noexcept
+void CandleTimeAxisItem::setCursorPos(uint64_t timestamp) noexcept
 {
     m_cursorIndex = timestamp;
 
@@ -445,9 +437,13 @@ void cen::TimeAxisItem::setCursorPos(uint64_t timestamp) noexcept
     update();
 }
 
-void cen::TimeAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGraphicsItem *option, C_UNUSED QWidget *widget)
+void CandleTimeAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGraphicsItem *option, C_UNUSED QWidget *widget)
 {
     const QRectF &thisRect = rect();
+
+    painter->setPen(QPen(QColor(255, 0, 0)));
+    painter->setBrush(QBrush(QColor(40, 40, 40)));
+    painter->drawRect(thisRect);
 
     if (m_tf == CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime)
     {
@@ -456,53 +452,52 @@ void cen::TimeAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGrap
         return;
     }
     /*
-        painter->setPen(QPen(QColor(255, 0, 0)));
-        painter->setBrush(QBrush(QColor(40, 40, 40)));
-        painter->drawRect(thisRect);
 
-        for (const auto &rc : m_candleRects)
+    for (const auto &rc : m_candleRects)
+    {
+        painter->setPen(QColor(0, 255, 0));
+        painter->drawRect(rc.second);
+    }
+    */
+    /*
+        for (const auto &label : m_labelRects)
         {
-            painter->setPen(QColor(0, 255, 0));
-            painter->drawRect(rc.second);
-        }*/
 
-    for (const auto &label : m_labelRects)
-    {
-        /*painter->setPen(QColor(255, 0, 0));
-        painter->setBrush(QBrush(QColor(0, 0, 255, 125)));*/
-        const auto &labelText = std::get<0>(label);
-        const auto &rect      = std::get<1>(label);
-        const auto &font      = std::get<2>(label);
-        // painter->drawRect(rect);
-        painter->setPen(QPen(QColor(200, 200, 200)));
-        painter->setFont(*font);
-        painter->drawText(rect, Qt::AlignHCenter | Qt::AlignVCenter, labelText);
-    }
+            const auto &labelText = std::get<0>(label);
+            const auto &rect      = std::get<1>(label);
+            const auto &font      = std::get<2>(label);
+            // painter->drawRect(rect);
+            painter->setPen(QPen(QColor(200, 200, 200)));
+            painter->setFont(*font);
+            painter->drawText(rect, Qt::AlignHCenter | Qt::AlignVCenter, labelText);
+        }
 
-    if (m_cursorIndex > 0 && m_mouseInScene)
-    {
-        painter->setPen(QColor(80, 80, 80));
-        painter->setBrush(QBrush(QColor(80, 80, 80)));
-        painter->drawRect(m_infoRect);
-        painter->setPen(QColor(220, 220, 220));
-        painter->setFont(m_normalFont);
-        painter->drawText(m_infoRect, Qt::AlignHCenter | Qt::AlignVCenter, m_infoLabel);
-    }
+        if (m_cursorIndex > 0 && m_mouseInScene)
+        {
+            painter->setPen(QColor(80, 80, 80));
+            painter->setBrush(QBrush(QColor(80, 80, 80)));
+            painter->drawRect(m_infoRect);
+            painter->setPen(QColor(220, 220, 220));
+            painter->setFont(m_normalFont);
+            painter->drawText(m_infoRect, Qt::AlignHCenter | Qt::AlignVCenter, m_infoLabel);
+        }
 
-    painter->setPen(QColor(150, 150, 150));
-    painter->drawLine(QLineF { thisRect.left(), thisRect.top(), thisRect.width(), thisRect.top() });
-    painter->drawLine(QLineF { thisRect.width(), thisRect.top(), thisRect.width(), thisRect.bottom() });
+        painter->setPen(QColor(150, 150, 150));
+        painter->drawLine(QLineF { thisRect.left(), thisRect.top(), thisRect.width(), thisRect.top() });
+        painter->drawLine(QLineF { thisRect.width(), thisRect.top(), thisRect.width(), thisRect.bottom() });*/
 }
 
-QList<double> cen::TimeAxisItem::getGridLinePositions() noexcept
+QList<double> CandleTimeAxisItem::getGridLinePositions() noexcept
 {
     return m_gridLines;
 }
 
-QPair<double, bool> cen::TimeAxisItem::getGridFrame(uint64_t timestamp)
+QPair<double, bool> CandleTimeAxisItem::getGridFrame(uint64_t timestamp)
 {
     auto iter = m_candleRects.find(timestamp);
     if (iter == m_candleRects.end())
         return { 0, false };
     return { iter->second.left() + (iter->second.width() / 2) - (m_candleWidth / 2), true };
 }
+
+END_CENTAUR_NAMESPACE

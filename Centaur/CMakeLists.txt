@@ -45,11 +45,6 @@ SET(CENT_SOURCE
         src/ProtocolClient.cpp
         src/CandleViewWidget.cpp
         src/ProtocolServer.cpp
-        src/CandleChart/CandleItem.cpp
-        src/CandleChart/CandleChartWidget.cpp
-        src/CandleChart/CandleChartScene.cpp
-        src/CandleChart/PriceAxisItem.cpp
-        src/CandleChart/TimeAxisItem.cpp
         src/LogDialog.cpp
         src/SplashDialog.cpp
         src/LoginDialog.cpp
@@ -62,7 +57,8 @@ SET(CENT_SOURCE
         src/WatchlistWidget.cpp
         src/WatchlistModel.cpp
         src/PortfolioWidget.cpp
-        src/PortfolioModel.cpp)
+        src/PortfolioModel.cpp
+        src/CandleChartDialog.cpp)
 
 SET(CENT_INCLUDE
         include/CentaurApp.hpp
@@ -78,11 +74,6 @@ SET(CENT_INCLUDE
         include/CandleViewWidget.hpp
         include/ProtocolClient.hpp
         include/CandleViewWidget.hpp
-        include/CandleChart/CandleItem.hpp
-        include/CandleChart/CandleChartWidget.hpp
-        include/CandleChart/CandleChartScene.hpp
-        include/CandleChart/PriceAxisItem.hpp
-        include/CandleChart/TimeAxisItem.hpp
         ../Plugins/include/CentaurPlugin.hpp
         ../Plugins/include/CentaurInterface.hpp
         include/LogDialog.hpp
@@ -97,7 +88,7 @@ SET(CENT_INCLUDE
         include/WatchlistWidget.hpp
         include/WatchListModel.hpp
         include/PortfolioModel.hpp
-        include/PortfolioWidget.hpp)
+        include/PortfolioWidget.hpp include/CandleChartDialog.hpp)
 
 SET(CENT_UI
         ui/CentaurApp.ui
@@ -185,7 +176,7 @@ if (${APPLE_PLATFORM})
             COMMAND ${CMAKE_COMMAND}
             ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/lib/libBinanceSPOT.dylib ${BUNDLE_BUILTIN_PLUGINS}/libBinanceSPOT.dylib
             VERBATIM)
-    
+
 
     ADD_CUSTOM_COMMAND(TARGET Centaur
             POST_BUILD

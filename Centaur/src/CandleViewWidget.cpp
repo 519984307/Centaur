@@ -5,8 +5,8 @@
 //
 
 #include "CandleViewWidget.hpp"
-#include "CandleChart/CandleChartScene.hpp"
-#include "CandleChart/CandleItem.hpp"
+#include "CandleChartScene.hpp"
+#include "CandleItem.hpp"
 #include "CentaurApp.hpp"
 #include <QCloseEvent>
 #include <QSettings>
@@ -49,7 +49,7 @@ cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginIn
 {
     m_ui->setupUi(this);
 
-   // m_ui->graphicsView->setEnabled(true);
+    // m_ui->graphicsView->setEnabled(true);
     setWindowTitle(symbol);
 
     connect(this, &CandleViewWidget::snRetrieveCandles, this, &CandleViewWidget::onRetrieveCandles);
@@ -66,7 +66,7 @@ cen::CandleViewWidget::CandleViewWidget(const CENTAUR_PLUGIN_NAMESPACE::PluginIn
     m_ui->graphicsView->setChartTimeFrame(tf);
     // Inform the plugin that the user wants to start acquiring the data
 
-    ///view->acquire(emitter, symbol, tf, m_uuid);
+    /// view->acquire(emitter, symbol, tf, m_uuid);
 
     // Load the last window of times for the specific timeframe and symbol
     loadLastTimeWindow();

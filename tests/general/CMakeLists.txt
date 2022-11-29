@@ -11,9 +11,9 @@ add_executable(tests
 
 
 target_include_directories(tests PRIVATE
-        ../Library/uuid/include
-        ../Library/Protocol/include
-        ../include)
+        ../../Library/uuid/include
+        ../../Library/Protocol/include
+        ../../include)
 
 IF (UNIX AND NOT APPLE)
     message("Centaur Linux Detected")

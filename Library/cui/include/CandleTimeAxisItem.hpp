@@ -21,23 +21,23 @@
 namespace CENTAUR_NAMESPACE
 {
 
-    class TimeAxisItem : public QGraphicsRectItem
+    class CandleTimeAxisItem : public QGraphicsRectItem
     {
-
-
     public:
         /// Labels will be set based on the timeframe
-        TimeAxisItem(double height, double candleWidth, double candleSpacing, double labelSpacing, uint64_t min, uint64_t max, CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf, QGraphicsItem *parent = nullptr);
-        ~TimeAxisItem() override = default;
+        CandleTimeAxisItem(QGraphicsItem *parent = nullptr);
+        ~CandleTimeAxisItem() override;
 
     public:
+        void setTimeFrame(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
+
         void setHeight(double height) noexcept;
         void setCandleWidth(double width) noexcept;
         void setCandleSpacing(double spacing) noexcept;
         void setCandleParameters(double width, double spacing) noexcept;
         void setLabelSpacing(double spacing) noexcept;
         void setTimestampRange(uint64_t min, uint64_t max) noexcept;
-        void setTimeFrame(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
+
         /// The timestamp can be the uint64_t parameter returned by isXPointInCandleFrame
         void setCursorPos(uint64_t timestamp) noexcept;
 

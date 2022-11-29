@@ -38,7 +38,8 @@ add_subdirectory(Plugins/BinanceSpot)
 add_subdirectory(Plugins/BinanceCS)
 
 #tests
-add_subdirectory(test)
+add_subdirectory(tests/general)
+add_subdirectory(tests/CandleWidgetTest)
 
 #Tools
 add_subdirectory(tools/imgSorter)

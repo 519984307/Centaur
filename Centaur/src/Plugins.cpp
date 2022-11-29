@@ -145,6 +145,8 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
     }
 }
 
+#include <iostream>
+
 bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
 {
     logTrace("plugins", "CentaurApp::initExchangePlugin");
@@ -166,6 +168,15 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
     // clang-format on
 
     mapExchangePluginViewMenus(uuid, exchange->dynamicWatchListMenuItems());
+
+
+    auto data = exchange->getCandlesByPeriod("BTCUSDT", 1659225600000, 1665792000000, cen::plugin::TimeFrame::Hours_4);
+
+    std::cout << "QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> data = {";
+    for (const auto &[ts, cd] : data)
+    {
+        std::cout << "{ " << ts << ", {" << cd.high << ", " << cd.open << ", " << cd.close << ", " << cd.low << ", " << cd.volume << "} },";
+    }
 
     return true;
 }
@@ -220,9 +231,32 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
 
     ui()->stackedWidget->addWidget(widget);
 
-    connect(button, &QPushButton::clicked, this, [&, widget = widget](bool clicked) {
+    connect(button, &QPushButton::clicked, this, [&, widget, symbolsList, exchange](bool clicked) {
         if (clicked)
+        {
+            if (symbolsList->getRowCount() == 0)
+            {
+                auto symbols = exchange->getSymbolList();
+                for (const auto &[sym, icon] : symbols)
+                {
+
+                    auto item  = new QStandardItem(sym);
+                    int curRow = symbolsList->getRowCount();
+                    item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+                    const QString base = exchange->getBaseFromSymbol(sym);
+                    QPixmap img;
+                    if (g_globals->symIcons.find(16, base, &img, 0))
+                        item->setIcon({ img });
+                    else
+                        item->setIcon(*icon);
+
+                    symbolsList->insertRowWithOptions(curRow, { item }, false);
+                }
+            }
+
             ui()->stackedWidget->setCurrentWidget(widget);
+        }
     });
 
     connect(symbolsList, &OptionsTableWidget::customContextMenuRequested, this, [&, symbolsList, exchange](const QPoint &pos) {
@@ -243,25 +277,6 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
             contextMenu.exec(symbolsList->mapToGlobal(pos));
         }
     });
-
-    auto symbols = exchange->getSymbolList();
-
-    for (const auto &[sym, icon] : symbols)
-    {
-
-        auto item  = new QStandardItem(sym);
-        int curRow = symbolsList->getRowCount();
-        item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-        const QString base = exchange->getBaseFromSymbol(sym);
-        QPixmap img;
-        if (g_globals->symIcons.find(16, base, &img, 0))
-            item->setIcon({ img });
-        else
-            item->setIcon(*icon);
-
-        symbolsList->insertRowWithOptions(curRow, { item }, false);
-    }
 
     logInfo("plugins", "Exchange list populated");
 

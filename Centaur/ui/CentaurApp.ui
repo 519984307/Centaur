@@ -366,7 +366,7 @@ background-color: rgb(142,235,129);
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLabel" name="label">
+                 <widget class="QLabel" name="titleLabel">
                   <property name="text">
                    <string>Centaur 0.1.0</string>
                   </property>
@@ -668,19 +668,6 @@ border: 0px;
                 </size>
                </property>
               </spacer>
-             </item>
-             <item>
-              <widget class="QLabel" name="titleLabel">
-               <property name="styleSheet">
-                <string notr="true"/>
-               </property>
-               <property name="text">
-                <string>Centaur</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
              </item>
              <item>
               <widget class="QLabel" name="userImage">
