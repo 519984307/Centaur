@@ -49,6 +49,9 @@ public:
     void updateLatency(const QString &symbol, const QString &source, qint64 lat);
     void updatePriceAndLatency(const QString &symbol, const QString &source, qreal price, qint64 lat);
 
+
+    void removeItem(const QString &symbol, const QString &source) noexcept;
+
 public:
     C_NODISCARD std::pair<QString, QString> sourceFromIndex(const QModelIndex &index) noexcept;
 

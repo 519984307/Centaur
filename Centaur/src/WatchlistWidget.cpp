@@ -317,6 +317,11 @@ std::pair<QString, QString> WatchlistWidget::sourceFromPoint(const QPoint &pt)
     return _impl->sourceModel->sourceFromIndex(index);
 }
 
+void WatchlistWidget::removeItem(const QString &symbol, const QString &source) noexcept
+{
+    _impl->sourceModel->removeItem(symbol, source);
+}
+
 void WatchlistWidget::mouseMoveEvent(QMouseEvent *event)
 {
     auto proxyIndex = indexAt(event->pos());

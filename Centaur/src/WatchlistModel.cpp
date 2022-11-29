@@ -178,4 +178,17 @@ std::pair<QString, QString> WatchlistModel::sourceFromIndex(const QModelIndex &i
     return { iter->first.symbol, iter->first.source };
 }
 
+void WatchlistModel::removeItem(const QString &symbol, const QString &source) noexcept
+{
+    auto iter = _impl->data.find({ symbol, source });
+    if (iter == _impl->data.end())
+        return;
+    else
+    {
+        beginResetModel();
+        _impl->data.erase(iter);
+        endResetModel();
+    }
+}
+
 END_CENTAUR_NAMESPACE

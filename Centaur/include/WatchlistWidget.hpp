@@ -39,6 +39,8 @@ public:
     void updateLatency(const QString &symbol, const QString &source, qint64 latency) noexcept;
     void updatePriceAndLatency(const QString &symbol, const QString &source, qreal price, qint64 latency) noexcept;
 
+    void removeItem(const QString &symbol, const QString &source) noexcept;
+
     std::pair<QString, QString> sourceFromPoint(const QPoint &pt);
 
 protected:
