@@ -44,16 +44,15 @@ public:
     /// \brief Determinate the current max price
     /// \param max determinate if max is the high price so far
     void calculatePriceMax(qreal max);
-    /// \brief Centers the price axis at this position
-    /// \param price Center of the axis
-    void centerPriceAxisAt(qreal price);
-    /// \brief Gets the center position
-    qreal priceAxisCenterPosition() const noexcept;
+
     /// \brief Scale the price axis
     /// \param factor factor > 0 to zoom in; factor < 0 to zoom out
     void scalePriceAxis(qreal factor) noexcept;
     // Price to point
     qreal priceToPoint(qreal price) noexcept;
+
+public:
+    void scaleTimeAxis(qreal factor) noexcept;
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
@@ -78,7 +77,6 @@ protected:
 private:
     struct Impl;
     std::unique_ptr<Impl> _impl;
-
 };
 
 END_CENTAUR_NAMESPACE

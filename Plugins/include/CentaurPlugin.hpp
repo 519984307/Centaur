@@ -258,7 +258,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
     struct IExchange : public IStatus
     {
         /// \brief All timestamps must be in milliseconds
-        using Timestamp = uint64_t;
+        using Timestamp = int64_t;
 
         ~IExchange() override = default;
 

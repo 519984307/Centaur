@@ -282,7 +282,8 @@ cen::CandleViewWidget::CandleWindow cen::CandleViewWidget::getClosedCandlesTimes
 
     const auto t_begin = t_end - ms * times;
 
-    return { t_begin, t_end };
+    //return { t_begin, t_end };
+    return {0,0};
 }
 
 QPair<double, double> cen::CandleViewWidget::calculateMinMaxVerticalAxis(double highestHigh, double lowestLow) noexcept
@@ -361,7 +362,7 @@ void cen::CandleViewWidget::onUpdateSeries() noexcept
 
 void cen::CandleViewWidget::onUpdateCandleMousePosition(uint64_t timestamp)
 {
-    auto candle = m_ui->graphicsView->getCandleItem(timestamp);
+   /* auto candle = m_ui->graphicsView->getCandleItem(timestamp);
 
     const QString timeFormat = [&]() {
         const uint64_t candleTimeframe = timeFrameToMilliseconds(m_tf);
@@ -404,7 +405,7 @@ void cen::CandleViewWidget::onUpdateCandleMousePosition(uint64_t timestamp)
         m_ui->labelOpen->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->open(), 'f', precision)));
         m_ui->labelHigh->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->high(), 'f', precision)));
         m_ui->labelLow->setText(QString("%1").arg(QLocale(QLocale::English).toString(candle->low(), 'f', precision)));
-    }
+    }*/
 }
 
 void cen::CandleViewWidget::updateLatency(quint64 event) noexcept

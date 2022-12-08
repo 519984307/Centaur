@@ -16,17 +16,14 @@
 #include "CentaurPlugin.hpp"
 #include <QDialog>
 
-
-
 class TestDialog : public QDialog
 {
 public:
     explicit TestDialog(QWidget *parent = nullptr);
     ~TestDialog() override;
-
-
 };
 
 extern QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> testData;
+extern QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> testData1h;
 
 #endif // CENTAUR_TESTDIALOG_HPP

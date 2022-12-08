@@ -169,8 +169,7 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
 
     mapExchangePluginViewMenus(uuid, exchange->dynamicWatchListMenuItems());
 
-
-    auto data = exchange->getCandlesByPeriod("BTCUSDT", 1659225600000, 1665792000000, cen::plugin::TimeFrame::Hours_4);
+    auto data = exchange->getCandlesByPeriod("BTCUSDT", 1659225600000, 1665792000000, cen::plugin::TimeFrame::Hours_1);
 
     std::cout << "QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> data = {";
     for (const auto &[ts, cd] : data)

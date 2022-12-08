@@ -6,6 +6,7 @@
 
 #include "CandleChartWidget.hpp"
 #include "CandleChartScene.hpp"
+#include "CandleItem.hpp"
 #include "CandlePriceAxisItem.hpp"
 
 #include <QLocale>
@@ -31,8 +32,15 @@ struct CandleChartWidget::Impl
         horizontalCrosshairLine->setFlag(QGraphicsItem::ItemIgnoresTransformations);
 
         addCrosshairLines();
+
+        horizontalGridLinesGroup = scene->createItemGroup({});
+        verticalGridLinesGroup   = scene->createItemGroup({});
     }
-    ~Impl() = default;
+    ~Impl()
+    {
+        scene->destroyItemGroup(horizontalGridLinesGroup);
+        scene->destroyItemGroup(verticalGridLinesGroup);
+    }
 
 protected:
     void addCrosshairLines() const noexcept
@@ -48,6 +56,13 @@ protected:
     }
 
 public:
+    QGraphicsItemGroup *horizontalGridLinesGroup { nullptr };
+    std::vector<QGraphicsLineItem *> horizontalGridLines;
+
+    QGraphicsItemGroup *verticalGridLinesGroup { nullptr };
+    std::vector<QGraphicsLineItem *> verticalGridLines;
+
+public:
     CandleChartScene *scene;
 
     // Tracking lines (Crosshair)
@@ -56,16 +71,20 @@ public:
     QGraphicsLineItem *horizontalCrosshairLine { nullptr };
 
 public:
-    QPointF grabPoint;
     QPointF movePoint;
 
 public:
     Qt::Orientation grabbedAxis;
-
     QGraphicsRectItem *rect { nullptr };
 
 public:
     CENTAUR_PLUGIN_NAMESPACE::TimeFrame chartTimeFrame { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime };
+
+public:
+    std::unordered_map<int64_t, CandleItem *> chartCandles;
+
+public:
+    bool magnetizeTime { true };
 };
 
 CandleChartWidget::CandleChartWidget(QWidget *parent) :
@@ -77,7 +96,7 @@ CandleChartWidget::CandleChartWidget(QWidget *parent) :
     setScene(_impl->scene);
 
     // Set this rect by default
-    _impl->scene->setSceneRect(QRectF(0, 0, 2058, 2058));
+    _impl->scene->setSceneRect(QRectF(0, 0, 2058, 2046));
 
     setRenderHints(QPainter::SmoothPixmapTransform | QPainter::Antialiasing);
 
@@ -124,39 +143,42 @@ void CandleChartWidget::onShowVerticalLine(bool show) noexcept
     _impl->verticalCrosshairLine->setData(Qt::UserRole + 1, _impl->verticalCrosshairLine->isVisible());
 }
 
-void CandleChartWidget::addCandle(quint64 timestamp, double open, double close, double high, double low) noexcept
+void CandleChartWidget::addCandle(int64_t timestamp, double open, double close, double high, double low) noexcept
 {
     // Call to updateCandle will add the candle.
-    updateCandle(timestamp, open, close, high, low);
-
-    _impl->scene->centerPriceAxisAt(low + (high - low) / 2);
-
-    centerOn(0, _impl->scene->priceAxisCenterPosition());
-
-    _impl->scene->onViewRectChange(QSizeF());
-
-    const qreal pY1 = _impl->scene->priceToPoint(24613);
-    const qreal pY2 = _impl->scene->priceToPoint(24000);
-
-    _impl->rect = new QGraphicsRectItem(
-        150.0,
-        pY1,
-        20,
-        pY2 - pY1);
-
-    _impl->rect->setBrush(QColor(124, 32, 223));
-    _impl->scene->addItem(_impl->rect);
-}
-
-void CandleChartWidget::updateCandle(quint64 timestamp, double open, double close, double high, double low) noexcept
-{
-    assert(_impl->chartTimeFrame != CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime);
+    centerOn(0, _impl->scene->getPriceAxis()->center());
 
     _impl->scene->calculatePriceMax(high);
 
+    _impl->scene->onViewRectChange(QSizeF());
 
+    auto iter = _impl->chartCandles.find(timestamp);
+    if (iter == _impl->chartCandles.end())
+    {
+        auto newChartItem              = new CandleItem(timestamp, open, close, high, low);
+        _impl->chartCandles[timestamp] = newChartItem;
+        _impl->scene->addItem(newChartItem);
+        newChartItem->updateCandleRect();
+    }
+    else
+    {
+        iter->second->setParameters(open, close, high, low);
+        iter->second->updateCandleRect();
+    }
 }
 
+void CandleChartWidget::updateCandle(int64_t timestamp, double open, double close, double high, double low) noexcept
+{
+    assert(_impl->chartTimeFrame != CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime);
+
+    auto iter = _impl->chartCandles.find(timestamp);
+    if (iter != _impl->chartCandles.end())
+    {
+        _impl->scene->calculatePriceMax(high);
+        iter->second->setParameters(open, close, high, low);
+        iter->second->updateCandleRect();
+    }
+}
 
 void CandleChartWidget::setHorizontalLinePen(const QPen &pen) noexcept
 {
@@ -179,57 +201,22 @@ void CandleChartWidget::updateCrossHair(const QPointF &pt) noexcept
         pts.y()
     };
     const QPointF horzFinal {
-        size.x() - 70,
+        size.x(),
         pts.y()
     };
 
     _impl->horizontalCrosshairLine->setLine({ horzOrigin, horzFinal });
 
     const QPointF vertOrigin {
-        pts.x(),
+        _impl->magnetizeTime ? _impl->scene->getTimeAxis()->middle(pts.x()) : pts.x(),
         origin.y()
     };
     const QPointF vertFinal {
-        pts.x(),
+        _impl->magnetizeTime ? _impl->scene->getTimeAxis()->middle(pts.x()) : pts.x(),
         size.y()
     };
 
     _impl->verticalCrosshairLine->setLine({ vertOrigin, vertFinal });
-
-    /*
-    const auto width    = getCandleWidth() + getCandleSpacing();
-    const auto position = std::floor(pts.x() / width);
-    const auto XdW_1    = static_cast<int64_t>(position) * static_cast<int64_t>(m_originParameters.timeDiff);
-
-    const auto timestamp = XdW_1 > 0
-                               ? m_originParameters.timestamp + XdW_1
-                               : m_originParameters.timestamp - static_cast<uint64_t>(-XdW_1);
-
-    auto candle = getCandleItem(timestamp);
-    emit snUpdateCandleMousePosition(timestamp);
-
-    double vertX = 0;
-    if (candle != nullptr)
-    {
-        vertX = candle->rect().left() + width / 2;
-    }
-    else
-    {
-        vertX = (position * width) + (width / 2);
-    }
-
-    const QPointF vertOrigin {
-        vertX,
-        origin.y()
-    };
-    const QPointF vertFinal {
-        vertX,
-        size.y()
-    };
-
-    _impl->verticalCrosshairLine->setLine({ vertOrigin, vertFinal });*/
-
-    // qDebug() << m_candles.size() << position << timestamp;
 }
 
 void CandleChartWidget::setPriceAxisOrientation(Qt::AlignmentFlag orientation)
@@ -247,6 +234,8 @@ void CandleChartWidget::resizeEvent(QResizeEvent *event)
 
     // Notify the scene so it can adjust the axis's
     _impl->scene->onViewRectChange(QSizeF { event->size() });
+    updateHorizontalGridLines();
+    updateVerticalGridLines();
 }
 
 void CandleChartWidget::leaveEvent(QEvent *event)
@@ -313,26 +302,30 @@ void CandleChartWidget::mouseMoveEvent(QMouseEvent *event)
         }
         else
         {
+            bool updateItemsRect = false;
             if (_impl->grabbedAxis == Qt::Orientation::Vertical)
             {
                 auto relative = event->position().y() - _impl->movePoint.y();
                 if (!qFuzzyCompare(relative, 0.0))
                 {
-
-                    _impl->scene->scalePriceAxis(relative);
-
-                    const qreal pY1 = _impl->scene->priceToPoint(24613);
-                    const qreal pY2 = _impl->scene->priceToPoint(24000);
-                    _impl->rect->setRect(
-                        150.0,
-                        pY1,
-                        20,
-                        pY2 - pY1);
+                    _impl->scene->scalePriceAxis(-relative);
+                    updateHorizontalGridLines();
+                    updateItemsRect = true;
                 }
             }
-            else
+            else if (_impl->grabbedAxis == Qt::Orientation::Horizontal)
             {
+                auto relative = event->position().x() - _impl->movePoint.x();
+                if (!qFuzzyCompare(relative, 0.0))
+                {
+                    _impl->scene->scaleTimeAxis(-relative);
+                    updateVerticalGridLines();
+                    updateItemsRect = true;
+                }
             }
+
+            if (updateItemsRect)
+                updateItemRects();
         }
 
         // Prevent proportional movement
@@ -347,7 +340,6 @@ void CandleChartWidget::mouseMoveEvent(QMouseEvent *event)
 void CandleChartWidget::mousePressEvent(QMouseEvent *event)
 {
     _impl->movePoint   = event->position();
-    _impl->grabPoint   = event->pos();
     _impl->grabbedAxis = static_cast<Qt::Orientation>(_impl->scene->isPointInAxis(mapToScene(event->pos())));
 
     QGraphicsView::mousePressEvent(event);
@@ -357,13 +349,191 @@ void CandleChartWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     QGraphicsView::mouseReleaseEvent(event);
 }
-void CandleChartWidget::onShowAxisPriceTracker(bool show) noexcept
+
+void CandleChartWidget::onShowPriceAxisTracker(bool show) noexcept
 {
     show ? _impl->scene->getPriceAxis()->showTracker() : _impl->scene->getPriceAxis()->hideTracker();
 }
+
 bool CandleChartWidget::isPriceTrackerVisible() const noexcept
 {
     return _impl->scene->getPriceAxis()->isTrackerVisible();
+}
+
+void CandleChartWidget::onChangeCandleWidth(qreal width) noexcept
+{
+    _impl->scene->getTimeAxis()->setCandleWidth(width);
+}
+
+void CandleChartWidget::onChangeCandleSpacing(qreal spacing) noexcept
+{
+    _impl->scene->getTimeAxis()->setCandleSpacing(spacing);
+}
+
+bool CandleChartWidget::isHorizontalGridLineVisible() const noexcept
+{
+    return _impl->horizontalGridLinesGroup->isVisible();
+}
+
+void CandleChartWidget::onShowHorizontalGridLines(bool show) noexcept
+{
+    show ? _impl->horizontalGridLinesGroup->show() : _impl->horizontalGridLinesGroup->hide();
+}
+
+void CandleChartWidget::updateHorizontalGridLines() noexcept
+{
+    if (!_impl->horizontalGridLinesGroup->isVisible())
+        return;
+
+    for (const auto &lines : _impl->horizontalGridLines)
+        _impl->horizontalGridLinesGroup->removeFromGroup(lines);
+
+    auto gridLines = _impl->scene->getPriceAxis()->getGridLinePositions();
+
+    if (_impl->horizontalGridLines.size() < static_cast<std::size_t>(gridLines.size()))
+    {
+        _impl->horizontalGridLines.reserve(static_cast<std::size_t>(gridLines.size()));
+        auto difference = static_cast<std::size_t>(gridLines.size()) - _impl->horizontalGridLines.size();
+        for (decltype(difference) i = 0; i < difference; ++i)
+        {
+            auto item = new QGraphicsLineItem;
+            item->setPen(QPen(QColor(255, 255, 255, 25), 1.0));
+            item->setZValue(0);
+            _impl->horizontalGridLines.emplace_back(item);
+        }
+    }
+    else if (static_cast<std::size_t>(gridLines.size()) < _impl->horizontalGridLines.size() && !gridLines.empty())
+    {
+        for ( auto i = static_cast<std::size_t>(gridLines.size()); i < _impl->horizontalGridLines.size(); ++i )
+            _impl->horizontalGridLines[i]->hide();
+    }
+
+    _impl->horizontalGridLinesGroup->hide();
+    for (auto i = 0ll; i < gridLines.size(); ++i)
+    {
+        const QPointF horzOrigin {
+            0,
+            gridLines[i]
+        };
+        const QPointF horzFinal {
+            scene()->sceneRect().width(),
+            gridLines[i]
+        };
+
+        _impl->horizontalGridLines[static_cast<std::size_t>(i)]->setLine({ horzOrigin, horzFinal });
+        _impl->horizontalGridLinesGroup->addToGroup(_impl->horizontalGridLines[static_cast<std::size_t>(i)]);
+        _impl->horizontalGridLines[static_cast<std::size_t>(i)]->show();
+    }
+
+    _impl->horizontalGridLinesGroup->show();
+}
+
+void CandleChartWidget::setLinkTimestamp(int64_t timestamp) noexcept
+{
+    _impl->scene->getTimeAxis()->setTimestamp(timestamp);
+}
+
+bool CandleChartWidget::isTimeCrosshairMagnetize() const noexcept
+{
+    return _impl->magnetizeTime;
+}
+
+void CandleChartWidget::onMagnetizeTimeCrosshair(bool mag) noexcept
+{
+    _impl->magnetizeTime = mag;
+}
+
+bool CandleChartWidget::isTimeTrackerVisible() const noexcept
+{
+    return _impl->scene->getTimeAxis()->isTrackerVisible();
+}
+
+bool CandleChartWidget::isVerticalGridLineVisible() const noexcept
+{
+    return _impl->verticalGridLinesGroup->isVisible();
+}
+
+void CandleChartWidget::onShowVerticalGridLines(bool show) noexcept
+{
+    show ? _impl->verticalGridLinesGroup->show() : _impl->verticalGridLinesGroup->hide();
+}
+
+void CandleChartWidget::onShowTimeAxisTracker(bool show) noexcept
+{
+    show ? _impl->scene->getTimeAxis()->showTracker() : _impl->scene->getTimeAxis()->hideTracker();
+}
+
+void CandleChartWidget::updateVerticalGridLines() noexcept
+{
+    if (!_impl->verticalGridLinesGroup->isVisible())
+        return;
+
+    auto gridLines = _impl->scene->getTimeAxis()->getGridLinePositions();
+
+    for (const auto &lines : _impl->verticalGridLines)
+    {
+        lines->hide();
+        _impl->verticalGridLinesGroup->removeFromGroup(lines);
+    }
+
+    if (_impl->verticalGridLines.size() < static_cast<std::size_t>(gridLines.size()))
+    {
+        _impl->verticalGridLines.reserve(static_cast<std::size_t>(gridLines.size()));
+        auto difference = static_cast<std::size_t>(gridLines.size()) - _impl->verticalGridLines.size();
+        for (decltype(difference) i = 0; i < difference; ++i)
+        {
+            auto item = new QGraphicsLineItem;
+            item->setPen(QPen(QColor(255, 255, 255, 25), 1.0));
+            item->setZValue(0);
+            _impl->verticalGridLines.emplace_back(item);
+        }
+    }
+
+    _impl->verticalGridLinesGroup->hide();
+    for (auto i = 0ll; i < gridLines.size(); ++i)
+    {
+        const QPointF vertOrigin {
+            gridLines[i],
+            0.0
+        };
+        const QPointF vertFinal {
+            gridLines[i],
+            scene()->sceneRect().height()
+        };
+
+        _impl->verticalGridLines[static_cast<std::size_t>(i)]->setLine({ vertOrigin, vertFinal });
+        _impl->verticalGridLinesGroup->addToGroup(_impl->verticalGridLines[static_cast<std::size_t>(i)]);
+        _impl->verticalGridLines[static_cast<std::size_t>(i)]->show();
+    }
+
+    _impl->verticalGridLinesGroup->show();
+}
+
+CandleChartScene *CandleChartWidget::ChartScene() noexcept
+{
+    return _impl->scene;
+}
+
+void CandleChartWidget::updateItemRects() noexcept
+{
+
+    QList<QGraphicsItem *> items = _impl->scene->items(viewport()->rect());
+    for (auto &[ts, item] : _impl->chartCandles)
+    {
+        if (item->type() == ChartType::Candle)
+        {
+            // auto candle = qgraphicsitem_cast<CandleItem *>(item);
+            // if (candle != nullptr)
+            item->updateCandleRect();
+        }
+    }
+}
+
+void CandleChartWidget::onSetMinMaxPrice(qreal min, qreal max) noexcept
+{
+    _impl->scene->getPriceAxis()->setAxisMinMaxPrice(min, max);
+    _impl->scene->getPriceAxis()->update();
+    updateItemRects();
 }
 
 END_CENTAUR_NAMESPACE

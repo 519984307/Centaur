@@ -18,59 +18,44 @@
 
 namespace CENTAUR_NAMESPACE
 {
+    enum ChartType : int
+    {
+        Candle
+    };
     class CandleChartScene;
     class CandleItem : public QGraphicsRectItem
     {
-        enum
-        {
-            Type = UserType + 1
-        };
+    public:
+        CandleItem(int64_t timestamp, qreal open, qreal close, qreal high, qreal low, QGraphicsItem *parent = nullptr);
 
     public:
-        CandleItem(uint64_t timestamp, double open, double close, double high, double low, QGraphicsItem *parent = nullptr);
+        C_NODISCARD auto timestamp() const noexcept -> int64_t;
+        C_NODISCARD auto open() const noexcept -> qreal;
+        C_NODISCARD auto close() const noexcept -> qreal;
+        C_NODISCARD auto high() const noexcept -> qreal;
+        C_NODISCARD auto low() const noexcept -> qreal;
 
     public:
-        C_NODISCARD inline auto timestamp() const noexcept { return m_timestamp; }
-        C_NODISCARD inline auto open() const noexcept { return m_data.open; }
-        C_NODISCARD inline auto close() const noexcept { return m_data.close; }
-        C_NODISCARD inline auto high() const noexcept { return m_data.high; }
-        C_NODISCARD inline auto low() const noexcept { return m_data.low; }
+        void setCandleTimestamp(int64_t timestamp) noexcept;
+        void setParameters(qreal open, qreal close, qreal high, qreal low) noexcept;
 
     public:
-        void setParameters(double open, double close, double high, double low) noexcept;
+        C_NODISCARD auto isCandleBullish() const -> bool;
+        C_NODISCARD auto isCandleBearish() const -> bool;
 
     public:
-        C_NODISCARD inline bool isCandleBullish() const
-        {
-            return close() > open();
-        }
-        C_NODISCARD inline bool isCandleBearish() const
-        {
-            return !isCandleBullish();
-        }
+        int type() const override;
 
     public:
-        C_NODISCARD inline int type() const override { return Type; }
-
-    public:
-        void updateCandleRect(double openPoint, double closePoint, double highPoint, double lowPoint) noexcept;
+        void updateCandleRect() noexcept;
 
     protected:
         void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
         void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
 
-    protected:
-        uint64_t m_timestamp;
-        struct CandleData
-        {
-            double open;
-            double close;
-            double high;
-            double low;
-        } m_data;
-        QLineF m_high;
-        QLineF m_low;
-        QRectF m_barRect;
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> _impl;
     };
 
 } // namespace CENTAUR_NAMESPACE

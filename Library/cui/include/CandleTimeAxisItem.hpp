@@ -30,83 +30,55 @@ namespace CENTAUR_NAMESPACE
 
     public:
         void setTimeFrame(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
-
-        void setHeight(double height) noexcept;
-        void setCandleWidth(double width) noexcept;
-        void setCandleSpacing(double spacing) noexcept;
+        void setCandleWidth(qreal width) noexcept;
+        void setCandleSpacing(qreal spacing) noexcept;
         void setCandleParameters(double width, double spacing) noexcept;
-        void setLabelSpacing(double spacing) noexcept;
-        void setTimestampRange(uint64_t min, uint64_t max) noexcept;
-
-        /// The timestamp can be the uint64_t parameter returned by isXPointInCandleFrame
-        void setCursorPos(uint64_t timestamp) noexcept;
+        void setTimestamp(int64_t timestamp) noexcept;
+        void setAxisFont(const QFont &font) noexcept;
+        void updateTracker(qreal x) noexcept;
 
     public:
-        C_NODISCARD inline auto getMin() const noexcept { return m_min; }
-        C_NODISCARD inline auto getMax() const noexcept { return m_max; }
-        C_NODISCARD inline auto getTimeframe() const noexcept { return m_tf; }
-        C_NODISCARD inline auto getCandleWidth() const noexcept { return m_candleWidth; }
-        C_NODISCARD inline auto getCandleSpacing() const noexcept { return m_candleSpacing; }
+        void hideTracker() noexcept;
+        void showTracker() noexcept;
 
     public:
-        void mouseInScene(bool scene);
+        C_NODISCARD auto getTimeframe() const noexcept -> CENTAUR_PLUGIN_NAMESPACE::TimeFrame;
+        C_NODISCARD auto getCandleWidth() const noexcept -> qreal;
+        C_NODISCARD auto getCandleSpacing() const noexcept -> qreal;
+        C_NODISCARD auto getGridLinePositions() const noexcept -> QList<qreal>;
 
     public:
-        /// \brief The idea of fit is to return the number candles that fit between min and max based on the timeframe
-        /// and calculating with the candleWidth and the spacing
-        /// \return the number of candles that fit in the axis with the corresponding parameters
-        uint64_t fit() const;
+        C_NODISCARD auto timestampFromPoint(qreal point) const noexcept -> int64_t;
+        C_NODISCARD auto middle(qreal point) const noexcept -> qreal;
+        C_NODISCARD auto pointFromTimestamp(int64_t timestamp) const noexcept -> qreal;
 
     public:
-        /// \brief Determines if the X point is within one the candle frames and return the center of that frame
-        /// \return The double parameter is the X position relative to the origin and uint64_t parameter is the timestamp of the candle and can be used to set the cursor pos
-        QPair<double, uint64_t> isXPointInCandleFrame(double X) noexcept;
+        C_NODISCARD auto isTrackerVisible() const noexcept -> bool;
 
-        QList<double> getGridLinePositions() noexcept;
-
-        QPair<double, bool> getGridFrame(uint64_t timestamp);
+    protected:
+        C_NODISCARD auto indexFromPoint(qreal point) const noexcept -> std::int64_t;
 
     public:
-        void calculateCandleRects() noexcept;
-        void recalculateAxisLabels() noexcept;
+        void scaleTime(qreal factor) noexcept;
 
     public:
-        static uint64_t timeFrameToMilliseconds(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
+        void updatePriceAxisWidth(qreal width) noexcept;
+        void calculateRectangles();
 
-    public:
-        inline double getHeight() const noexcept { return m_height; }
+    protected:
+        static int64_t timeFrameToMilliseconds(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept;
+        static qreal longestPossibleTagSize(const QFont &font) noexcept;
 
     protected:
         void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
     protected:
-        double getAxisLabelsWidth(bool retrievingMode = false, QList<QPair<QString, QFont *>> *labels = nullptr, uint64_t startAtTimestamp = 0, uint64_t numberOfLabels = 0, uint64_t shifts = 0) noexcept;
-
-    protected:
-        double m_height;
-        double m_candleWidth;
-        double m_candleSpacing;
-        double m_labelSpacing;
-        uint64_t m_min;
-        uint64_t m_max;
-        uint64_t m_absoluteMin;
-        CENTAUR_PLUGIN_NAMESPACE::TimeFrame m_tf;
-        uint64_t m_cursorIndex;
-        bool m_mouseInScene;
+        C_NODISCARD std::pair<QString, bool> labelFromTimestamp(int64_t timestamp) noexcept;
+        C_NODISCARD bool isTimestampAnchor(int64_t timestamp) noexcept;
 
     private:
-        QString m_infoLabel;
-        QRectF m_infoRect;
-
-    private:
-        QList<double> m_gridLines;
-        std::map<uint64_t, QRectF> m_candleRects;
-        // QList<QPair<QRectF, uint64_t>> m_candleRects;
-        QList<std::tuple<QString, QRectF, QFont *>> m_labelRects;
-
-    private:
-        QFont m_normalFont;
-        QFont m_boldFont;
+        struct Impl;
+        std::unique_ptr<Impl> _impl;
     };
 } // namespace CENTAUR_NAMESPACE
 

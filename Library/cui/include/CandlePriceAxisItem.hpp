@@ -27,7 +27,9 @@ public:
 
 public:
     void setOrientation(Qt::AlignmentFlag orientation) noexcept;
-    void centerAt(qreal price) noexcept;
+    void setAxisMaxPrice(qreal max) noexcept;
+    void setAxisMinPrice(qreal min) noexcept;
+    void setAxisMinMaxPrice(qreal min, qreal max) noexcept;
     qreal center() noexcept;
     void scalePrice(qreal factor) noexcept;
     void setPriceStep(qreal log, qreal dec) noexcept;

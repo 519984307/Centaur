@@ -146,20 +146,12 @@ void CandleChartScene::updateTimeAxisRect() noexcept
 
 void CandleChartScene::onViewRectChange(C_UNUSED QSizeF size)
 {
-    updateTimeAxisRect();
     updatePriceAxisRect();
+    updateTimeAxisRect();
 
+    _impl->timeAxis->updatePriceAxisWidth(_impl->priceAxis->rect().width());
     _impl->priceAxis->calculateRectangles();
-}
-
-void CandleChartScene::centerPriceAxisAt(qreal price)
-{
-    _impl->priceAxis->centerAt(price);
-}
-
-qreal CandleChartScene::priceAxisCenterPosition() const noexcept
-{
-    return _impl->priceAxis->center();
+    _impl->timeAxis->calculateRectangles();
 }
 
 int CandleChartScene::isPointInAxis(const QPointF &pt) const noexcept
@@ -174,6 +166,8 @@ int CandleChartScene::isPointInAxis(const QPointF &pt) const noexcept
 
     if (item == _impl->priceAxis)
         return Qt::Orientation::Vertical;
+    else if (item == _impl->timeAxis)
+        return Qt::Orientation ::Horizontal;
 
     return 0;
 }
@@ -189,6 +183,7 @@ void CandleChartScene::onMouseLeave(C_UNUSED QEvent *event) noexcept
 void CandleChartScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
     _impl->priceAxis->updateTracker(mouseEvent->scenePos().y());
+    _impl->timeAxis->updateTracker(mouseEvent->scenePos().x());
 
     QGraphicsScene::mouseMoveEvent(mouseEvent);
 }
@@ -218,6 +213,11 @@ qreal CandleChartScene::priceToPoint(qreal price) noexcept
 CandleTimeAxisItem *CandleChartScene::getTimeAxis() noexcept
 {
     return _impl->timeAxis;
+}
+
+void CandleChartScene::scaleTimeAxis(qreal factor) noexcept
+{
+    getTimeAxis()->scaleTime(factor);
 }
 
 END_CENTAUR_NAMESPACE

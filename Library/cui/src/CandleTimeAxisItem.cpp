@@ -4,18 +4,144 @@
 // Copyright (c) 2022 Ricardo Romero.  All rights reserved.
 //
 #include "CandleTimeAxisItem.hpp"
+#include <QApplication>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QPainter>
 
 BEGIN_CENTAUR_NAMESPACE
 
+enum class TimeframeGroup : int
+{
+    nullTime,
+    Seconds,
+    Minutes,
+    Hours,
+    Days,
+    Months
+};
+
+static TimeframeGroup groupTimeFrame(CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf) noexcept
+{
+    switch (tf)
+    {
+        case plugin::TimeFrame::nullTime:
+            return TimeframeGroup::nullTime;
+        case plugin::TimeFrame::Seconds_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_5: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_10: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_30: C_FALLTHROUGH;
+        case plugin::TimeFrame::Seconds_45:
+            return TimeframeGroup::Seconds;
+        case plugin::TimeFrame::Minutes_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_2: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_3: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_5: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_10: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_15: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_30: C_FALLTHROUGH;
+        case plugin::TimeFrame::Minutes_45:
+            return TimeframeGroup::Minutes;
+        case plugin::TimeFrame::Hours_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_2: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_4: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_6: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_8: C_FALLTHROUGH;
+        case plugin::TimeFrame::Hours_12:
+            return TimeframeGroup::Hours;
+        case plugin::TimeFrame::Days_1: C_FALLTHROUGH;
+        case plugin::TimeFrame::Days_3: C_FALLTHROUGH;
+        case plugin::TimeFrame::Weeks_1:
+            return TimeframeGroup::Days;
+        case plugin::TimeFrame::Months_1:
+            return TimeframeGroup::Months;
+    }
+}
+
+struct LabelRect
+{
+    LabelRect() = default;
+
+    LabelRect(const QRectF &rc, const std::pair<QString, bool> &data, int64_t ts) noexcept :
+        rect { rc },
+        text { data.first },
+        timestamp { ts },
+        useBold { data.second }
+    {
+    }
+
+    template <typename... T>
+    void setRect(T &&...args) noexcept
+    {
+        rect = QRectF { std::forward<T>(args)... };
+    }
+
+    explicit operator QRectF() const noexcept { return rect; }
+    explicit operator QString() const noexcept { return text; }
+
+    QRectF rect;
+    QString text;
+    int64_t timestamp { 0 };
+    bool useBold { false };
+};
+
+struct CandleTimeAxisItem::Impl
+{
+    Impl() :
+        axisFont { QApplication::font() },
+        boldAxisFont { axisFont },
+        borderPen { QPen(QColor(230, 230, 230), 0.5) },
+        tf { CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime },
+        labelRealSize { 0 },
+        linkTimestamp { 0 },
+        candleWidth { 10.0 },
+        candleSpacing { 2.0 },
+        scaleFactor { 0.0 },
+        priceAxisWidth { 0.0 },
+        maxTagLabelWidth { CandleTimeAxisItem::longestPossibleTagSize(axisFont) },
+        showTracker { true }
+    {
+        boldAxisFont.setWeight(QFont::Weight::Bold);
+    }
+
+    ~Impl() = default;
+
+public:
+    QFont axisFont;
+    QFont boldAxisFont;
+    QPen borderPen;
+
+    LabelRect trackerRect;
+
+    std::vector<QRectF> candleRects;
+    std::vector<LabelRect> labelRects;
+
+    QRectF scaledAxis;
+
+    CENTAUR_PLUGIN_NAMESPACE::TimeFrame tf;
+
+    std::size_t labelRealSize;
+
+    int64_t linkTimestamp;
+
+    qreal candleWidth;
+    qreal candleSpacing;
+    qreal scaleFactor;
+    qreal priceAxisWidth;
+    qreal maxTagLabelWidth;
+
+    bool showTracker;
+};
+
 CandleTimeAxisItem::CandleTimeAxisItem(QGraphicsItem *parent) :
-    QGraphicsRectItem(parent)
+    QGraphicsRectItem(parent),
+    _impl { new Impl }
 {
 }
 
 CandleTimeAxisItem::~CandleTimeAxisItem() = default;
 
-uint64_t CandleTimeAxisItem::timeFrameToMilliseconds(plugin::TimeFrame tf) noexcept
+int64_t CandleTimeAxisItem::timeFrameToMilliseconds(plugin::TimeFrame tf) noexcept
 {
     constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp sec   = 1000;
     constexpr CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp min   = sec * 60;
@@ -53,451 +179,567 @@ uint64_t CandleTimeAxisItem::timeFrameToMilliseconds(plugin::TimeFrame tf) noexc
     }
 }
 
-void CandleTimeAxisItem::setHeight(double height) noexcept
+auto CandleTimeAxisItem::getTimeframe() const noexcept -> CENTAUR_PLUGIN_NAMESPACE::TimeFrame
 {
-    m_height = height;
-    update();
+    return _impl->tf;
+}
+
+auto CandleTimeAxisItem::getCandleWidth() const noexcept -> qreal
+{
+    if (_impl->candleRects.empty())
+        return _impl->candleWidth;
+    else
+        return _impl->candleRects[0].width() - _impl->candleSpacing;
+}
+
+auto CandleTimeAxisItem::getCandleSpacing() const noexcept -> qreal
+{
+    return _impl->candleSpacing;
 }
 
 void CandleTimeAxisItem::setCandleParameters(double width, double spacing) noexcept
 {
-    m_candleWidth   = width;
-    m_candleSpacing = spacing;
+    _impl->candleWidth   = width;
+    _impl->candleSpacing = spacing;
 
-    if (m_candleWidth < 2)
-        m_candleWidth = 2;
-    if (m_candleSpacing < .05)
-        m_candleSpacing = 0;
+    if (_impl->candleWidth < 2)
+        _impl->candleWidth = 2;
+    else if (_impl->candleWidth > 30)
+        _impl->candleWidth = 30;
 
-    if (auto maxLabelWidth = getAxisLabelsWidth(false); m_candleWidth + m_candleSpacing > maxLabelWidth)
-    {
-        m_candleSpacing = 1;
-        m_candleWidth   = maxLabelWidth - 1;
-        if (m_candleWidth < 0)
-        {
-            m_candleWidth = 4;
-            qDebug() << "!!!" << m_candleSpacing << m_candleWidth;
-        }
-    }
-    calculateCandleRects();
-    recalculateAxisLabels();
+    if (_impl->candleSpacing < 0)
+        _impl->candleSpacing = 0;
+    else if (_impl->candleSpacing > 30)
+        _impl->candleSpacing = 30;
+
+    calculateRectangles();
 
     update();
 }
 
-void CandleTimeAxisItem::setCandleWidth(double width) noexcept
+void CandleTimeAxisItem::setCandleWidth(qreal width) noexcept
 {
     setCandleParameters(width, getCandleSpacing());
 }
 
-void CandleTimeAxisItem::setCandleSpacing(double spacing) noexcept
+void CandleTimeAxisItem::setCandleSpacing(qreal spacing) noexcept
 {
     setCandleParameters(getCandleWidth(), spacing);
 }
 
-void CandleTimeAxisItem::setLabelSpacing(double spacing) noexcept
-{
-    m_labelSpacing = spacing;
-    update();
-}
-
-void CandleTimeAxisItem::setTimestampRange(uint64_t min, uint64_t max) noexcept
-{
-    if (min <= m_absoluteMin)
-        return;
-
-    m_min = min;
-    m_max = max;
-
-    calculateCandleRects();
-    recalculateAxisLabels();
-    update();
-}
-
 void CandleTimeAxisItem::setTimeFrame(plugin::TimeFrame tf) noexcept
 {
-    m_tf = tf;
-    recalculateAxisLabels();
+    _impl->tf = tf;
+    calculateRectangles();
     update();
 }
 
-uint64_t CandleTimeAxisItem::fit() const
+std::pair<QString, bool> CandleTimeAxisItem::labelFromTimestamp(int64_t timestamp) noexcept
 {
-    const QRectF &thisRect = rect();
-
-    // The idea is to calculate, how many candles fit in the axis based on the parameters
-    const double maxCandleWidth = m_candleWidth + m_candleSpacing;
-    const double dWidth         = thisRect.width();
-
-    return static_cast<uint64_t>(dWidth / maxCandleWidth);
-}
-
-void CandleTimeAxisItem::mouseInScene(bool scene)
-{
-    m_mouseInScene = scene;
-    update();
-}
-
-QPair<double, uint64_t> CandleTimeAxisItem::isXPointInCandleFrame(double X) noexcept
-{
-    const QRectF &thisRect = rect();
-
-    for (const auto &[ts, rect] : m_candleRects)
-    {
-        QPointF testPoint { X, thisRect.top() + thisRect.height() / 2 };
-        if (rect.contains(testPoint))
-        {
-            return { thisRect.left() + rect.left() + rect.width() / 2, ts };
-        }
-    }
-
-    return { -1, 0 };
-}
-
-void CandleTimeAxisItem::calculateCandleRects() noexcept
-{
-    const QRectF &thisRect = rect();
-    m_candleRects.clear();
-    const double maxCandleWidth = m_candleWidth + m_candleSpacing;
-    const uint64_t timeSteps    = timeFrameToMilliseconds(m_tf);
-    for (auto rc = 0ull; rc < fit(); ++rc)
-    {
-        const double newXPosition = maxCandleWidth * static_cast<double>(rc);
-        const QRectF labelRect { newXPosition, thisRect.top(), maxCandleWidth, thisRect.height() };
-
-        m_candleRects.emplace(m_min + (timeSteps * rc), labelRect);
-    }
-    // m_candleRects.red();
-
-    /// Must recalculate, because this function is called every window resize by CandleChartWidget
-    recalculateAxisLabels();
-}
-
-void CandleTimeAxisItem::recalculateAxisLabels() noexcept
-{
-    const auto widestFrame = getAxisLabelsWidth();
-
-    const QRectF &thisRect = rect();
-    // Now we can calculate how many label rectangles fit in the axis width
-    double maxWidth = static_cast<double>(widestFrame) + m_labelSpacing;
-
-    // By now, m_candleRects, must be set, so we must see, how many of this candle rectangles can fit one of this max width
-    using qtSizeType    = decltype(m_candleRects.size());
-    qtSizeType rectTest = 1;
-    bool canBeFitted    = false;
-    while (!canBeFitted && rectTest < m_candleRects.size())
-    {
-        double size = 0;
-        for (qtSizeType i = 0; i < rectTest; ++i)
-            size += m_candleRects.begin()->second.width();
-
-        if (size >= maxWidth)
-        {
-            canBeFitted = true;
-            maxWidth    = size; // set maxWidth to this new size. This will make the consequence shift calculation way easier
-        }
-        else
-            ++rectTest;
-    }
-
-    // qDebug() << rectTest << canBeFitted;
-
-    if (!canBeFitted)
-    {
-        qDebug() << "Time axis can not hold the time labels";
-        m_labelRects.clear();
-        return;
-    }
-
-    // Now we have to make sure that, a candle rectangle is centered with a label rectangle, this is to ensure the user that the candle and the time at the cursor position is correct
-    // This is easy when the "rectTest" is odd, because, these centers are aligned, the problem arises when "rectTest" is even because, the center of the label is centered in a candle rectangle limit
-    // so we must shift the label rectangles to the right to make those centers align
-    const double shift = [&rectTest](double candleRectWidth) -> double {
-        if ((rectTest % 2) == 0)
-        {
-            // The shift is simply the half of a candle rect
-            return candleRectWidth / 2;
-        }
-        return 0; // Odd rectTest
-    }(m_candleRects.begin()->second.width());
-
-    // Now we have to calculate the axis time shift.
-    // This is a problem because the labels are calculated based on m_min, and the first label, in the worst case scenario, is not centered in the first candle
-    // In this situation, the first label has not the same shift as the rest of the labels
-    auto firstTimeShiftSteps = static_cast<uint64_t>((rectTest / 2));
-    auto timeShifts          = static_cast<uint64_t>(rectTest);
-
-    const auto startTime = m_min + (timeFrameToMilliseconds(m_tf) * firstTimeShiftSteps);
-
-    // Now the shift must reduce from the total width of the axis, otherwise, we can be painting outside the axis
-    const double maxLabels  = (thisRect.width() - shift) / maxWidth; // Number of labels
-    const auto intMaxLabels = static_cast<uint64_t>(maxLabels);
-
-    m_labelRects.clear();
-    m_gridLines.clear();
-    QList<QPair<QString, QFont *>> labelData;
-    getAxisLabelsWidth(true, &labelData, startTime, intMaxLabels, timeShifts);
-
-    if (labelData.isEmpty())
-        return;
-
-    for (auto k = 0ull; k < intMaxLabels; ++k)
-    {
-        const double newXPosition = static_cast<double>(k) * maxWidth + shift;
-        const QRectF rc { newXPosition, thisRect.top(), maxWidth, thisRect.height() };
-
-        m_gridLines.emplace_back(newXPosition + (maxWidth / 2));
-        m_labelRects.emplace_back(labelData[static_cast<qint64>(k)].first, rc, labelData[static_cast<qint64>(k)].second);
-    }
-    m_gridLines.shrink_to_fit();
-    m_labelRects.shrink_to_fit();
-
-    // qDebug() << ppp << m_labelRects.size();
-}
-
-double CandleTimeAxisItem::getAxisLabelsWidth(bool retrievingMode, QList<QPair<QString, QFont *>> *labels, uint64_t startAtTimestamp, uint64_t numberOfLabels, uint64_t shifts) noexcept
-{
+    bool useBold = false;
     QString labelFormat {};
 
-    switch (m_tf)
+    switch (groupTimeFrame(_impl->tf))
     {
-
-        case plugin::TimeFrame::nullTime: labelFormat = ""; break;
-        case plugin::TimeFrame::Seconds_1: C_FALLTHROUGH;
-        case plugin::TimeFrame::Seconds_5: C_FALLTHROUGH;
-        case plugin::TimeFrame::Seconds_10: C_FALLTHROUGH;
-        case plugin::TimeFrame::Seconds_30: C_FALLTHROUGH;
-        case plugin::TimeFrame::Seconds_45:
+        case TimeframeGroup::nullTime:
+            labelFormat = "";
+            break;
+        case TimeframeGroup::Seconds:
             labelFormat = "mm:ss";
             break;
-        case plugin::TimeFrame::Minutes_1: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_2: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_3: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_5: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_10: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_15: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_30: C_FALLTHROUGH;
-        case plugin::TimeFrame::Minutes_45: C_FALLTHROUGH;
-        case plugin::TimeFrame::Hours_1: C_FALLTHROUGH;
-        case plugin::TimeFrame::Hours_2: C_FALLTHROUGH;
-        case plugin::TimeFrame::Hours_4: C_FALLTHROUGH;
-        case plugin::TimeFrame::Hours_6: C_FALLTHROUGH;
-        case plugin::TimeFrame::Hours_8: C_FALLTHROUGH;
-        case plugin::TimeFrame::Hours_12:
+        case TimeframeGroup::Minutes:
+            C_FALLTHROUGH;
+        case TimeframeGroup::Hours:
             labelFormat = "HH:mm";
             break;
-        case plugin::TimeFrame::Days_1: C_FALLTHROUGH;
-        case plugin::TimeFrame::Days_3: C_FALLTHROUGH;
-        case plugin::TimeFrame::Weeks_1:
+        case TimeframeGroup::Days:
             labelFormat = "dd";
             break;
-        case plugin::TimeFrame::Months_1:
+        case TimeframeGroup::Months:
             labelFormat = "MMM";
             break;
     }
 
-    if (labelFormat.isEmpty())
-        return 0;
+    const QDateTime dt = QDateTime::fromMSecsSinceEpoch(timestamp);
+    const QTime tm     = dt.time();
+    const QDate da     = dt.date();
 
-    // Case exceptions are:
-    // IF  labelFormat = "mm:ss" AND timestamp = square minute THEN LabelFormat = "mm";
-    // IF labelFormat = "HH:mm" AND (timestamp = square hour OR timestamp = square day OR timestamp = square month) THEN LabelFormat = "HH" FOR HOUR; LabelFormat = "dd" FOR DAY; LabelFormat="MMM" for months;
-    // IF labelFormat = "DD" AND (timestamp = square month or timestamp square year THEN LabelFormat = "MMM" for month; LabelFormat="yyyy" for years;
-    // IF LabelFormat = "MMM" and (timestamp = square year) THEN LabelFormat = "yyyy"
-    // Considering that all exceptions will have a Bold Font Style
-
-    const uint64_t timeSteps = timeFrameToMilliseconds(m_tf);
-    const uint64_t loopSteps = !retrievingMode ? timeSteps : 1;
-
-    // Generate a set of strings to determine the largest
-    const QString cacheFormat = labelFormat;
-    QFont *fontUsed;
-    int widestFrame = 0;
-
-    const uint64_t startAt = [&]() {
-        if (!retrievingMode)
-            return m_min;
-        return 0ull;
-    }();
-
-    const uint64_t endAt = [&]() {
-        if (!retrievingMode)
-            return m_max;
-        return numberOfLabels;
-    }();
-
-    for (auto i = startAt; i < endAt; i += loopSteps)
+    if (tm.hour() == 0 && tm.second() == 0 && tm.minute() == 0)
     {
-        const auto ms = static_cast<qint64>(!retrievingMode ? i : startAtTimestamp + (i * timeSteps * shifts));
-        QDateTime dt  = QDateTime::fromMSecsSinceEpoch(ms);
-        auto time     = dt.time();
-        auto date     = dt.date();
-        labelFormat   = cacheFormat;
-        fontUsed      = &m_normalFont;
-
-        if (labelFormat == "mm:ss" && time.second() == 0)
-            labelFormat = "mm";
-        else if (labelFormat == "HH:mm")
+        useBold = true;
+        if (da.day() == 1)
         {
-            if (time.minute() == 0 && time.second() == 0)
-            {
-                // HH:00:00
-                labelFormat = "HH";
-            }
-
-            if (time.hour() == 0 && time.minute() == 0 && time.second() == 0)
-            {
-                // day 00:00:00
-                labelFormat = "dd";
-            }
-
-            if (date.day() == 1 && time.hour() == 0 && time.minute() == 0 && time.second() == 0)
-            {
-                // First of each month at 00:00:00
-                labelFormat = "MMM";
-            }
-        }
-        else if (labelFormat == "dd")
-        {
-            if (date.day() == 1 && time.hour() == 0 && time.minute() == 0 && time.second() == 0)
-            {
-                // First of each month at 00:00:00
-                labelFormat = "MMM";
-            }
-
-            if (date.month() == 1 && date.day() == 1 && time.hour() == 0 && time.minute() == 0 && time.second() == 0)
-            {
-                // First of january at 00:00:00
+            if (da.month() == 1)
                 labelFormat = "yyyy";
-            }
+            else
+                labelFormat = "MMM";
         }
-        else if (labelFormat == "MMM")
-        {
-            if (date.month() == 1 && date.day() == 1 && time.hour() == 0 && time.minute() == 0 && time.second() == 0)
-            {
-                // First of january at 00:00:00
-                labelFormat = "yyyy";
-            }
-        }
-
-        if (labelFormat != cacheFormat)
-            fontUsed = &m_boldFont;
-
-        const auto string = dt.toString(labelFormat);
-
-        const QFontMetrics fontMetrics(*fontUsed);
-        auto size = fontMetrics.size(Qt::TextSingleLine, string);
-
-        // qDebug() << "###" << size.width() << widestFrame;
-        widestFrame = std::max(size.width(), widestFrame); // All frames will have this
-
-        if (retrievingMode)
-        {
-            labels->emplace_back(string, fontUsed);
-        }
-
-        // qDebug() << retrievingMode << string;
+        else
+            labelFormat = "d";
     }
 
-    return widestFrame;
-}
+    if (labelFormat.isEmpty())
+        return { QString(), false };
 
-void CandleTimeAxisItem::setCursorPos(uint64_t timestamp) noexcept
-{
-    m_cursorIndex = timestamp;
-
-    // This information does not need to be updated on every paint event, since, the Y cursor is always fixed in the center of a candle
-    const QRectF &thisRect = rect();
-    QFontMetrics metrics(m_normalFont);
-    const QString timeFormat = [&]() {
-        const uint64_t candleTimeframe = timeFrameToMilliseconds(m_tf);
-        if (candleTimeframe < 3'600'000) // 3,600,000 is the number of milliseconds in a minute, thus, if the time is less a minute we must include the seconds on the label
-            return "dd-MM-yyyy HH:mm:ss";
-        else
-            return "dd-MM-yyyy HH:mm";
-    }();
-
-    // const auto &time       = m_candleRects.at(m_cursorIndex);
-    QDateTime dt = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(timestamp));
-    m_infoLabel  = dt.toString(timeFormat);
-    auto size    = metrics.size(Qt::TextSingleLine, m_infoLabel);
-
-    const auto width       = static_cast<qreal>(size.width());
-    const auto &candleRect = m_candleRects.at(timestamp);
-    // Center the label to candle rectangle center
-    auto candleCenterXPos = (thisRect.left() + candleRect.left() + candleRect.width() / 2) - (width / 2);
-
-    if (candleCenterXPos < thisRect.left())
-        candleCenterXPos = 0; // Prevent hiding the label to the left
-    if ((candleCenterXPos + width) > thisRect.width())
-        candleCenterXPos = thisRect.width() - width; // Prevent hiding the label to the right
-
-    m_infoRect = QRectF { candleCenterXPos, thisRect.top(), width, thisRect.height() };
-
-    update();
+    // qDebug() << dt << useBold << dt.toMSecsSinceEpoch() << timestamp;
+    return { dt.toString(labelFormat), useBold };
 }
 
 void CandleTimeAxisItem::paint(QPainter *painter, C_UNUSED const QStyleOptionGraphicsItem *option, C_UNUSED QWidget *widget)
 {
     const QRectF &thisRect = rect();
 
-    painter->setPen(QPen(QColor(255, 0, 0)));
-    painter->setBrush(QBrush(QColor(40, 40, 40)));
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(25, 25, 25));
     painter->drawRect(thisRect);
 
-    if (m_tf == CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime)
+    // Draw the border
+    painter->setPen(_impl->borderPen);
+    painter->drawLine(QLineF { 0, thisRect.top(), thisRect.right() - _impl->priceAxisWidth, thisRect.top() });
+
+    if (_impl->tf == CENTAUR_PLUGIN_NAMESPACE::TimeFrame::nullTime)
     {
         // No paint
         QGraphicsRectItem::paint(painter, option, widget);
         return;
     }
-    /*
 
-    for (const auto &rc : m_candleRects)
+    for (const auto &rc : _impl->candleRects)
     {
-        painter->setPen(QColor(0, 255, 0));
-        painter->drawRect(rc.second);
+        painter->drawRect(rc);
     }
-    */
+
+    painter->setPen(QColor(200, 255, 255));
+
+    for (const auto &item : _impl->labelRects)
+    {
+        if (item.rect.right() > _impl->scaledAxis.right() || item.rect.left() < _impl->scaledAxis.left())
+            continue;
+
+        if (item.useBold)
+            painter->setBrush(QColor(255, 0, 255, 120));
+        else
+            painter->setBrush(QColor(23, 105, 123, 200));
+
+        painter->drawRect(QRectF(item));
+
+        if (item.useBold)
+        {
+            painter->save();
+            painter->setFont(_impl->boldAxisFont);
+        }
+        painter->drawText(
+            QRectF(item),
+            QString(item),
+            Qt::AlignVCenter | Qt::AlignHCenter);
+
+        if (item.useBold)
+            painter->restore();
+    }
+
+    if (_impl->showTracker)
+    {
+        painter->setBrush(QColor(80, 80, 85));
+        painter->drawRect(QRectF(_impl->trackerRect));
+        painter->drawText(QRectF(_impl->trackerRect), QString(_impl->trackerRect), Qt::AlignVCenter | Qt::AlignHCenter);
+    }
+}
+
+void CandleTimeAxisItem::scaleTime(qreal factor) noexcept
+{
+    _impl->scaleFactor = factor > 0 ? _impl->scaleFactor + 5.0 : _impl->scaleFactor - 5.0;
+
+    if (_impl->scaleFactor < 1)
+        _impl->scaleFactor = 1;
+    if (_impl->scaleFactor > 500)
+        _impl->scaleFactor = 500;
+
+    calculateRectangles();
+
+    update();
+}
+
+void CandleTimeAxisItem::calculateRectangles()
+{
+    // The idea is, to have two set of rectangles
+    // One with labels and the other with the candles
+    // Being the set of labels totally dependant of the set of candle rects
+    const QRectF &thisRect = rect();
+    _impl->scaledAxis      = thisRect;
+    _impl->scaledAxis.setRight(thisRect.right() - _impl->priceAxisWidth);
+
+    if (_impl->scaledAxis.right() < _impl->scaledAxis.left())
+        return;
+
+    const qreal totalWidth = _impl->candleWidth + _impl->candleSpacing;
+
+    _impl->scaledAxis.setLeft(_impl->scaledAxis.left() - _impl->scaleFactor * totalWidth);
+
+    // Round to the lowest to prevent clipping rects
+    const auto axisTotalPossibleTags = static_cast<uint64_t>(std::floor((thisRect.width() - _impl->priceAxisWidth) / totalWidth));
+    const auto dTotalTags            = static_cast<qreal>(axisTotalPossibleTags);
+
+    if (!axisTotalPossibleTags)
+        return;
+
+    if (_impl->candleRects.size() != axisTotalPossibleTags)
+    {
+        _impl->candleRects.clear();
+        _impl->candleRects.reserve(axisTotalPossibleTags);
+        for (auto i = 0ull; i < axisTotalPossibleTags; ++i)
+            _impl->candleRects.emplace_back(0, 0, 0, 0);
+    }
+
+    const qreal actualWidth         = _impl->scaledAxis.width() / dTotalTags;
+    const qreal relativeMiddlePoint = actualWidth / 2.0;
+    qreal left                      = _impl->scaledAxis.left();
+    const qreal leftLabelShift      = _impl->maxTagLabelWidth / 2.0;
+
+    _impl->labelRects.clear();
+
+    QList<qreal> anchors;
+    for (auto i = 0ull; i < axisTotalPossibleTags; ++i)
+    {
+        _impl->candleRects[i].setRect(left, _impl->scaledAxis.top(), actualWidth, _impl->scaledAxis.height());
+        if (isTimestampAnchor(timestampFromPoint(left + relativeMiddlePoint)))
+            anchors.emplace_back(left + relativeMiddlePoint);
+
+        left += actualWidth;
+    }
+
+    if (anchors.empty())
+    {
+        const auto axisMiddlePoint = _impl->scaledAxis.center().x();
+        if (const auto index = indexFromPoint(axisMiddlePoint); index >= 0)
+            anchors.emplaceBack(_impl->candleRects[static_cast<std::size_t>(index)].center().x());
+    }
+
+    const qreal distance = [&]() {
+        if (anchors.size() > 1)
+        {
+            // distance is constant across all anchors
+            return std::abs(anchors[0] - anchors[1]);
+        }
+        else
+        {
+            return (_impl->scaledAxis.right() + leftLabelShift) - anchors[0];
+        }
+    }();
+
+    _impl->labelRects.clear();
+
+    // set the anchors in the edges
+    anchors.push_back(anchors.last() + distance);
+    anchors.push_front(anchors.front() - distance);
+
+    QList<QRectF> rects;
+    rects.emplace_back(
+        anchors.front() - leftLabelShift,
+        _impl->scaledAxis.top(),
+        _impl->maxTagLabelWidth,
+        _impl->scaledAxis.height());
+    anchors.pop_front();
+
+    while (!anchors.empty())
+    {
+
+        QRectF savedRect {
+            anchors.front() - leftLabelShift,
+            _impl->scaledAxis.top(),
+            _impl->maxTagLabelWidth,
+            _impl->scaledAxis.height()
+        };
+        rects.emplace_back(savedRect);
+        anchors.pop_front();
+
+        while (!rects.empty())
+        {
+            qreal currentDistance = std::abs((rects.back().left() - rects[rects.size() - 2].left())) / 2.0;
+
+            QRectF newRect {
+                rects.back().left() - currentDistance,
+                _impl->scaledAxis.top(),
+                _impl->maxTagLabelWidth,
+                _impl->scaledAxis.height()
+            };
+
+            const qreal middleNewRect  = newRect.center().x();
+            const auto candleRectIndex = indexFromPoint(middleNewRect);
+            if (candleRectIndex >= 0)
+            {
+                const auto &candleRect       = _impl->candleRects[static_cast<std::size_t>(candleRectIndex)];
+                const auto candleMiddlePoint = candleRect.center().x();
+
+                const auto diff = std::abs(middleNewRect - candleMiddlePoint);
+                if (!qFuzzyCompare(diff, 0))
+                {
+                    // Centers are not aligned
+                    if (middleNewRect > candleMiddlePoint)
+                    {
+                        // The new rect center is displaced towards the left of the middle candle rect
+                        newRect.moveLeft(newRect.left() - diff);
+                    }
+                    else
+                    {
+                        // The new rect center is displaced towards the right of the middle candle rect
+                        newRect.moveLeft(newRect.left() + diff);
+                    }
+                }
+            }
+
+            bool intersects = false;
+
+            std::for_each(rects.begin(), rects.end(), [&](const auto &rc) {
+                if (rc.intersects(newRect))
+                    intersects = true;
+            });
+
+            if (!intersects)
+                rects.insert(rects.size() - 1, newRect);
+            else
+            {
+                const int64_t timestamp = timestampFromPoint(rects.back().left() + leftLabelShift);
+                _impl->labelRects.emplace_back(rects.back(), labelFromTimestamp(timestamp), timestamp);
+                rects.pop_back();
+            }
+
+            if (rects.size() == 1)
+            {
+                const int64_t timestamp = timestampFromPoint(rects.back().left() + leftLabelShift);
+                _impl->labelRects.emplace_back(rects.back(), labelFromTimestamp(timestamp), timestamp);
+                rects.pop_back();
+            }
+        }
+        // At this point what we really need is the saved rect
+        rects.push_back(savedRect);
+    }
+}
+
+void CandleTimeAxisItem::updatePriceAxisWidth(qreal width) noexcept
+{
+    _impl->priceAxisWidth = width;
+}
+
+void CandleTimeAxisItem::setTimestamp(int64_t timestamp) noexcept
+{
+    _impl->linkTimestamp = timestamp;
+}
+
+auto CandleTimeAxisItem::timestampFromPoint(qreal point) const noexcept -> int64_t
+{
+    const auto index = indexFromPoint(point);
+    if (index < 0)
+        return 0.0;
+
+    const auto axisMilliseconds = CandleTimeAxisItem::timeFrameToMilliseconds(_impl->tf);
+
+    const auto total = _impl->linkTimestamp - (static_cast<int64_t>(_impl->candleRects.size()) - index) * axisMilliseconds;
+
+    return total;
+}
+
+auto CandleTimeAxisItem::middle(qreal point) const noexcept -> qreal
+{
+    const auto index = indexFromPoint(point);
+    if (index < 0)
+        return 0.0;
+    return _impl->candleRects[static_cast<std::size_t>(index)].left() + _impl->candleRects[static_cast<std::size_t>(index)].width() / 2;
+}
+
+auto CandleTimeAxisItem::indexFromPoint(qreal point) const noexcept -> int64_t
+{
+    const auto closestIndex = static_cast<int64_t>(std::floor((point - _impl->scaledAxis.left()) / (_impl->scaledAxis.width() / static_cast<qreal>(_impl->candleRects.size()))));
+    if (closestIndex < 0 || closestIndex >= static_cast<int64_t>(_impl->candleRects.size()))
+        return -1;
+    return closestIndex;
+}
+
+qreal CandleTimeAxisItem::longestPossibleTagSize(const QFont &font) noexcept
+{
+    // Even in seconds scale this will be the longest time format
+    QString time { "HH:mm" };
+    QString month { "MMM" };
+    QString year { "yyyy" };
+
+    QFont ft = font;
+    ft.setWeight(QFont::Weight::Bold);
+    QFontMetrics fontMetrics { ft };
+
+    return std::max({
+        fontMetrics.horizontalAdvance(time),
+        fontMetrics.horizontalAdvance(month),
+        fontMetrics.horizontalAdvance(year),
+    });
+}
+
+void CandleTimeAxisItem::setAxisFont(const QFont &font) noexcept
+{
+    _impl->axisFont         = font;
+    _impl->maxTagLabelWidth = longestPossibleTagSize(_impl->axisFont);
+}
+
+void CandleTimeAxisItem::updateTracker(qreal x) noexcept
+{
+    if (!isTrackerVisible())
+        return;
+
+    QString labelFormat;
+    switch (groupTimeFrame(_impl->tf))
+    {
+        case TimeframeGroup::nullTime: labelFormat = ""; break;
+        case TimeframeGroup::Seconds:
+            labelFormat = "ddd d MMMM yy HH:mm:ss";
+            break;
+        case TimeframeGroup::Minutes:
+            C_FALLTHROUGH;
+        case TimeframeGroup::Hours:
+            labelFormat = "ddd d MMMM yy HH:mm";
+            break;
+        case TimeframeGroup::Days:
+            C_FALLTHROUGH;
+        case TimeframeGroup::Months:
+            labelFormat = "ddd d MMMM yy";
+            break;
+    }
+
+    auto index              = indexFromPoint(x);
+    QDateTime dt            = QDateTime::fromMSecsSinceEpoch(timestampFromPoint(x));
+    _impl->trackerRect.text = dt.toString(labelFormat);
+
+    QFontMetrics metric { _impl->axisFont };
+    const auto advance = static_cast<qreal>(metric.horizontalAdvance(_impl->trackerRect.text)) + 10.0;
+
+    _impl->trackerRect.rect.setRect(
+        (index < 0
+                ? x
+                : _impl->candleRects[static_cast<std::size_t>(index)].center().x())
+            - advance / 2,
+        _impl->scaledAxis.top(),
+        advance,
+        _impl->scaledAxis.height());
+
+    const auto views = scene()->views();
+    if (!views.empty())
+    {
+        const auto view   = views[0];
+        const auto point0 = view->mapFromScene(_impl->trackerRect.rect.left(), 0.0);
+        const auto point1 = view->mapFromScene(_impl->trackerRect.rect.right(), 0.0);
+
+        if (point0.x() < 0)
+            _impl->trackerRect.rect.moveLeft(view->mapToScene(0, 0).x());
+
+        if (point1.x() > view->rect().right() - _impl->priceAxisWidth)
+            _impl->trackerRect.rect.moveLeft(
+                view->mapToScene(
+                        view->rect().right() - static_cast<int>(_impl->priceAxisWidth + _impl->trackerRect.rect.width()), 0)
+                    .x());
+    }
+
+    update();
+}
+
+void CandleTimeAxisItem::hideTracker() noexcept
+{
+    _impl->showTracker = false;
+}
+
+void CandleTimeAxisItem::showTracker() noexcept
+{
+    _impl->showTracker = true;
+}
+
+auto CandleTimeAxisItem::isTrackerVisible() const noexcept -> bool
+{
+    return _impl->showTracker;
+}
+
+bool CandleTimeAxisItem::isTimestampAnchor(int64_t timestamp) noexcept
+{
+    const QDateTime dt = QDateTime::fromMSecsSinceEpoch(timestamp);
+
+    QTime t = dt.time();
+    // Anchor every day
+    if (t.second() == 0 && t.minute() == 0 && t.hour() == 0)
+        return true;
     /*
-        for (const auto &label : m_labelRects)
+
+        switch (groupTimeFrame(_impl->tf))
         {
+            case TimeframeGroup::nullTime:
+                return false;
+            case TimeframeGroup::Seconds:
+                {
+                    // Anchor is a whole minute
+                    QTime t = dt.time();
+                    if (t.second() == 0)
+                        return true;
+                }
+                break;
+            case TimeframeGroup::Minutes:
+                {
+                    // Anchor is every hour
+                    QTime t = dt.time();
+                    if (t.second() == 0 && t.minute() == 0 && t.hour() % 2 == 0)
+                        return true;
+                }
+                break;
+            case TimeframeGroup::Hours:
+                {
+                    QTime t = dt.time();
+                    // Anchor every day
+                    if (t.second() == 0 && t.minute() == 0 && t.hour() == 0)
+                        return true;
+                }
+                break;
+            case TimeframeGroup::Days:
+                {
+                    QTime t = dt.time();
+                    QDate d = dt.date();
 
-            const auto &labelText = std::get<0>(label);
-            const auto &rect      = std::get<1>(label);
-            const auto &font      = std::get<2>(label);
-            // painter->drawRect(rect);
-            painter->setPen(QPen(QColor(200, 200, 200)));
-            painter->setFont(*font);
-            painter->drawText(rect, Qt::AlignHCenter | Qt::AlignVCenter, labelText);
-        }
+                    // Anchor every month
+                    if (d.day() == 1 && t.second() == 0 && t.minute() == 0 && t.hour() == 0)
+                        return true;
+                }
 
-        if (m_cursorIndex > 0 && m_mouseInScene)
-        {
-            painter->setPen(QColor(80, 80, 80));
-            painter->setBrush(QBrush(QColor(80, 80, 80)));
-            painter->drawRect(m_infoRect);
-            painter->setPen(QColor(220, 220, 220));
-            painter->setFont(m_normalFont);
-            painter->drawText(m_infoRect, Qt::AlignHCenter | Qt::AlignVCenter, m_infoLabel);
-        }
-
-        painter->setPen(QColor(150, 150, 150));
-        painter->drawLine(QLineF { thisRect.left(), thisRect.top(), thisRect.width(), thisRect.top() });
-        painter->drawLine(QLineF { thisRect.width(), thisRect.top(), thisRect.width(), thisRect.bottom() });*/
+                break;
+            case TimeframeGroup::Months:
+                {
+                    QTime t = dt.time();
+                    QDate d = dt.date();
+                    // Anchor every year
+                    if (d.month() == 1 && d.day() == 1 && t.second() == 0 && t.minute() == 0 && t.hour() == 0)
+                        return true;
+                }
+                break;
+        }*/
+    return false;
 }
 
-QList<double> CandleTimeAxisItem::getGridLinePositions() noexcept
+auto CandleTimeAxisItem::getGridLinePositions() const noexcept -> QList<qreal>
 {
-    return m_gridLines;
+    QList<double> lines;
+
+    for (const auto &l : _impl->labelRects)
+    {
+        lines.emplace_back(l.rect.center().x());
+    }
+
+    return lines;
 }
 
-QPair<double, bool> CandleTimeAxisItem::getGridFrame(uint64_t timestamp)
+auto CandleTimeAxisItem::pointFromTimestamp(int64_t timestamp) const noexcept -> qreal
 {
-    auto iter = m_candleRects.find(timestamp);
-    if (iter == m_candleRects.end())
-        return { 0, false };
-    return { iter->second.left() + (iter->second.width() / 2) - (m_candleWidth / 2), true };
+    const auto axisMilliseconds = static_cast<qreal>(CandleTimeAxisItem::timeFrameToMilliseconds(_impl->tf));
+
+    const auto sizeReal = static_cast<qreal>(_impl->candleRects.size());
+    const auto timeDiff = static_cast<qreal>(timestamp - _impl->linkTimestamp);
+    const auto sizeRel  = _impl->scaledAxis.width() / sizeReal;
+
+    const auto index = std::floor((timeDiff / axisMilliseconds) + sizeReal);
+    if (index < 0 || static_cast<std::size_t>(index) >= _impl->candleRects.size())
+        return -1;
+
+    return _impl->candleRects[static_cast<std::size_t>(index)].center().x();
 }
 
 END_CENTAUR_NAMESPACE
