@@ -42,13 +42,6 @@ SET(CMAKE_AUTOUIC ON)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 
-
-FIND_FILE(EXCHANGE_PLUGIN
-        libExchangeRate.dylib
-        PATHS ${CMAKE_BINARY_DIR}/bin/Centaur.app/Contents/Plugins
-        NO_CACHE)
-
-
 SET(CENT_SOURCE
         src/main.cpp
         src/CentaurApp.cpp
@@ -196,9 +189,9 @@ TARGET_LINK_LIBRARIES(Centaur PRIVATE ${QRENCODE_LIBRARIES})
 TARGET_LINK_LIBRARIES(Centaur PRIVATE cryptopp-static)
 
 # Local Libraries
-TARGET_LINK_LIBRARIES(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
-TARGET_LINK_LIBRARIES(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
-TARGET_LINK_LIBRARIES(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libcui.dylib)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE Protocol)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE uuid)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE cui)
 
 IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # Control clang warnings
