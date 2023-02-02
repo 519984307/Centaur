@@ -1,31 +1,31 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.24)
 
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(FMT REQUIRED)
-find_package(RapidJSON REQUIRED)
-find_package(SQLite3 REQUIRED)
-find_package(libwebsockets REQUIRED)
-find_package(OpenSSL REQUIRED)
-find_package(re2)
+FIND_PACKAGE(FMT REQUIRED)
+FIND_PACKAGE(RapidJSON REQUIRED)
+FIND_PACKAGE(SQLite3 REQUIRED)
+FIND_PACKAGE(libwebsockets REQUIRED)
+FIND_PACKAGE(OpenSSL REQUIRED)
+FIND_PACKAGE(re2)
 
 IF (UNIX AND NOT APPLE)
-    add_compile_definitions(P_LINUX)
-    message("Linux Platform detected")
+    ADD_COMPILE_DEFINITIONS(P_LINUX)
+    MESSAGE(STATUS "BTRADER: Linux Platform detected")
 ELSEIF (WIN32)
-    add_compile_definitions(P_WINDOWS)
-    message("Windows Platform detected")
-ELSEIF (APPLE)
-    add_compile_definitions(P_APPLE)
-    message("Apple Platforms detected")
-    set(PLATFORM_INDEPENDENT_FILES
+    ADD_COMPILE_DEFINITIONS(P_WINDOWS)
+    MESSAGE(STATUS "BTRADER: Windows Platform detected")
+ELSEIF (UNIX AND APPLE)
+    ADD_COMPILE_DEFINITIONS(P_APPLE)
+    MESSAGE(STATUS "BTRADER: Apple Platforms detected")
+    SET(PLATFORM_INDEPENDENT_FILES
             src/apple/AppleDirectory.mm
             include/apple/AppleDirectory.h
             src/SpotStreams.cpp)
 ELSE ()
-    message(FATAL_ERROR "Unknown target platform")
+    MESSAGE(FATAL_ERROR "BTRADER: Unknown target platform")
 ENDIF ()
 
 
@@ -40,19 +40,19 @@ SET(INCLUDE_FILES
         ../common/Tools.hpp
         include/SpotStreams.hpp)
 
-SET(SOURCE_FILE
+SET(SOURCE_FILES
         src/main.cpp
         src/KeysLoader.cpp
         src/TraderApplication.cpp
         src/ClientSocket.cpp)
 
-add_executable(btrader
+ADD_EXECUTABLE(btrader
         ${PLATFORM_INDEPENDENT_FILES}
-        ${SOURCE_FILE}
+        ${SOURCE_FILES}
         ${INCLUDE_FILES})
 
 
-target_include_directories(btrader PRIVATE
+TARGET_INCLUDE_DIRECTORIES(btrader PRIVATE
         include
         ../common
         ../../Library/Protocol/include
@@ -61,29 +61,39 @@ target_include_directories(btrader PRIVATE
         ../../include)
 
 
-target_link_libraries(btrader PRIVATE fmt::fmt)
-target_link_libraries(btrader PRIVATE SQLite3)
-target_link_libraries(btrader PRIVATE ${OPENSSL_LIBRARIES})
-target_link_libraries(btrader PRIVATE websockets)
-target_link_libraries(btrader PRIVATE re2::re2)
+TARGET_LINK_LIBRARIES(btrader PRIVATE fmt::fmt)
+TARGET_LINK_LIBRARIES(btrader PRIVATE SQLite3)
+TARGET_LINK_LIBRARIES(btrader PRIVATE ${OPENSSL_LIBRARIES})
+TARGET_LINK_LIBRARIES(btrader PRIVATE websockets)
+TARGET_LINK_LIBRARIES(btrader PRIVATE re2::re2)
 
 # Local Libraries
-target_link_libraries(btrader PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
-target_link_libraries(btrader PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
-target_link_libraries(btrader PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
+TARGET_LINK_LIBRARIES(btrader PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+TARGET_LINK_LIBRARIES(btrader PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
+TARGET_LINK_LIBRARIES(btrader PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
 
-IF (APPLE)
-    target_link_libraries(btrader PRIVATE "-framework Foundation")
+IF (UNIX AND APPLE)
+    TARGET_LINK_LIBRARIES(btrader PRIVATE "-framework Foundation")
 ENDIF ()
 
 
-set_source_files_properties(
-        ${CENT_INCLUDE}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
 
-set_source_files_properties(
-        ${CENT_SOURCE}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${INCLUDE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+    SET_SOURCE_FILES_PROPERTIES(
+            ${SOURCE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+
+    MESSAGE(STATUS "btrader: Clang detected - Warning Level Set")
+ENDIF ()
+
+

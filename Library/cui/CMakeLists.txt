@@ -1,24 +1,35 @@
-cmake_minimum_required(VERSION 3.24)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.25)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_COLOR_DIAGNOSTICS ON)
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_COLOR_DIAGNOSTICS ON)
 
-set(CMAKE_PREFIX_PATH ${CENTAUR_QT_DIRECTORY})
-
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
-find_package(Qt6 COMPONENTS
+SET(Qt6_Components
         Core
         Gui
         Widgets
         Sql
-        Concurrent
-        REQUIRED)
+        Concurrent)
+
+IF (DEFINED CENTAUR_ENV_DETECTED)
+    MESSAGE(STATUS "CUI: Qt6 package in environment variable")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED
+            PATHS ${CENTAUR_ENV_DETECTED})
+ELSE ()
+    MESSAGE(STATUS "CUI: Qt6 package in default paths")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED)
+ENDIF ()
 
 
-set(INCLUDE_FILES
+SET(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTORCC ON)
+SET(CMAKE_AUTOUIC ON)
+
+
+SET(INCLUDE_FILES
         include/EditorDelegate.hpp
         include/OptionsWidget.hpp
         include/OptionsTableWidget.hpp
@@ -40,7 +51,7 @@ set(INCLUDE_FILES
         include/CandleTimeAxisItem.hpp
         )
 
-set(SOURCE_FILES
+SET(SOURCE_FILES
         src/EditorDelegate.cpp
         src/OptionsWidget.cpp
         src/OptionsTableWidget.cpp
@@ -60,47 +71,54 @@ set(SOURCE_FILES
         src/CandlePriceAxisItem.cpp
         src/CandleTimeAxisItem.cpp)
 
-set(UI_FILES
+SET(UI_FILES
         rcc/resources.qrc
         ui/OptionsWidget.ui)
 
-set(LIBCUI cui)
+SET(LIBCUI cui)
 
 IF (UNIX AND NOT APPLE)
-    message(STATUS "Centaur Linux Detected")
+    MESSAGE(STATUS "CUI: Linux Detected")
 ELSEIF (WIN32)
-    message(STATUS "Centaur Windows Detected")
-    set(CENTAUR_EXECUTABLE WIN32)
+    MESSAGE(STATUS "CUI: Windows Detected")
+    SET(CENTAUR_EXECUTABLE WIN32)
 ELSEIF (UNIX AND APPLE)
-    message(STATUS "Centaur Apple Detected")
+    MESSAGE(STATUS "CUI: Apple Detected")
 ELSE ()
-    message(FATAL_ERROR "Centaur Unknown target platform")
+    MESSAGE(FATAL_ERROR "CUI: Unknown target platform")
 ENDIF ()
 
 
-add_library(${LIBCUI} SHARED
+ADD_LIBRARY(${LIBCUI} SHARED
         ${INCLUDE_FILES}
         ${SOURCE_FILES}
         ${UI_FILES})
 
-target_compile_definitions(${LIBCUI} PRIVATE CENTFIN_LIBRARY_)
+TARGET_COMPILE_DEFINITIONS(${LIBCUI} PRIVATE CENTFIN_LIBRARY_)
 
-target_include_directories(${LIBCUI} PRIVATE ../../include)
-target_include_directories(${LIBCUI} PRIVATE include)
+TARGET_INCLUDE_DIRECTORIES(${LIBCUI} PRIVATE ../../include)
+TARGET_INCLUDE_DIRECTORIES(${LIBCUI} PRIVATE include)
 
-target_link_libraries(${LIBCUI} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql Qt6::Concurrent)
+TARGET_LINK_LIBRARIES(${LIBCUI} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql Qt6::Concurrent)
 
 
-SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
 
-set_source_files_properties(
-        ${INCLUDE_FILES}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${INCLUDE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
 
-set_source_files_properties(
-        ${SOURCE_FILES}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${SOURCE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+
+    MESSAGE(STATUS "libCUI: Clang detected - Warning Level Set")
+ENDIF ()
+
 
 

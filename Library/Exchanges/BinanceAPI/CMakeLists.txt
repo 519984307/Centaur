@@ -1,55 +1,69 @@
-cmake_minimum_required(VERSION 3.24)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.24)
+
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_COLOR_DIAGNOSTICS ON)
 
 
-# Required libraries
-find_package(FMT REQUIRED)
-find_package(RapidJSON REQUIRED)
-find_package(cpr CONFIG REQUIRED)
-find_package(libwebsockets CONFIG REQUIRED)
-find_package(OpenSSL REQUIRED)
+# required libraries
+FIND_PACKAGE(fmt REQUIRED)
+FIND_PACKAGE(rapidjson REQUIRED)
+FIND_PACKAGE(cpr CONFIG REQUIRED)
+FIND_PACKAGE(libwebsockets CONFIG REQUIRED)
+FIND_PACKAGE(OpenSSL REQUIRED)
 
-
-add_library(BinanceAPI SHARED
-        include/APIException.hpp
-        include/Binapi.hpp
-        include/BinanceAPIDefs.hpp
-        include/BinanceAPIGlobal.hpp
-        include/BinanceAPILimits.hpp
+SET(INCLUDE_FILES
+        include/apiexception.hpp
+        include/binapi.hpp
+        include/binanceapidefs.hpp
+        include/binanceapiglobal.hpp
+        include/binanceapilimits.hpp
         include/schemas.hpp
-        include/WSSpotBinanceAPI.hpp
-        include/WSFuturesBinanceAPI.hpp
-        include/WSFuturesBinanceUser.hpp
-        include/BinanceAPI.hpp
-        include/WSThread.hpp
-        src/APIException.cpp
-        src/Binapi.cpp
-        src/BinanceAPILimits.cpp
+        include/wsspotbinanceapi.hpp
+        include/wsfuturesbinanceapi.hpp
+        include/wsfuturesbinanceuser.hpp
+        include/binanceapi.hpp
+        include/wsthread.hpp)
+
+SET(SOURCE_FILES
+        src/apiexception.cpp
+        src/binapi.cpp
+        src/binanceapilimits.cpp
         src/schemas.cpp
-        src/WSFuturesBinanceAPI.cpp
-        src/WSFuturesBinanceUser.cpp
-        src/WSSpotBinanceAPI.cpp
-        src/WSThread.cpp
-        src/BinanceAPISpot.cpp
-        )
+        src/wsfuturesbinanceapi.cpp
+        src/wsfuturesbinanceuser.cpp
+        src/wsspotbinanceapi.cpp
+        src/wsthread.cpp
+        src/binanceapispot.cpp)
+
+ADD_LIBRARY(BinanceAPI SHARED
+        ${INCLUDE_FILES}
+        ${SOURCE_FILES})
 
 
-include_directories(include PRIVATE)
+TARGET_INCLUDE_DIRECTORIES(BinanceAPI PRIVATE include)
 
 
-target_link_libraries(BinanceAPI PRIVATE fmt::fmt)
-target_link_libraries(BinanceAPI PRIVATE cpr::cpr)
-target_link_libraries(BinanceAPI PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-target_link_libraries(BinanceAPI PRIVATE websockets)
-target_link_libraries(BinanceAPI PRIVATE rapidjson)
+TARGET_LINK_LIBRARIES(BinanceAPI PRIVATE fmt::fmt)
+TARGET_LINK_LIBRARIES(BinanceAPI PRIVATE cpr::cpr)
+TARGET_LINK_LIBRARIES(BinanceAPI PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+TARGET_LINK_LIBRARIES(BinanceAPI PRIVATE websockets)
+TARGET_LINK_LIBRARIES(BinanceAPI PRIVATE rapidjson)
 
 
-target_compile_options(BinanceAPI PRIVATE
-        -Weverything
-        -Wno-extra-semi-stmt
-        -Wno-reserved-id-macro
-        -Wno-c++98-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-c++20-compat
-        -Wno-padded
-        -Wno-poison-system-directories
-        -fdiagnostics-color=always)
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
+
+    SET_SOURCE_FILES_PROPERTIES(
+            ${INCLUDE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+    SET_SOURCE_FILES_PROPERTIES(
+            ${SOURCE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+
+    MESSAGE(STATUS "libBinanceAPI: Clang detected - Warning Level Set")
+ENDIF ()

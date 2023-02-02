@@ -1,36 +1,52 @@
-cmake_minimum_required(VERSION 3.21)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.24)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_COLOR_DIAGNOSTICS ON)
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_COLOR_DIAGNOSTICS ON)
 
-find_package(FMT CONFIG REQUIRED)
-find_package(SQLite3 REQUIRED)
-find_package(RapidJSON CONFIG REQUIRED)
-find_package(XercesC REQUIRED)
-find_package(cryptopp CONFIG REQUIRED)
+FIND_PACKAGE(FMT CONFIG REQUIRED)
+FIND_PACKAGE(SQLite3 REQUIRED)
+FIND_PACKAGE(RapidJSON CONFIG REQUIRED)
+FIND_PACKAGE(XercesC REQUIRED)
+FIND_PACKAGE(cryptopp CONFIG REQUIRED)
 
 if (CMAKE_BUILD_TYPE EQUAL "Debug")
-    find_library(QRENCODE_LIBRARY_DEBUG qrencoded)
-    set(QRENCODE_LIBRARIES debug ${QRENCODE_LIBRARY_DEBUG})
+    FIND_LIBRARY(QRENCODE_LIBRARY_DEBUG qrencoded)
+    SET(QRENCODE_LIBRARIES debug ${QRENCODE_LIBRARY_DEBUG})
 else ()
-    find_library(QRENCODE_LIBRARY_RELEASE qrencode)
-    set(QRENCODE_LIBRARIES ${QRENCODE_LIBRARY_RELEASE})
+    FIND_LIBRARY(QRENCODE_LIBRARY_RELEASE qrencode)
+    SET(QRENCODE_LIBRARIES ${QRENCODE_LIBRARY_RELEASE})
 endif ()
 
-
-set(CMAKE_PREFIX_PATH /Volumes/RicardoESSD/Qt/6.3.0/macos)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
-find_package(Qt6 COMPONENTS
+SET(Qt6_Components
         Core
         Gui
         Widgets
         Charts
         Sql
-        WebSockets
-        REQUIRED)
+        WebSockets)
+
+IF (DEFINED CENTAUR_ENV_DETECTED)
+    MESSAGE(STATUS "Centaur: Qt6 package in environment variable")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED
+            PATHS ${CENTAUR_ENV_DETECTED})
+ELSE ()
+    MESSAGE(STATUS "Centaur: Qt6 package in default paths")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED)
+ENDIF ()
+
+SET(CMAKE_AUTOUIC ON)
+SET(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTORCC ON)
+
+
+FIND_FILE(EXCHANGE_PLUGIN
+        libExchangeRate.dylib
+        PATHS ${CMAKE_BINARY_DIR}/bin/Centaur.app/Contents/Plugins
+        NO_CACHE)
 
 
 SET(CENT_SOURCE
@@ -106,42 +122,59 @@ SET(CENT_RESOURCE
         qrc/resource.qrc)
 
 IF (UNIX AND NOT APPLE)
-    message("Centaur Linux Detected")
+    MESSAGE(STATUS "Centaur: Linux Detected")
 ELSEIF (WIN32)
-    message("Centaur Windows Detected")
-    set(CENTAUR_EXECUTABLE WIN32)
+    MESSAGE(STATUS "Centaur: Windows Detected")
+    SET(CENTAUR_EXECUTABLE WIN32)
 ELSEIF (UNIX AND APPLE)
-    message("Centaur Apple Detected")
-    set(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
-    set(APPLE_PLATFORM TRUE)
-    set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
+    MESSAGE(STATUS "Centaur: Apple Detected")
+    SET(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
+    SET(APPLE_PLATFORM TRUE)
+    SET(CMAKE_MACOSX_RPATH 1)
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
 ELSE ()
-    message(FATAL_ERROR "Unknown target platform")
+    MESSAGE(FATAL_ERROR "Centaur: Unknown target platform ")
 ENDIF ()
 
-add_executable(Centaur ${CENTAUR_EXECUTABLE}
+ADD_EXECUTABLE(Centaur ${CENTAUR_EXECUTABLE}
         ${CENT_RESOURCE}
         ${CENT_UI}
         ${CENT_INCLUDE}
-        ${CENT_SOURCE}
-        )
+        ${CENT_SOURCE})
+
+ADD_DEPENDENCIES(Centaur BinanceSPOT ExchangeRate)
 
 
 IF (${APPLE_PLATFORM})
-    set(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
-    set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
-ELSE ()
-    message(FATAL_ERROR "Unknown target platform")
+
+    # Remove all builtin plugins from the Bundle/Plugins directory
+    LIST(APPEND BUILTIN_PLUGINS_FILES
+            libExchangeRate.dylib
+            libBinanceSPOT.dylib)
+
+    SET(PLUGINS_BUNDLE_PATH "${CMAKE_BINARY_DIR}/bin/Centaur.app/Contents/Plugins")
+    FOREACH (fls IN ZIP_LISTS BUILTIN_PLUGINS_FILES)
+        FIND_FILE(CURRENT_FOUND
+                ${fls}
+                PATHS ${PLUGINS_BUNDLE_PATH}
+                NO_CACHE)
+        IF (NOT ${CURRENT_FOUND} STREQUAL "CURRENT_FOUND-NOTFOUND")
+            MESSAGE(STATUS "Plugin will be temporarly removed: ${fls}")
+            ADD_CUSTOM_COMMAND(TARGET Centaur
+                    PRE_BUILD
+                    COMMAND ${CMAKE_COMMAND}
+                    ARGS -E rm "${PLUGINS_BUNDLE_PATH}/${fls}"
+                    VERBATIM)
+        ENDIF ()
+    ENDFOREACH ()
 ENDIF ()
 
 
 # Create the Apple Bundle
 IF (${APPLE_PLATFORM})
-    set_target_properties(Centaur PROPERTIES
+    SET_TARGET_PROPERTIES(Centaur PROPERTIES
             MACOSX_BUNDLE_BUNDLE_NAME Centaur
-            MACOSX_BUNDLE_GUI_IDENTIFIER com.centaurproject.Centaur
+            MACOSX_BUNDLE_GUI_IDENTIFIER com.centaur-project.Centaur
             MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 ENDIF ()
@@ -154,47 +187,44 @@ target_include_directories(Centaur PRIVATE
         ../Library/cui/include
         ../include)
 
-target_link_libraries(Centaur PRIVATE fmt::fmt)
-target_link_libraries(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets)
-target_link_libraries(Centaur PRIVATE SQLite3)
-target_link_libraries(Centaur PRIVATE XercesC::XercesC)
-target_link_libraries(Centaur PRIVATE rapidjson)
-target_link_libraries(Centaur PRIVATE ${QRENCODE_LIBRARIES})
-target_link_libraries(Centaur PRIVATE cryptopp-static)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE fmt::fmt)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE SQLite3)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE XercesC::XercesC)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE rapidjson)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE ${QRENCODE_LIBRARIES})
+TARGET_LINK_LIBRARIES(Centaur PRIVATE cryptopp-static)
 
 # Local Libraries
-target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
-target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
-target_link_libraries(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libcui.dylib)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE ${CMAKE_BINARY_DIR}/lib/libcui.dylib)
 
-if (${APPLE_PLATFORM})
-    set(BUNDLE_BUILTIN_PLUGINS "${CMAKE_BINARY_DIR}/bin/Centaur.app/Contents/Plugins")
-    message("INFO: ${BUNDLE_BUILTIN_PLUGINS}")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
 
-    ADD_CUSTOM_COMMAND(TARGET Centaur
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND}
-            ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/lib/libBinanceSPOT.dylib ${BUNDLE_BUILTIN_PLUGINS}/libBinanceSPOT.dylib
-            VERBATIM)
+    SET_SOURCE_FILES_PROPERTIES(
+            ${CENT_INCLUDE}
+            PROPERTIES
+            COMPILE_FLAGS " ${COMPILER_OPTIONS} ")
 
+    SET_SOURCE_FILES_PROPERTIES(
+            ${CENT_SOURCE}
+            PROPERTIES
+            COMPILE_FLAGS " ${COMPILER_OPTIONS} ")
 
-    ADD_CUSTOM_COMMAND(TARGET Centaur
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND}
-            ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/lib/libExchangeRate.dylib ${BUNDLE_BUILTIN_PLUGINS}/libExchangeRate.dylib
-            VERBATIM)
-endif ()
+    MESSAGE(STATUS "Centaur: Clang detected - Warning Level Set")
+ENDIF ()
 
-
-SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
-
-set_source_files_properties(
-        ${CENT_INCLUDE}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
-
-set_source_files_properties(
-        ${CENT_SOURCE}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+IF (${APPLE_PLATFORM})
+    # Copy the builtin plugins to the bundle
+    FOREACH (fls IN LISTS BUILTIN_PLUGINS_FILES)
+        ADD_CUSTOM_COMMAND(TARGET Centaur
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                ARGS -E copy_if_different "${CMAKE_BINARY_DIR}/lib/${fls}" "${PLUGINS_BUNDLE_PATH}/${fls}"
+                VERBATIM)
+    ENDFOREACH ()
+ENDIF ()
 

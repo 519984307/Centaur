@@ -28,15 +28,20 @@ TARGET_INCLUDE_DIRECTORIES(uuid PRIVATE
         ../../include/)
 
 
-SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
 
-SET_SOURCE_FILES_PROPERTIES(
-        ${SOURCE_FILES}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${INCLUDE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
 
-SET_SOURCE_FILES_PROPERTIES(
-        ${INCLUDE_FILES}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${SOURCE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
 
+
+    MESSAGE(STATUS "libUUID: Clang detected - Warning Level Set")
+ENDIF ()

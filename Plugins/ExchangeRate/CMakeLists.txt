@@ -1,54 +1,78 @@
-cmake_minimum_required(VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.24)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+FIND_PACKAGE(cpr REQUIRED)
+FIND_PACKAGE(FMT CONFIG REQUIRED)
+FIND_PACKAGE(RapidJSON REQUIRED)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(Qt6_Components
+        Gui
+        LinguistTools
+        Widgets)
 
-find_package(cpr REQUIRED)
-find_package(FMT CONFIG REQUIRED)
-find_package(RapidJSON REQUIRED)
+IF (DEFINED CENTAUR_ENV_DETECTED)
+    MESSAGE(STATUS "ExchangeRate: Qt6 package in environment variable")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED
+            PATHS ${CENTAUR_ENV_DETECTED})
+ELSE ()
+    MESSAGE(STATUS "ExchangeRate: Qt6 package in default paths")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED)
+ENDIF ()
 
-set(CMAKE_PREFIX_PATH ${CENTAUR_QT_DIRECTORY})
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+SET(CMAKE_AUTOUIC ON)
+SET(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTORCC ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui LinguistTools Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui LinguistTools Widgets REQUIRED)
-# Required libraries
 
 SET(PROJECT_FILES
         include/ExchangeRate.hpp
-        src/ExchangeRate.cpp
+        src/ExchangeRate.cpp)
+
+SET(RESOURCE_FILES
         res/resources.qrc)
 
-add_library(ExchangeRate SHARED
+ADD_LIBRARY(ExchangeRate SHARED
         ${PROJECT_FILES}
+        ${RESOURCE_FILES}
         )
 
 
-target_include_directories(ExchangeRate PRIVATE
+TARGET_INCLUDE_DIRECTORIES(ExchangeRate PRIVATE
         include
         ../include
         ../../Library/Protocol/include
         ../../Library/uuid/include
         ../../include/)
 
+TARGET_LINK_LIBRARIES(ExchangeRate PRIVATE Qt6::Gui)
+TARGET_LINK_LIBRARIES(ExchangeRate PRIVATE Qt6::Widgets)
+TARGET_LINK_LIBRARIES(ExchangeRate PRIVATE fmt::fmt)
+TARGET_LINK_LIBRARIES(ExchangeRate PRIVATE cpr::cpr)
 
-target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Gui)
-target_link_libraries(ExchangeRate PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(ExchangeRate PRIVATE fmt::fmt)
-target_link_libraries(ExchangeRate PRIVATE cpr::cpr)
-
-target_link_libraries(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
-target_link_libraries(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+TARGET_LINK_LIBRARIES(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
+TARGET_LINK_LIBRARIES(ExchangeRate PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
 
 
-SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
 
-set_source_files_properties(
-        ${PROJECT_FILES}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${PROJECT_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+    MESSAGE(STATUS "ExchangeRate: Clang detected - Warning Level Set")
+ENDIF ()
+
+
+
+
+

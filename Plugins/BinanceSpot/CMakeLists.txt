@@ -1,32 +1,40 @@
-cmake_minimum_required(VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.24)
 
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(cpr REQUIRED)
-find_package(FMT REQUIRED)
-find_package(RapidJSON REQUIRED)
-find_package(libwebsockets REQUIRED)
-find_package(OpenSSL REQUIRED)
-
-
-set(CMAKE_PREFIX_PATH ${CENTAUR_QT_DIRECTORY})
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+FIND_PACKAGE(cpr REQUIRED)
+FIND_PACKAGE(FMT REQUIRED)
+FIND_PACKAGE(RapidJSON REQUIRED)
+FIND_PACKAGE(libwebsockets REQUIRED)
+FIND_PACKAGE(OpenSSL REQUIRED)
 
 
-message(STATUS "LibWebSockets SPOT: libraries at ${Libwebsockets_INCLUDE_DIRS}")
-
-find_package(Qt6 COMPONENTS
+SET(Qt6_Components
         Core
         Gui
-        Widgets
-        REQUIRED)
+        Widgets)
+
+IF (DEFINED CENTAUR_ENV_DETECTED)
+    MESSAGE(STATUS "BinanceSPOT: Qt6 package in environment variable")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED
+            PATHS ${CENTAUR_ENV_DETECTED})
+ELSE ()
+    MESSAGE(STATUS "BinanceSPOT: Qt6 package in default paths")
+    FIND_PACKAGE(Qt6 COMPONENTS
+            ${Qt6_Components}
+            REQUIRED)
+ENDIF ()
+
+SET(CMAKE_AUTOUIC ON)
+SET(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTORCC ON)
 
 
-SET(SOURCE_FILE
+SET(SOURCE_FILES
         src/BinanceSPOT.cpp
         src/SpotMarketWS.cpp
         ../../Library/Helpers/src/OptionsWidget.cpp
@@ -39,7 +47,7 @@ SET(SOURCE_FILE
         src/BinnaceSPOT_IBase.cpp
         src/BinanceSPOT_IExchange.cpp)
 
-SET(INCLUDE_FILE
+SET(INCLUDE_FILES
         include/BinanceSPOT.hpp
         ../../Library/Helpers/include/OptionsWidget.hpp
         ../../Library/Helpers/include/OptionsTableWidget.hpp
@@ -63,14 +71,14 @@ SET(UI_FILES
         )
 
 
-add_library(BinanceSPOT SHARED
+ADD_LIBRARY(BinanceSPOT SHARED
         ${INCLUDE_FILE}
         ${SOURCE_FILE}
         ${UI_FILES}
         )
 
 
-target_include_directories(BinanceSPOT PRIVATE
+TARGET_INCLUDE_DIRECTORIES(BinanceSPOT PRIVATE
         include
         ../../Library/Exchanges/BinanceAPI/include
         ../../Library/Protocol/include
@@ -79,27 +87,34 @@ target_include_directories(BinanceSPOT PRIVATE
         ../../include)
 
 
-target_link_libraries(BinanceSPOT PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
-target_link_libraries(BinanceSPOT PRIVATE fmt::fmt)
-target_link_libraries(BinanceSPOT PRIVATE ${OPENSSL_LIBRARIES})
-target_link_libraries(BinanceSPOT PRIVATE cpr::cpr)
-target_link_libraries(BinanceSPOT PRIVATE websockets)
-target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
-target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
-target_link_libraries(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE fmt::fmt)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE ${OPENSSL_LIBRARIES})
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE cpr::cpr)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE websockets)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libuuid.dylib)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE ${CMAKE_BINARY_DIR}/lib/libBinanceAPI.dylib)
 
-target_compile_definitions(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)
+TARGET_COMPILE_DEFINITIONS(BinanceSPOT PRIVATE BINANCESPOTPLUGIN_LIBRARY)
 
 
-SET(COMPILER_OPTIONS "-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Control clang warnings
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
 
-set_source_files_properties(
-        ${INCLUDE_FILE}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${INCLUDE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
 
-set_source_files_properties(
-        ${SOURCE_FILE}
-        PROPERTIES
-        COMPILE_FLAGS "${COMPILER_OPTIONS}")
+    SET_SOURCE_FILES_PROPERTIES(
+            ${SOURCE_FILES}
+            PROPERTIES
+            COMPILE_FLAGS "${COMPILER_OPTIONS}")
+
+
+    MESSAGE(STATUS "libBinanceSPOT: Clang detected - Warning Level Set")
+ENDIF ()
+
 
