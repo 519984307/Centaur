@@ -49,5 +49,4 @@ ADD_SUBDIRECTORY(tests/general)
 ADD_SUBDIRECTORY(tests/CandleWidgetTest)
 
 #Tools
-ADD_SUBDIRECTORY(tools/imgSorter)
 ADD_SUBDIRECTORY(tools/btrader)

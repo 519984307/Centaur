@@ -6,7 +6,6 @@ SET(CMAKE_COLOR_DIAGNOSTICS ON)
 FIND_PACKAGE(FMT CONFIG REQUIRED)
 FIND_PACKAGE(SQLite3 REQUIRED)
 FIND_PACKAGE(RapidJSON CONFIG REQUIRED)
-FIND_PACKAGE(XercesC REQUIRED)
 FIND_PACKAGE(cryptopp CONFIG REQUIRED)
 
 if (CMAKE_BUILD_TYPE EQUAL "Debug")
@@ -129,16 +128,45 @@ ELSE ()
     MESSAGE(FATAL_ERROR "Centaur: Unknown target platform ")
 ENDIF ()
 
+
+LIST(APPEND REPAIR_FILES
+        ${CMAKE_SOURCE_DIR}/local/logdb.sql)
+
+LIST(APPEND IMAGE_FILES
+        ${CMAKE_SOURCE_DIR}/local/dbimg.zip)
+
 ADD_EXECUTABLE(Centaur ${CENTAUR_EXECUTABLE}
         ${CENT_RESOURCE}
         ${CENT_UI}
         ${CENT_INCLUDE}
-        ${CENT_SOURCE})
+        ${CENT_SOURCE}
+        ${REPAIR_FILES}
+        ${IMAGE_FILES})
 
-ADD_DEPENDENCIES(Centaur BinanceSPOT ExchangeRate)
+ADD_DEPENDENCIES(Centaur
+        BinanceSPOT
+        ExchangeRate)
+
+
+# Create the Apple Bundle
+IF (${APPLE_PLATFORM})
+
+    SET_TARGET_PROPERTIES(Centaur PROPERTIES
+            MACOSX_BUNDLE_BUNDLE_NAME Centaur
+            MACOSX_BUNDLE_GUI_IDENTIFIER com.centaur-project.Centaur
+            MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+            )
+
+    SET_SOURCE_FILES_PROPERTIES(${REPAIR_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Repair/")
+    SET_SOURCE_FILES_PROPERTIES(${IMAGE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Images/")
+ENDIF ()
 
 
 IF (${APPLE_PLATFORM})
+
+    # Create the repair directory
+
 
     # Remove all builtin plugins from the Bundle/Plugins directory
     LIST(APPEND BUILTIN_PLUGINS_FILES
@@ -163,15 +191,6 @@ IF (${APPLE_PLATFORM})
 ENDIF ()
 
 
-# Create the Apple Bundle
-IF (${APPLE_PLATFORM})
-    SET_TARGET_PROPERTIES(Centaur PROPERTIES
-            MACOSX_BUNDLE_BUNDLE_NAME Centaur
-            MACOSX_BUNDLE_GUI_IDENTIFIER com.centaur-project.Centaur
-            MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-            MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
-ENDIF ()
-
 target_include_directories(Centaur PRIVATE
         include
         ../Library/Protocol/include
@@ -183,7 +202,6 @@ target_include_directories(Centaur PRIVATE
 TARGET_LINK_LIBRARIES(Centaur PRIVATE fmt::fmt)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE SQLite3)
-TARGET_LINK_LIBRARIES(Centaur PRIVATE XercesC::XercesC)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE rapidjson)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE ${QRENCODE_LIBRARIES})
 TARGET_LINK_LIBRARIES(Centaur PRIVATE cryptopp-static)
@@ -192,6 +210,7 @@ TARGET_LINK_LIBRARIES(Centaur PRIVATE cryptopp-static)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE Protocol)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE uuid)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE cui)
+
 
 IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # Control clang warnings
