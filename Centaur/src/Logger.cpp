@@ -152,7 +152,7 @@ void CENTAUR_NAMESPACE::CentaurLogger::setApplication(CENTAUR_NAMESPACE::Centaur
 
         logFileInfoDir.mkpath(logFileInfoDir.absolutePath());
 
-        auto recoveryFile = g_globals->paths.appPath + "/Contents/Repair/logdb.sql";
+        auto recoveryFile = g_globals->paths.appPath + "/Contents/Resources/Repair/logdb.sql";
         QFile file(recoveryFile);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
             throw std::runtime_error("recovery file not located");
