@@ -20,11 +20,6 @@
 #include <cryptopp/modes.h>
 #include <cryptopp/rijndael.h>
 
-#include <xercesc/dom/DOMNodeFilter.hpp>
-#include <xercesc/parsers/XercesDOMParser.hpp>
-#include <xercesc/sax/HandlerBase.hpp>
-#include <xercesc/util/PlatformUtils.hpp>
-
 CENTAUR_NAMESPACE::Globals *CENTAUR_NAMESPACE::g_globals { nullptr };
 
 BEGIN_CENTAUR_NAMESPACE
@@ -199,7 +194,7 @@ END_CENTAUR_NAMESPACE
 
 namespace
 {
-// clang-format off
+    // clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF("-Wexit-time-destructors")
