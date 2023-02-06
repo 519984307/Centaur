@@ -33,7 +33,7 @@ The way plpack works is to pack in a single mainly two files:
 5. **md5**: Main MD5 checksum of the **lib*****name***(.dylib)/(.dll) of the file[^1]
 6. **ui-version:uuid**: Minimum version of the CentaurUI that can be run
 
-[^1] For Debugging and testing purposes if compile with _NO_PLUGIN_CHECKSUM_CHECK. The UI will ignore this parameter.
+[^1]: For Debugging and testing purposes if compile with _NO_PLUGIN_CHECKSUM_CHECK. The UI will ignore this parameter.
 This setup will be informed in the Settings page of the plugins.
 
 ### plpack command line
