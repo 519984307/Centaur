@@ -9,11 +9,12 @@
     "sqlite3",
     "cpr",
     "zlib",
-    "xerces-c",
     "re2",
     "catch2",
     "libqrencode",
-    "cryptopp"
+    "cryptopp",
+    "cli11",
+    "libzip"
   ],
   "overrides": [
     {

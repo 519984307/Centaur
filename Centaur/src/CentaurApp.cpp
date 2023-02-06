@@ -504,17 +504,18 @@ void CentaurApp::initializeInterface() noexcept
     });
 
     ui()->porfolioList->linkSearchEdit(ui()->porfolioSearch);
+    /*
     QPixmap pm;
-    g_globals->symIcons.find(32, "BTC", &pm);
+    g_globals->symIcons.find(32, "BTC", &pm, Globals::AssetIcons::Crypto, this);
     ui()->porfolioList->insertItem(pm, "Bitcoin", "Binance SPOT", "BTC", "$ 45.02 USD", "0.023 BTC");
-    g_globals->symIcons.find(32, "ETH", &pm);
+    g_globals->symIcons.find(32, "ETH", &pm, Globals::AssetIcons::Crypto, this);
     ui()->porfolioList->insertItem(pm, "Ethereum", "Binance SPOT", "ETH", "$ 450.31 USD", "0.25 ETH");
-    g_globals->symIcons.find(32, "BNB", &pm);
+    g_globals->symIcons.find(32, "BNB", &pm, Globals::AssetIcons::Crypto, this);
     ui()->porfolioList->insertItem(pm, "Binance Coin", "Binance BNB", "BNB", "$ 125.02 USD", "0.505 BNB");
-    g_globals->symIcons.find(32, "TRX", &pm);
+    g_globals->symIcons.find(32, "TRX", &pm, Globals::AssetIcons::Crypto, this);
     ui()->porfolioList->insertItem(pm, "Tron", "Binance SPOT", "TRX", "$ 85.97 USD", "1250.2548 TRX");
-    g_globals->symIcons.find(32, "DOT", &pm);
-    ui()->porfolioList->insertItem(pm, "Polkadot", "Binance SPOT", "DOT", "$ 0.23 USD", "0.0023 DOT");
+    g_globals->symIcons.find(32, "DOT", &pm, Globals::AssetIcons::Crypto, this);
+    ui()->porfolioList->insertItem(pm, "Polkadot", "Binance SPOT", "DOT", "$ 0.23 USD", "0.0023 DOT");*/
 
     ui()->watchListWidget->linkSearchEdit(ui()->watchListSearch);
 
@@ -848,12 +849,12 @@ void CentaurApp::onAddToWatchList(const QString &symbol, const QString &sender, 
     auto watchInterface = interface->second.exchange;
 
     // Generate a unique-id
-    if (watchInterface->addSymbolToWatchlist(symbol))
+    const auto [addSuccess, symbolWatchlistPixmap] = watchInterface->addSymbolToWatchlist(symbol);
+    if (addSuccess)
     {
         QPixmap icon;
-        g_globals->symIcons.find(32, watchInterface->getBaseFromSymbol(symbol), &icon);
         qDebug() << icon << watchInterface->getBaseFromSymbol(symbol);
-        ui()->watchListWidget->insertItem(icon, symbol, sender, 0.0, 0.0, 0);
+        ui()->watchListWidget->insertItem(symbolWatchlistPixmap, symbol, sender, 0.0, 0.0, 0);
 
         // Add to the database
         if (addToDatabase)
@@ -1094,8 +1095,6 @@ void CentaurApp::addFavoritesWatchListDB(const QString &symbol, const QString &s
 void CentaurApp::onViewCandleChart(const QString &symbol, const QString &source, cen::plugin::TimeFrame tf) noexcept
 {
     const QString dlgName = QString("chart_%1_%2_%3").arg(symbol, source).arg(static_cast<int>(tf));
-
-
 
     auto *dlg = this->findChild<CandleChartDialog *>(dlgName);
     if (dlg != nullptr)

@@ -1,14 +1,13 @@
 <RCC>
-    <qresource prefix="/img">
-        <file alias="binance-plugin">../res/BinancePlugin.png</file>
-        <file alias="crypto">../res/crypto.svg</file>
-        <file>../res/money-locked.svg</file>
+    <qresource prefix="bspot/general">
+        <file alias="binance">../res/binance-logo.svg</file>
+        <file alias="crypto_currency">../res/crypto_currency.svg</file>
         <file alias="glass">../res/search_gray_48dp.svg</file>
         <file alias="copy">../res/content_copy_FILL0_wght400_GRAD0_opsz48.svg</file>
     </qresource>
-    
 
-    <qresource prefix="status">
-        <file alias="icon">../res/BinancePlugin.png</file>
+
+    <qresource prefix="bspot/status">
+        <file alias="icon">../res/binance-logo.svg</file>
     </qresource>
 </RCC>

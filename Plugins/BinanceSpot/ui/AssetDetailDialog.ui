@@ -11,9 +11,7 @@
    </rect>
   </property>
   <property name="font">
-   <font>
-    <family>Roboto</family>
-   </font>
+   <font/>
   </property>
   <property name="windowTitle">
    <string>Asset detail</string>
@@ -70,8 +68,8 @@ border:0px;
       <widget class="QLabel" name="image">
        <property name="minimumSize">
         <size>
-         <width>64</width>
-         <height>64</height>
+         <width>32</width>
+         <height>32</height>
         </size>
        </property>
        <property name="maximumSize">

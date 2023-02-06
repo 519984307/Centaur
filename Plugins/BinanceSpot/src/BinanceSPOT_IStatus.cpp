@@ -13,7 +13,7 @@
 
 cen::plugin::IStatus::DisplayMode cen::BinanceSpotPlugin::initialize() noexcept
 {
-    m_image.load(":/status/icon");
+    m_image.load(":/bspot/status/icon");
     return DisplayMode::TextIcon;
 }
 

@@ -25,7 +25,7 @@ auto cen::PluginConfiguration::getConfigurationFileName() noexcept -> std::strin
     return m_settingsFile.toStdString();
 }
 
-auto cen::PluginConfiguration::getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool
+auto cen::PluginConfiguration::getAssetImage(int size, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource source, const QString &asset, QWidget *parent) -> QPixmap
 {
-    return g_globals->symIcons.find(size, asset, pm, format);
+    return findAssetImage(size, asset, source, parent);
 }

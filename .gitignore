@@ -5,14 +5,5 @@
 /.idea
 
 #internal tool
-/tools/imgSorter
+/tools/dbimgbuild
 
-
-# Application testing
-/local
-
-/tools/local
-
-Library/Exchanges/BinanceAPI/binapi-old.cpp
-Library/Exchanges/BinanceAPI/binapi-old.hpp
-Library/Exchanges/BinanceAPI/WSThread-old.cpp

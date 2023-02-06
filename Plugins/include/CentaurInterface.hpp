@@ -39,6 +39,13 @@ namespace CENTAUR_INTERFACE_NAMESPACE
         debug
     };
 
+    enum class AssetImageSource
+    {
+        Stock,
+        Forex,
+        Crypto
+    };
+
     /// \brief Handles the logging window
     /// All plugin interfaces accept the ILogger interface to access the Logging window of the main UI
     struct ILogger
@@ -115,17 +122,19 @@ namespace CENTAUR_INTERFACE_NAMESPACE
         /// \brief return the configuration filename with json extension
         virtual auto getConfigurationFileName() noexcept -> std::string = 0;
 
-
         /// Access to images of assets
     public:
-        /// \brief Access the Asset images (if any). All images are stored in the global application object QPixmapCache.
-        ///        However, locating the files are needed, so this function is added to access the images files directly into a QPixmap.
-        /// \param size Supported size: 16, 32, 64, 128 (if any)
-        /// \param format Supported format: 0: PNG, 1: SVG (if supported)
-        /// \param asset The asset name
-        /// \param pm Pixmap to hold the data (do not pass a null pointer)
-        /// \return True if the image could be loaded, false otherwise
-        virtual auto getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool = 0;
+        /// \brief Finds the image of the specified asset, size and format (when supported).
+        /// \param size Size
+        /// \param asset Asset name
+        /// \param source Database Origin
+        /// \return A null pixmap if it fails, or a loaded pixmap, otherwise.
+        /// \remarks The application only supports transparent file formats. In the database files,
+        /// the application will search for the files in the order: SVG, PNG, TIFF and GIF for the symbol.
+        /// In case the format is not SVG, the application will append the size in the file
+        /// for example: supposed the asset named GGG, and the image file exists as a PNG with sizes, 16, 32, 64
+        /// The files must be named: GGG_16.png, GGG_32.png, GGG_64.png;
+        virtual auto getAssetImage(int size, AssetImageSource source, const QString &asset, QWidget *parent) -> QPixmap = 0;
     };
 
 } // namespace CENTAUR_INTERFACE_NAMESPACE

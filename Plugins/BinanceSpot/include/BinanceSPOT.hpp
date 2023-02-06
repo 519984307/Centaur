@@ -66,7 +66,7 @@ namespace CENTAUR_NAMESPACE
         bool initialization() noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIcon getSymbolListName() const noexcept override;
         CENTAUR_PLUGIN_NAMESPACE::StringIconVector getSymbolList() const noexcept override;
-        bool addSymbolToWatchlist(const QString &name) noexcept override;
+        QPair<bool, QPixmap> addSymbolToWatchlist(const QString &name) noexcept override;
         void removeSymbolFromWatchlist(const QString &name) noexcept override;
         void updateOrderbook(const QString &symbol) noexcept override;
         void stopOrderbook(const QString &symbol) noexcept override;
@@ -118,8 +118,8 @@ namespace CENTAUR_NAMESPACE
 
         // Resources
     protected:
-        mutable QIcon m_exchIcon { ":/img/binance-plugin" };
-        QIcon m_cryptoIcon { ":/img/crypto" };
+        mutable QIcon m_exchIcon { ":/bspot/general/binance" };
+        QIcon m_cryptoIcon { ":/bspot/general/crypto_currency" };
 
     private:
         CENTAUR_INTERFACE_NAMESPACE::ILogger *m_logger { nullptr };

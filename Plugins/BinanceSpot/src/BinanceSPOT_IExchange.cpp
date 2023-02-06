@@ -99,6 +99,7 @@ namespace
         }
     }
 } // namespace
+
 bool CENTAUR_NAMESPACE::BinanceSpotPlugin::initialization() noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::initialization");
@@ -248,7 +249,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::runMarketWS(const QString &symbol) no
     logInfo("BinanceSpotPlugin", "The main thread is unblocked");
 }
 
-bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &name) noexcept
+QPair<bool, QPixmap> CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &name) noexcept
 {
     logTrace("BinanceSpotPlugin", "BinanceSpotPlugin::addSymbolToWatchlist()");
 
@@ -256,7 +257,7 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &n
     if (itemId != m_symbolsWatch.end())
     {
         logError("BinanceSpotPlugin", QString("The %1 symbol is already handled").arg(name));
-        return false;
+        return { false, {} };
     }
 
     logInfo("BinanceSpotPlugin", QString("Attempting to add %1 to the watchlist").arg(name));
@@ -282,9 +283,11 @@ bool CENTAUR_NAMESPACE::BinanceSpotPlugin::addSymbolToWatchlist(const QString &n
     get7dayData(name);
 
     // According to the API, there is no way to see if the stream was successfully retrieved in this part of the code
-    // since the stream receiving is asynchronous
+    // since the stream receiving is asynchronous,
     // So we'll handle the symbol return true even if there is a slight chance that this will not happen
-    return true;
+    QPixmap pm = m_config->getAssetImage(16, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource::Crypto, getBaseFromSymbol(name), nullptr);
+
+    return { true, pm.isNull() ? QPixmap(":/bspot/general/crypto_currency") : pm };
 }
 
 void CENTAUR_NAMESPACE::BinanceSpotPlugin::removeSymbolFromWatchlist(const QString &name) noexcept

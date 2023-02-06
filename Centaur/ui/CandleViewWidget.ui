@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>429</width>
-    <height>220</height>
+    <width>555</width>
+    <height>323</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -201,7 +201,7 @@ border-bottom: 0px;
   <customwidget>
    <class>CENTAUR_NAMESPACE::CandleChartWidget</class>
    <extends>QGraphicsView</extends>
-   <header>CandleChart/CandleChartWidget.hpp</header>
+   <header>../../Library/cui/include/CandleChartWidget.hpp</header>
   </customwidget>
  </customwidgets>
  <resources/>

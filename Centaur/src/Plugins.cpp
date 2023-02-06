@@ -108,8 +108,6 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
                 // Init the plugin
                 auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
 
-                // tr            loadPluginLocalData(baseInterface->getPluginUUID(), doc, pluginConfig);
-
                 baseInterface->setPluginInterfaces(g_logger,
                     static_cast<CENTAUR_INTERFACE_NAMESPACE::IConfiguration *>(pluginConfig));
 
@@ -145,8 +143,6 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
     }
 }
 
-#include <iostream>
-
 bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin::IExchange *exchange) noexcept
 {
     logTrace("plugins", "CentaurApp::initExchangePlugin");
@@ -169,14 +165,15 @@ bool CENTAUR_NAMESPACE::CentaurApp::initExchangePlugin(CENTAUR_NAMESPACE::plugin
 
     mapExchangePluginViewMenus(uuid, exchange->dynamicWatchListMenuItems());
 
-    auto data = exchange->getCandlesByPeriod("BTCUSDT", 1659225600000, 1665792000000, cen::plugin::TimeFrame::Hours_1);
+    /*
+        auto data = exchange->getCandlesByPeriod("BTCUSDT", 1659225600000, 1665792000000, cen::plugin::TimeFrame::Hours_1);
 
-    std::cout << "QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> data = {";
-    for (const auto &[ts, cd] : data)
-    {
-        std::cout << "{ " << ts << ", {" << cd.high << ", " << cd.open << ", " << cd.close << ", " << cd.low << ", " << cd.volume << "} },";
-    }
-
+        std::cout << "QList<QPair<CENTAUR_PLUGIN_NAMESPACE::IExchange::Timestamp, CENTAUR_PLUGIN_NAMESPACE::CandleData>> data = {";
+        for (const auto &[ts, cd] : data)
+        {
+            std::cout << "{ " << ts << ", {" << cd.high << ", " << cd.open << ", " << cd.close << ", " << cd.low << ", " << cd.volume << "} },";
+        }
+    */
     return true;
 }
 
@@ -192,6 +189,7 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
         button = new QPushButton(*icon, name, ui()->scrollAreaWidgetContents);
     else
         button = new QPushButton(name, ui()->scrollAreaWidgetContents);
+
     button->setMinimumSize(QSize(0, 30));
     button->setCheckable(true);
     button->setAutoExclusive(true);
@@ -235,6 +233,7 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
         {
             if (symbolsList->getRowCount() == 0)
             {
+
                 auto symbols = exchange->getSymbolList();
                 for (const auto &[sym, icon] : symbols)
                 {
@@ -243,12 +242,7 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
                     int curRow = symbolsList->getRowCount();
                     item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-                    const QString base = exchange->getBaseFromSymbol(sym);
-                    QPixmap img;
-                    if (g_globals->symIcons.find(16, base, &img, 0))
-                        item->setIcon({ img });
-                    else
-                        item->setIcon(*icon);
+                    item->setIcon(*icon);
 
                     symbolsList->insertRowWithOptions(curRow, { item }, false);
                 }
@@ -288,8 +282,8 @@ void cen::CentaurApp::initStatusPlugin(CENTAUR_PLUGIN_NAMESPACE::IStatus *status
     auto mode = status->initialize();
 
     constexpr static char stylesheet[] = { R"(QToolButton{border-radius: 0px; border: 0px; }
-QToolButton:hover{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 0  rgb(58,58,58), stop: 1 rgb(68,68,68)); border-radius: 0px;}
-QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 1  rgb(85,85,85), stop: 0 rgb(95,95,95)); border-radius: 0px;})" };
+    QToolButton:hover{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 0  rgb(58,58,58), stop: 1 rgb(68,68,68)); border-radius: 0px;}
+    QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:1, stop: 1  rgb(85,85,85), stop: 0 rgb(95,95,95)); border-radius: 0px;})" };
 
     auto *button = new QToolButton(ui()->frameStatusPluginsFrame);
 
@@ -351,7 +345,7 @@ QToolButton:pressed{background-color: qlineargradient(x1:0.5, y1: 0, x2:0.5, y2:
     button->setPalette(palette);
 
     // clang-format off
-    connect(status->getPluginObject(), SIGNAL(displayChange(plugin::IStatus::DisplayRole)), this, SLOT(onStatusDisplayChanged(plugin::IStatus::DisplayRole)));
+        connect(status->getPluginObject(), SIGNAL(displayChange(plugin::IStatus::DisplayRole)), this, SLOT(onStatusDisplayChanged(plugin::IStatus::DisplayRole)));
     // clang-format on
 
     if (status->action())
@@ -396,7 +390,7 @@ bool cen::CentaurApp::initCandleViewPlugin(cen::plugin::ICandleView *candleView)
 
     return true;
 }
- */
+*/
 
 CENTAUR_PLUGIN_NAMESPACE::PluginInformation cen::CentaurApp::pluginInformationFromBase(cen::plugin::IBase *base)
 {

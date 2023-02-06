@@ -276,8 +276,12 @@ namespace CENTAUR_PLUGIN_NAMESPACE
 
         /// \brief addSymbolToWatchlist Add a symbol to watchlist
         /// \param name Name of the symbol
-        /// \return True on success; false on error
-        C_NODISCARD virtual bool addSymbolToWatchlist(const QString &name) noexcept = 0;
+        /// \return A QPair<bool, QPixmap>; The boolean part is set to indicate the UI that the function succeeds,
+        /// and the second part is a QPixmap that is going to be shown in the Watchlist. The icon size must be 32x32 pixels in size
+        /// As you can see, the icon from the watchlist and the symbol list may be different.
+        /// If the IExchange handles too many symbols, this functionality gives the plugin the opportunity to display one icon or a group of icons
+        /// In the Symbol List and a specialized icon in the Watchlist, this way, memory can be saved.
+        C_NODISCARD virtual QPair<bool, QPixmap> addSymbolToWatchlist(const QString &name) noexcept = 0;
 
         /// \brief removeSymbolFromWatchlist The symbol was removed from the watchlist in the UI
         /// \param name Name of the symbol deleted

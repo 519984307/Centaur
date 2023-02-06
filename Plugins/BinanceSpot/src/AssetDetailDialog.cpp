@@ -25,9 +25,8 @@ CENTAUR_NAMESPACE::AssetDetailDialog::AssetDetailDialog(const binapi::SPOT::Asse
     setReadOnly(m_ui->checkBoxDeposit);
     setReadOnly(m_ui->checkBoxWithdraw);
 
-    QPixmap img;
-    if (config->getSymbolImage(64, 0, asset.toUpper(), &img))
-        m_ui->image->setPixmap(img);
+
+    m_ui->image->setPixmap(config->getAssetImage(64, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource::Crypto, asset, this));
     m_ui->coinName->setText(asset);
 
     m_ui->checkBoxDeposit->setChecked(detail.depositStatus);

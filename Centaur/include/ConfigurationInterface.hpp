@@ -26,18 +26,18 @@ namespace CENTAUR_NAMESPACE
         explicit PluginConfiguration(const QString &uuidString);
         ~PluginConfiguration() override;
 
-
     public:
         auto getPluginPublicKeyPath() -> std::string override;
-        auto getConfigurationFileName() noexcept  -> std::string override;
+        auto getConfigurationFileName() noexcept -> std::string override;
 
     public:
-        auto getSymbolImage(int size, int format, const QString &asset, QPixmap *pm) -> bool override;
+        auto getAssetImage(int size, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource source, const QString &asset, QWidget *parent) -> QPixmap override;
 
     private:
         QString m_path;
         QString m_settingsFile;
     };
+
 } // namespace CENTAUR_NAMESPACE
 
 #endif // CENTAUR_CONFIGURATIONINTERFACE_HPP

@@ -82,9 +82,7 @@ CENTAUR_NAMESPACE::CoinInfoDialog::CoinInfoDialog(BINAPI_NAMESPACE::AllCoinsInfo
         auto coinDeposit         = new QStandardItem(QString("%1").arg(data.depositAlLEnable ? "Yes" : "No"));
         auto coinViewNetworkList = new QStandardItem("");
 
-        QPixmap img;
-        if (m_config->getSymbolImage(16, 0, coinItem->text().toUpper(), &img))
-            coinItem->setIcon(img);
+        coinItem->setIcon(m_config->getAssetImage(16, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource::Crypto, coinItem->text(), this));
 
         m_ui->tableView->insertRowWithOptions(curRow, { coinItem, coinName, coinFree, coinLocked, coinFreeze, coinStorage, coinWithdrawing, coinIPOable, coinIPOing, coinLegalMoney, coinTrading, coinWithdrawingAll, coinDeposit, coinViewNetworkList }, false);
 
@@ -146,7 +144,6 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
 {
     m_ui->setupUi(this);
 
-
     m_ui->coinName->setText(QString("%1 (%2)").arg(name, coin));
     m_ui->closeButton->setText("Close");
 
@@ -158,9 +155,7 @@ CENTAUR_NAMESPACE::NetworkListDialog::NetworkListDialog(const QString &name, con
     connect(m_ui->closeButton, &QPushButton::released, this, [&]() {saveInterfaceState(); accept(); });
     connect(m_ui->tableWidget, &QTableWidget::currentItemChanged, this, &NetworkListDialog::onCurrentItemChanged);
 
-    QPixmap img;
-    if (m_config->getSymbolImage(64, 0, coin.toUpper(), &img))
-        m_ui->image->setPixmap(img);
+    m_ui->image->setPixmap(m_config->getAssetImage(64, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource::Crypto, coin, this));
 
     auto insertItem = [&table = m_ui->tableWidget](const QString &text, int row, int col) -> QTableWidgetItem * {
         auto item = new QTableWidgetItem(text);

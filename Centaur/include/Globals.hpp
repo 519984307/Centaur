@@ -14,6 +14,7 @@
 #define CENTAUR_GLOBALS_HPP
 
 #include "Centaur.hpp"
+#include "CentaurInterface.hpp"
 #include "crc64.hpp"
 #include <QFont>
 #include <QIcon>
@@ -62,27 +63,20 @@ namespace CENTAUR_NAMESPACE
             QIcon searchIcon { ":/svg/edit/search_gray" };
             QIcon favoritesIcon { ":/svg/favorites/star" };
         } icons;
-
-        struct SymbolsIcons
-        {
-            SymbolsIcons();
-            ~SymbolsIcons() = default;
-            /// \brief Finds the image of the specified symbol, size and format (when supported).
-            ///        This class will automatically let QPixmapCache handle the memory. That is will delete items when full and insert them as needed
-            /// \param size Size (when format is SvG it will be ignored)
-            /// \param symbol Symbol name
-            /// \param px The image data structure
-            /// \param format 0: for PNG, 1: for SVG
-            /// \return true on success false on failure
-            bool find(int size, const QString &symbol, QPixmap *px, int format = 0);
-
-        } symIcons;
-
-
     };
+    /// \brief Finds the image of the specified asset, size and format (when supported).
+    /// \param size Size
+    /// \param asset Asset name
+    /// \param source Database Origin
+    /// \return A null pixmap if it fails, or a loaded pixmap, otherwise.
+    /// \remarks The application only supports transparent file formats. In the database files,
+    /// the application will search for the files in the order: SVG, PNG, TIFF and GIF for the symbol
+    /// in case the format is not SVG, the application will append the size in the file
+    /// for example: supposed the asset named GGG, and the image file exists as a PNG with sizes, 16, 32, 64
+    /// The files must be named: GGG_16.png, GGG_32.png, GGG_64.png;
+    extern QPixmap findAssetImage(int size, const QString &asset, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource source, QWidget *caller = nullptr);
 
     extern Globals *g_globals;
 } // namespace CENTAUR_NAMESPACE
-
 
 #endif // CENTAUR_GLOBALS_HPP

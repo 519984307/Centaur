@@ -28,15 +28,13 @@ cen::NetworkAddressDialog::NetworkAddressDialog(BINAPI_NAMESPACE::BinanceAPISpot
         QToolTip::showText(QCursor::pos(), "Copied to the clipboard");
     };
 
-    connect(m_ui->btnClose, &QPushButton::released, this, [&](){saveInterfaceState(); accept(); });
+    connect(m_ui->btnClose, &QPushButton::released, this, [&]() {saveInterfaceState(); accept(); });
     connect(m_ui->networks, &QComboBox::currentIndexChanged, this, &NetworkAddressDialog::onNetworkChanged);
     connect(m_ui->btnCopyAddress, &QPushButton::released, this, [&]() { copyClipboard(m_ui->lineEditAddress); });
     connect(m_ui->btnCopyTag, &QPushButton::released, this, [&]() { copyClipboard(m_ui->lineEditTag); });
     connect(m_ui->btnCopyURL, &QPushButton::released, this, [&]() { copyClipboard(m_ui->lineEditURL); });
 
-    QPixmap img;
-    if (m_config->getSymbolImage(64, 0, m_coin.toUpper(), &img))
-        m_ui->image->setPixmap(img);
+    m_ui->image->setPixmap(m_config->getAssetImage(64, CENTAUR_INTERFACE_NAMESPACE::AssetImageSource::Crypto, m_coin, this));
 
     m_ui->coinName->setText(m_coin);
 
