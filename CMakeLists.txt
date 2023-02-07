@@ -50,3 +50,4 @@ ADD_SUBDIRECTORY(tests/CandleWidgetTest)
 
 #Tools
 ADD_SUBDIRECTORY(tools/btrader)
+ADD_SUBDIRECTORY(tools/plpack)
