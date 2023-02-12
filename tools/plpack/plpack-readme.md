@@ -16,6 +16,7 @@ The way plpack works is to pack in a single mainly two files and generate an out
     "manufacturer": "",
     "checksum": "",
     "protected": true/false,
+    "dynamic": "",
     "ui-version": {
       "min-uuid": ""
     }
@@ -29,11 +30,12 @@ The way plpack works is to pack in a single mainly two files and generate an out
 
 1. **name**: Name of the plugin
 2. **version**: Version of the plugin
-3. **uuid**: Identification string of the plugin
+3. **uuid**: Identification string of the plugin without the curly braces
 4. **manufacturer**: Developer of the plugin
 5. **checksum**: Main SHA224 checksum of the **lib*****name***(.dylib)/(.dll) of the file[^1]
 6. **protected**: Indicate that the plugin might store sensitive data that shall be encrypted
-7. **ui-version:uuid**: Minimum version of the CentaurUI that can be run
+7. **dynamic**: Name of the dynamic library file
+8. **ui-version:uuid**: Minimum version of the CentaurUI that can be run
 
 [^1]: For Debugging and testing purposes if compile with _NO_PLUGIN_CHECKSUM_CHECK. The UI will ignore this parameter.
 This setup will be informed in the Settings page of the plugins.
