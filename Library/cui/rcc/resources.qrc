@@ -29,4 +29,23 @@
     <qresource prefix="button">
         <file alias="left_chevron">../res/chevron_left_black_48dp.svg</file>
     </qresource>
+
+    <qresource prefix="ui/splash">
+        <file alias="bitmap">../res/png/splash.png</file>
+    </qresource>
+
+    <qresource prefix="ui/settings/advanced/table">
+        <file alias="image_cache">../res/svg/image_white_48dp.svg</file>
+    </qresource>
+
+    <qresource prefix="ui/settings/plugins">
+        <file alias="plugin">../res/svg/plugin.svg</file>
+    </qresource>
+
+    <qresource prefix="ui/global">
+        <file alias="extension">../res/svg/extension_white_48dp.svg</file>
+        <file alias="warning">../res/svg/warning.svg</file>
+    </qresource>
+
+
 </RCC>

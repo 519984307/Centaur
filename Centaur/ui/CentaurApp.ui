@@ -460,8 +460,8 @@ QToolButton:pressed{
 </string>
                      </property>
                      <property name="icon">
-                      <iconset resource="../qrc/resource.qrc">
-                       <normaloff>:/img/plugin</normaloff>:/img/plugin</iconset>
+                      <iconset resource="../../Library/cui/rcc/resources.qrc">
+                       <normaloff>:/ui/global/extension</normaloff>:/ui/global/extension</iconset>
                      </property>
                      <property name="iconSize">
                       <size>
@@ -2503,6 +2503,7 @@ border-bottom-right-radius: 10px;
  </customwidgets>
  <resources>
   <include location="../qrc/resource.qrc"/>
+  <include location="../../Library/cui/rcc/resources.qrc"/>
   <include location="../../../Financeable/Financeable/rcc/resources.qrc"/>
  </resources>
  <connections/>

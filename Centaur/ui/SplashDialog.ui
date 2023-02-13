@@ -42,7 +42,7 @@
      </property>
      <property name="styleSheet">
       <string notr="true">QFrame#logMainFrame{
-	border-image: url(:/splash/splash)  0 0 0 0 stretch stretch;
+	border-image: url(:ui/splash/bitmap)  0 0 0 0 stretch stretch;
 
 border-top-left-radius: 10px;
 border-top-right-radius: 10px;
@@ -157,6 +157,7 @@ QProgressBar::chunk {
  </customwidgets>
  <resources>
   <include location="../qrc/resource.qrc"/>
+  <include location="../../Library/cui/rcc/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

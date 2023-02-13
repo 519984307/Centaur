@@ -1,13 +1,7 @@
 <RCC>
-    <qresource prefix="splash">
-        <file alias="splash">../res/gradient.png</file>
-    </qresource>
-
     <qresource prefix="/img">
         <file alias="arrow-down">../res/img/downArrow.svg</file>
         <file alias="arrow-up">../res/img/upArrow.svg</file>
-        <file alias="extension">../res/img/plugin.svg</file>
-        <file alias="plugin">../res/img/extension_white_48dp.svg</file>
         <file alias="terminal">../res/img/terminal_white_48dp.svg</file>
         <file alias="server_green">../res/img/dns_green_48dp.svg</file>
         <file alias="server_red">../res/img/dns_red_48dp.svg</file>
@@ -38,6 +32,7 @@
     <qresource prefix="buttons">
         <file alias="add">../res/img/add_circle_white_48dp.svg</file>
     </qresource>
+
 
 </RCC>
 
