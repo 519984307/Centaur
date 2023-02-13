@@ -44,7 +44,7 @@ namespace CENTAUR_NAMESPACE
     struct uuid
     {
         /// \brief Construct an uuid from a string
-        /// \param str The string must have the curly braces and dashes
+        /// \param str The string must have the dashes
         /// \param checkForBrackets Check for the { } at the beginning and at the end of the string
         explicit uuid(std::string str, bool checkForBrackets = true);
 
