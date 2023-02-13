@@ -15,6 +15,7 @@
 
 #include "Centaur.hpp"
 #include <QDialog>
+#include <QTableWidgetItem>
 #include <QTreeWidgetItem>
 
 BEGIN_CENTAUR_NAMESPACE
@@ -22,6 +23,7 @@ namespace Ui
 {
     class SettingsDialog;
 }
+
 class SettingsDialog : public QDialog
 {
     enum class StatusMode
@@ -34,7 +36,9 @@ class SettingsDialog : public QDialog
 public:
     enum class Pages
     {
-        Session
+        Session,
+        Advanced,
+        Plugins
     };
 
 public:
@@ -50,12 +54,22 @@ public:
 protected:
     void initializeTree() noexcept;
     void initSessionWidget() noexcept;
+    void initAdvancedWidget() noexcept;
+    void initPluginsWidget() noexcept;
+    void initShortcutsWidget() noexcept;
 
-public slots:
+protected:
+    void showWarningLabels() noexcept;
+    void hideWarningLabels() noexcept;
+
+protected slots:
     void treeItemPressed(QTreeWidgetItem *item, int column) noexcept;
     void onAddUser() noexcept;
     void onAccept() noexcept;
     void onAllow2FA(bool checked) noexcept;
+    void pluginsTableItemChanged(QTableWidgetItem *item) noexcept;
+    void installPlugin() noexcept;
+    void uninstallPlugin() noexcept;
 
 protected:
     void restoreInterface() noexcept;
