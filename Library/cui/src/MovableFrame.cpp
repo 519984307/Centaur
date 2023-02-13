@@ -28,17 +28,17 @@ void MovableFrame::mousePressEvent(QMouseEvent *event)
 
 void MovableFrame::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->buttons() & Qt::LeftButton)
-    {
-        if ((event->globalPosition().toPoint() - m_startPoint) != QPoint { 0, 0 })
-        {
-            QRect thisRect = m_topLevelWidget->geometry();
-            thisRect.moveTopLeft(thisRect.topLeft() + (event->globalPosition().toPoint() - m_startPoint));
-            m_topLevelWidget->setGeometry(thisRect);
-        }
+     if (event->buttons() & Qt::LeftButton)
+     {
+         if ((event->globalPosition().toPoint() - m_startPoint) != QPoint { 0, 0 })
+         {
+             QRect thisRect = m_topLevelWidget->geometry();
+             thisRect.moveTopLeft(thisRect.topLeft() + (event->globalPosition().toPoint() - m_startPoint));
+             m_topLevelWidget->setGeometry(thisRect);
+         }
 
-        m_startPoint = event->globalPosition().toPoint();
-    }
+         m_startPoint = event->globalPosition().toPoint();
+     }
 
     QFrame::mouseMoveEvent(event);
 }
@@ -48,7 +48,7 @@ void MovableFrame::mouseDoubleClickEvent(C_UNUSED QMouseEvent *event)
     if (m_topLevelWidget->isMaximized())
     {
         m_topLevelWidget->showNormal();
-        if(!m_normalGeometry.isEmpty())
+        if (!m_normalGeometry.isEmpty())
             m_topLevelWidget->setGeometry(m_normalGeometry);
     }
     else
@@ -57,6 +57,7 @@ void MovableFrame::mouseDoubleClickEvent(C_UNUSED QMouseEvent *event)
         m_topLevelWidget->showMaximized();
     }
 }
+
 void MovableFrame::overrideParent(QWidget *newParent) noexcept
 {
     m_topLevelWidget = newParent;

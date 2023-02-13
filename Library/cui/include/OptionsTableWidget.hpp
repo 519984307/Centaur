@@ -40,7 +40,7 @@ public:
     ~OptionsTableWidget() override;
 
     void initialize(QLineEdit *filterEdit, int cols, int filterColumn, int optionsColumn, int editableCol);
-    void initialize(QLineEdit *filterEdit, int cols, int filterColumn, int optionsColumn, QAction *editable);
+    void initialize(QLineEdit *filterEdit, int cols, int filterColumn, int optionsColumn, QAction *editable, int editableCol = -1);
 
 public:
     QStandardItemModel *getModel();

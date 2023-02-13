@@ -38,13 +38,13 @@ void OptionsTableWidget::initialize(QLineEdit *filterEdit, int cols, int filterC
     init(filterColumn);
 }
 
-void OptionsTableWidget::initialize(QLineEdit *filterEdit, int cols, int filterColumn, int optionsColumn, QAction *editable)
+void OptionsTableWidget::initialize(QLineEdit *filterEdit, int cols, int filterColumn, int optionsColumn, QAction *editable, int editableCol)
 {
     m_mode           = EditableMode::byAction;
     m_filterEdit     = filterEdit;
     m_editAction     = editable;
     m_columns        = cols;
-    m_editableColumn = -1;
+    m_editableColumn = editableCol;
     m_optionsColumn  = optionsColumn;
     init(filterColumn);
 }
@@ -79,7 +79,7 @@ void OptionsTableWidget::init(int filterColumn) noexcept
             }
             break;
         case EditableMode::byAction:
-            localEditableColumn = 0;
+            localEditableColumn = m_editableColumn == -1 ? 0 : m_editableColumn;
             break;
     }
 
