@@ -77,7 +77,7 @@
 
 namespace CENTAUR_NAMESPACE
 {
-    constexpr char CentaurVersionString[]         = "0.3.0";
+    constexpr char CentaurVersionString[]         = "0.1.0";
     constexpr char CentaurProtocolVersionString[] = "0.1.0";
 } // namespace CENTAUR_NAMESPACE
 
