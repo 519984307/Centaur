@@ -38,7 +38,8 @@ public:
     {
         Session,
         Advanced,
-        Plugins
+        Plugins,
+        Shortcuts
     };
 
 public:
@@ -82,10 +83,18 @@ private:
     struct Impl;
     std::unique_ptr<Impl> _impl;
 
+    struct SessionImpl;
+    std::unique_ptr<SessionImpl> _sesImpl;
+
+    struct AdvancedImpl;
+    std::unique_ptr<AdvancedImpl> _advImpl;
+
 protected:
     Ui::SettingsDialog *ui();
 };
 
 END_CENTAUR_NAMESPACE
+
+#include "SettingsDialogData.hpp"
 
 #endif // CENTAUR_SETTINGSDIALOG_HPP

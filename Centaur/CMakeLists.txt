@@ -70,7 +70,11 @@ SET(CENT_SOURCE
         src/PortfolioModel.cpp
         src/CandleChartDialog.cpp
         src/PixmapMemCacheDialog.cpp
-        src/DAL.cpp)
+        src/DAL.cpp
+        src/SettingsShortcutsPage.cpp
+        src/SettingsAdvancedPage.cpp
+        src/SettingsPluginsPage.cpp
+        src/SettingsSessionPage.cpp)
 
 SET(CENT_INCLUDE
         include/CentaurApp.hpp
@@ -103,7 +107,8 @@ SET(CENT_INCLUDE
         include/PortfolioWidget.hpp
         include/CandleChartDialog.hpp
         include/PixmapMemCacheDialog.hpp
-        include/DAL.hpp)
+        include/DAL.hpp
+        include/SettingsDialogData.hpp)
 
 SET(CENT_UI
         ui/CentaurApp.ui
@@ -125,7 +130,7 @@ IF (UNIX AND NOT APPLE)
     MESSAGE(STATUS "Centaur: Linux Detected")
 ELSEIF (WIN32)
     MESSAGE(STATUS "Centaur: Windows Detected")
-    SET(CENTAUR_EXECUTABLE WIN32 include/DAL.hpp)
+    SET(CENTAUR_EXECUTABLE WIN32)
 ELSEIF (UNIX AND APPLE)
     MESSAGE(STATUS "Centaur: Apple Detected")
     SET(CENTAUR_EXECUTABLE MACOSX_BUNDLE)

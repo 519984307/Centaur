@@ -608,7 +608,7 @@ background: transparent;
 </string>
                </property>
                <property name="currentIndex">
-                <number>2</number>
+                <number>3</number>
                </property>
                <widget class="QWidget" name="sessionPage">
                 <property name="styleSheet">
@@ -1514,6 +1514,130 @@ QHeaderView::section:hover
                        </widget>
                       </item>
                      </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+               <widget class="QWidget" name="shortcutsPage">
+                <layout class="QVBoxLayout" name="verticalLayout_17">
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QFrame" name="shorcutHeaderFrame">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>50</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>50</height>
+                    </size>
+                   </property>
+                   <property name="baseSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QFrame{
+background-color: rgb(31,39,45);
+}</string>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_16">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="shortcutLabel">
+                      <property name="styleSheet">
+                       <string notr="true">QLabel{
+font-size:  25px;
+}</string>
+                      </property>
+                      <property name="text">
+                       <string>Keyboard shortcuts</string>
+                      </property>
+                      <property name="indent">
+                       <number>15</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="shortcutFrame">
+                   <property name="styleSheet">
+                    <string notr="true">QFrame{
+	background: transparent;
+}</string>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_15">
+                    <item>
+                     <widget class="CENTAUR_NAMESPACE::SearchLineEdit" name="shortcutSearch">
+                      <property name="styleSheet">
+                       <string notr="true">QLineEdit{
+border: 0px;
+color: black;
+background-color: rgb(220,220,220);
+border-radius:  0px;
+min-height: 25px;
+padding: 0 0 0 5;
+}
+
+
+QLineEdit:hover{
+background-color:  rgb(232,232,232);
+border: 2px solid #339ef4
+}
+
+QLineEdit:focus{
+background-color:  rgb(240,240,240);
+border: 2px solid #56aff6;
+}
+</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QTreeView" name="treeView"/>
                     </item>
                    </layout>
                   </widget>
