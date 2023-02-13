@@ -4,14 +4,20 @@
 // Copyright (c) 2023 Ricardo Romero.  All rights reserved.
 //
 
-#include <CLI/CLI.hpp>
 #include <filesystem>
+#include <map>
+#include <string>
+
+#include <CLI/CLI.hpp>
+
 #include <fmt/color.h>
 #include <fmt/core.h>
-#include <map>
+
 #include <openssl/sha.h>
-#include <string>
+
 #include <zip.h>
+
+#include "uuid.hpp"
 
 constexpr static std::string_view json_template = R"({{
   "version": "0.1.0",
@@ -22,6 +28,7 @@ constexpr static std::string_view json_template = R"({{
     "manufacturer": "{}",
     "checksum": "{}",
     "protected": {},
+    "dynamic": "{}",
     "ui-version": {{
       "min-uuid": "{}"
     }}
@@ -30,7 +37,7 @@ constexpr static std::string_view json_template = R"({{
 
 constexpr static std::string_view cui_version = "a15c48b4-460b-4a79-a0a8-8ece90603f85";
 
-static std::string checksum(const std::string &file, zip_t *z_archive) noexcept;
+static std::string add_library_file(const std::string &file, zip_t *z_archive) noexcept;
 
 int main(int argc, char *argv[])
 {
@@ -81,10 +88,14 @@ int main(int argc, char *argv[])
         pos = fileName.find(' ', pos);
     }
 
-    if (pl_uuid.size() < 8 || pl_uuid[0] == '{')
+    try
     {
-        fmt::print("{}: uuid seems to have the wrong format",
-            fmt::format(fmt::fg(fmt::color::red), "error"));
+        cen::uuid uid { pl_uuid, false };
+    } catch (const std::exception &ex)
+    {
+        fmt::print("{}: {}",
+            fmt::format(fmt::fg(fmt::color::red), "error"),
+            ex.what());
         return EXIT_FAILURE;
     }
 
@@ -102,7 +113,7 @@ int main(int argc, char *argv[])
     }
 
     fmt::print("Calculating checksum...\n");
-    auto sha224 = checksum(pl_lib, zip_archive);
+    auto sha224 = add_library_file(pl_lib, zip_archive);
 
     if (sha224.empty())
         return EXIT_FAILURE;
@@ -114,6 +125,7 @@ int main(int argc, char *argv[])
         pl_man,
         sha224,
         pl_protected,
+        std::filesystem::path(pl_lib).filename().c_str(),
         pl_min);
 
     fmt::print("{}\n", json);
@@ -153,7 +165,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-std::string checksum(const std::string &file, zip_t *z_archive) noexcept
+std::string add_library_file(const std::string &file, zip_t *z_archive) noexcept
 {
     // clang-format off
     static constexpr std::array<std::string_view, 256> toString = {
