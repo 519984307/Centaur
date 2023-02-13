@@ -30,11 +30,16 @@ SET(SOURCE_FILES
 ADD_EXECUTABLE(plpack
         ${SOURCE_FILES})
 
+TARGET_INCLUDE_DIRECTORIES(plpack PRIVATE
+        ../../include
+        ../../Library/uuid/include)
+
 
 TARGET_LINK_LIBRARIES(plpack PRIVATE fmt::fmt)
 TARGET_LINK_LIBRARIES(plpack PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 TARGET_LINK_LIBRARIES(plpack PRIVATE CLI11::CLI11)
 TARGET_LINK_LIBRARIES(plpack PRIVATE libzip::zip)
+TARGET_LINK_LIBRARIES(plpack PRIVATE uuid)
 
 # Local Libraries
 TARGET_LINK_LIBRARIES(plpack PRIVATE ${CMAKE_BINARY_DIR}/lib/libProtocol.dylib)

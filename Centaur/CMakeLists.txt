@@ -23,7 +23,8 @@ SET(Qt6_Components
         Widgets
         Charts
         Sql
-        WebSockets)
+        WebSockets
+        Concurrent)
 
 IF (DEFINED CENTAUR_ENV_DETECTED)
     MESSAGE(STATUS "Centaur: Qt6 package in environment variable")
@@ -67,7 +68,9 @@ SET(CENT_SOURCE
         src/WatchlistModel.cpp
         src/PortfolioWidget.cpp
         src/PortfolioModel.cpp
-        src/CandleChartDialog.cpp)
+        src/CandleChartDialog.cpp
+        src/PixmapMemCacheDialog.cpp
+        src/DAL.cpp)
 
 SET(CENT_INCLUDE
         include/CentaurApp.hpp
@@ -97,7 +100,10 @@ SET(CENT_INCLUDE
         include/WatchlistWidget.hpp
         include/WatchListModel.hpp
         include/PortfolioModel.hpp
-        include/PortfolioWidget.hpp include/CandleChartDialog.hpp)
+        include/PortfolioWidget.hpp
+        include/CandleChartDialog.hpp
+        include/PixmapMemCacheDialog.hpp
+        include/DAL.hpp)
 
 SET(CENT_UI
         ui/CentaurApp.ui
@@ -109,7 +115,8 @@ SET(CENT_UI
         ui/SettingsDialog.ui
         ui/AddUserDialog.ui
         ui/SplashDialog.ui
-        ui/QRCodeDialog.ui)
+        ui/QRCodeDialog.ui
+        ui/PixmapMemCacheDialog.ui)
 
 SET(CENT_RESOURCE
         qrc/resource.qrc)
@@ -118,7 +125,7 @@ IF (UNIX AND NOT APPLE)
     MESSAGE(STATUS "Centaur: Linux Detected")
 ELSEIF (WIN32)
     MESSAGE(STATUS "Centaur: Windows Detected")
-    SET(CENTAUR_EXECUTABLE WIN32)
+    SET(CENTAUR_EXECUTABLE WIN32 include/DAL.hpp)
 ELSEIF (UNIX AND APPLE)
     MESSAGE(STATUS "Centaur: Apple Detected")
     SET(CENTAUR_EXECUTABLE MACOSX_BUNDLE)
@@ -129,12 +136,18 @@ ELSE ()
     MESSAGE(FATAL_ERROR "Centaur: Unknown target platform ")
 ENDIF ()
 
+LIST(APPEND ICON_FILE
+        ${CMAKE_SOURCE_DIR}/local/cent-icon.icns)
 
 LIST(APPEND REPAIR_FILES
-        ${CMAKE_SOURCE_DIR}/local/logdb.sql)
+        ${CMAKE_SOURCE_DIR}/local/logdb.sql
+        ${CMAKE_SOURCE_DIR}/local/cdb.sql)
 
 LIST(APPEND IMAGE_FILES
         ${CMAKE_SOURCE_DIR}/local/crp_img.zip)
+
+LIST(APPEND EXTRA_FILES
+        ${CMAKE_SOURCE_DIR}/local/plugins.schema.json)
 
 ADD_EXECUTABLE(Centaur ${CENTAUR_EXECUTABLE}
         ${CENT_RESOURCE}
@@ -142,7 +155,9 @@ ADD_EXECUTABLE(Centaur ${CENTAUR_EXECUTABLE}
         ${CENT_INCLUDE}
         ${CENT_SOURCE}
         ${REPAIR_FILES}
-        ${IMAGE_FILES})
+        ${IMAGE_FILES}
+        ${ICON_FILE}
+        ${EXTRA_FILES})
 
 ADD_DEPENDENCIES(Centaur
         BinanceSPOT
@@ -157,17 +172,17 @@ IF (${APPLE_PLATFORM})
             MACOSX_BUNDLE_GUI_IDENTIFIER com.centaur-project.Centaur
             MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+            MACOSX_BUNDLE_ICON_FILE cent-icons.icns
             )
 
+    SET_SOURCE_FILES_PROPERTIES(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/")
     SET_SOURCE_FILES_PROPERTIES(${REPAIR_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Repair/")
     SET_SOURCE_FILES_PROPERTIES(${IMAGE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Images/")
+    SET_SOURCE_FILES_PROPERTIES(${EXTRA_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Schema/")
 ENDIF ()
 
 
 IF (${APPLE_PLATFORM})
-
-    # Create the repair directory
-
 
     # Remove all builtin plugins from the Bundle/Plugins directory
     LIST(APPEND BUILTIN_PLUGINS_FILES
@@ -201,7 +216,7 @@ target_include_directories(Centaur PRIVATE
         ../include)
 
 TARGET_LINK_LIBRARIES(Centaur PRIVATE fmt::fmt)
-TARGET_LINK_LIBRARIES(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets)
+TARGET_LINK_LIBRARIES(Centaur PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::WebSockets Qt6::Concurrent)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE SQLite3)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE rapidjson)
 TARGET_LINK_LIBRARIES(Centaur PRIVATE ${QRENCODE_LIBRARIES})
