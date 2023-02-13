@@ -13,7 +13,7 @@ namespace
     /// UUID V5 string "CentaurProject-BinanceExchangeSPOT-0.1.0"
     constexpr char g_BinanceSpotName[]          = "BinanceSPOT";
     constexpr char g_BinanceSpotVersionString[] = "0.1.0";
-    constexpr char g_uuidString[]               = "{85261bc6-8f92-57ca-802b-f08b819031db}";
+    constexpr char g_uuidString[]               = "85261bc6-8f92-57ca-802b-f08b819031db";
 } // namespace
 
 QObject *CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginObject() noexcept

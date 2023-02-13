@@ -49,7 +49,7 @@ namespace
 {
     constexpr char g_ExchangeRateName[]          = "ExchangeRate";
     constexpr char g_ExchangeRateVersionString[] = "0.2.0";
-    constexpr char g_uuidString[]                = "{f77ecf55-8162-5570-a9dc-3a79c6757c72}";
+    constexpr char g_uuidString[]                = "f77ecf55-8162-5570-a9dc-3a79c6757c72";
 
 } // namespace
 
