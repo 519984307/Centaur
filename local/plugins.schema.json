@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "identification": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "protected": {
+          "type": "boolean"
+        },
+        "dynamic": {
+          "type": "string"
+        },
+        "ui-version": {
+          "type": "object",
+          "properties": {
+            "min-uuid": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "min-uuid"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "uuid",
+        "manufacturer",
+        "checksum",
+        "protected",
+        "dynamic",
+        "ui-version"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "identification"
+  ]
+}
