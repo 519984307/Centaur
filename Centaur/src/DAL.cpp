@@ -227,6 +227,46 @@ std::optional<bool> CENTAUR_NAMESPACE::dal::DataAccess::insertPlugin(const QStri
     return q.numRowsAffected() > 0;
 }
 
+std::optional<QString> CENTAUR_NAMESPACE::dal::DataAccess::getDynamicFieldPlugin(const QString &uuid) noexcept
+{
+    QSqlQuery q;
+
+    q.prepare("SELECT dynamic AS dyn FROM plugins WHERE uuid = :uuid;");
+
+    q.bindValue(":uuid", uuid);
+    if (!q.exec())
+    {
+        QSqlError e = q.lastError();
+        QString er  = QString("%1").arg(e.text());
+        qDebug() << er;
+        logError("dbSelectDynamicPlugin", er);
+        return std::nullopt;
+    }
+
+    q.next();
+    return q.value(q.record().indexOf("dyn")).toString();
+}
+
+std::optional<bool> CENTAUR_NAMESPACE::dal::DataAccess::removePlugin(const QString &uuid) noexcept
+{
+    QSqlQuery q;
+
+    q.prepare("DELETE FROM plugins WHERE uuid = :uuid;");
+
+    q.bindValue(":uuid", uuid);
+
+    if (!q.exec())
+    {
+        QSqlError e = q.lastError();
+        QString er  = QString("%1").arg(e.text());
+        qDebug() << er;
+        logError("dbRemovePlugin", er);
+        return std::nullopt;
+    }
+
+    return q.numRowsAffected() > 0;
+}
+
 std::optional<QString> CENTAUR_NAMESPACE::dal::DataAccess::fromUUIDtoVersion(const QString &uuid) noexcept
 {
     QSqlQuery q;

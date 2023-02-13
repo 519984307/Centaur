@@ -585,6 +585,9 @@ QTreeView::branch:selected:!active {
 
 </string>
                </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectItems</enum>
+               </property>
                <property name="indentation">
                 <number>20</number>
                </property>
@@ -1398,11 +1401,23 @@ QHeaderView::section:hover
                       <property name="editTriggers">
                        <set>QAbstractItemView::NoEditTriggers</set>
                       </property>
+                      <property name="selectionMode">
+                       <enum>QAbstractItemView::SingleSelection</enum>
+                      </property>
+                      <property name="selectionBehavior">
+                       <enum>QAbstractItemView::SelectItems</enum>
+                      </property>
                       <property name="showGrid">
                        <bool>false</bool>
                       </property>
                       <property name="gridStyle">
                        <enum>Qt::NoPen</enum>
+                      </property>
+                      <property name="rowCount">
+                       <number>0</number>
+                      </property>
+                      <property name="columnCount">
+                       <number>0</number>
                       </property>
                       <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
                        <bool>true</bool>

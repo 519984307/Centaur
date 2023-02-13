@@ -137,36 +137,31 @@ namespace
     class DelegateItem : public QStyledItemDelegate
     {
     public:
-        explicit DelegateItem(QObject *parent = nullptr) :
-            QStyledItemDelegate { parent }
-        {
-        }
-
-        void paint(QPainter *painter, const QStyleOptionViewItem &option4, const QModelIndex &index) const override
-        {
-            QStyleOptionViewItem options { option4 };
-            initStyleOption(&options, index);
-
-            if (options.state & QStyle::State_MouseOver)
-            {
-                if (options.state & QStyle::State_Selected)
-                    options.backgroundBrush.setColor(QColor(79, 85, 90));
-                else
-                    options.backgroundBrush.setColor(QColor(104, 109, 113));
-            }
-
-            if (options.state & QStyle::State_Selected)
-                QStyledItemDelegate::paint(painter, options, index);
-            else
-            {
-                painter->save();
-                options.widget->style()->drawControl(QStyle::CE_ItemViewItem, &options, painter);
-
-                painter->restore();
-            }
-        }
+        explicit DelegateItem(QObject *parent = nullptr);
+        void paint(QPainter *painter, const QStyleOptionViewItem &option4, const QModelIndex &index) const override;
     };
 } // namespace
+
+DelegateItem::DelegateItem(QObject *parent) :
+    QStyledItemDelegate { parent }
+{
+}
+
+void DelegateItem::paint(QPainter *painter, const QStyleOptionViewItem &option4, const QModelIndex &index) const
+{
+    QStyleOptionViewItem options { option4 };
+    initStyleOption(&options, index);
+
+    if (options.state & QStyle::State_Selected)
+        QStyledItemDelegate::paint(painter, options, index);
+    else
+    {
+        painter->save();
+        options.widget->style()->drawControl(QStyle::CE_ItemViewItem, &options, painter);
+
+        painter->restore();
+    }
+}
 
 struct UserInformationTableWidgetItems final
 {
@@ -890,6 +885,15 @@ void SettingsDialog::initPluginsWidget() noexcept
         }
     }
 
+    connect(ui()->pluginsTableWidget, &QTableWidget::itemSelectionChanged, this, [this]() {
+        if (ui()->pluginsTableWidget->selectedItems().size() != 1)
+        {
+            ui()->uninstallButton->setDisabled(true);
+            return;
+        }
+        ui()->uninstallButton->setDisabled(false);
+    });
+
     connect(ui()->pluginsTableWidget, &QTableWidget::itemChanged, this, &SettingsDialog::pluginsTableItemChanged);
 
     connect(ui()->installButton, &QPushButton::released, this, &SettingsDialog::installPlugin);
@@ -1183,7 +1187,6 @@ void cen::SettingsDialog::installPlugin() noexcept
 
         for (const auto &[pluginFile, data] : toTableData)
         {
-
             auto insertionResult = DataAccess::insertPlugin(
                 data.name,
                 data.version,
@@ -1275,6 +1278,55 @@ CENTAUR_WARN_POP()
 void cen::SettingsDialog::uninstallPlugin() noexcept
 {
     using namespace dal;
+
+    auto res = QMessageBox::question(this,
+        tr("Uninstall"),
+        tr("Are you sure you want to uninstall this plugin?"),
+        QMessageBox::Yes | QMessageBox::No);
+
+    if (res == QMessageBox::No)
+        return;
+
+    const auto &selectedItem = ui()->pluginsTableWidget->selectedItems().front();
+
+    // Get the UUID item
+    auto uuidItem = selectedItem->column() == 4 ? selectedItem : ui()->pluginsTableWidget->item(selectedItem->row(), 4);
+
+    const QString uuid = uuidItem->text();
+
+    const auto dynFile = DataAccess::getDynamicFieldPlugin(uuid);
+    if (!dynFile.has_value())
+    {
+        QMessageBox::critical(this,
+            tr("Error"),
+            tr("The plugin can not be uninstalled"),
+            QMessageBox::Yes);
+        return;
+    }
+
+    const auto remResult = DataAccess::removePlugin(uuid);
+
+    if (!remResult.has_value() || !*remResult)
+    {
+        QMessageBox::critical(this,
+            tr("Error"),
+            tr("The plugin could not be removed from the database"),
+            QMessageBox::Yes);
+        return;
+    }
+
+    ui()->pluginsTableWidget->removeRow(uuidItem->row());
+    showWarningLabels();
+    _impl->forceShowPluginWarning = true;
+
+    if (!QFile::remove(g_globals->paths.pluginsPath + "/" + *dynFile))
+    {
+        QMessageBox::critical(this,
+            tr("Error"),
+            tr("The plugin file could not be deleted from the filesystem.\nReinstalling this plugin can't be done unless the file is removed manually"),
+            QMessageBox::Yes);
+        return;
+    }
 }
 
 void cen::SettingsDialog::pluginsTableItemChanged(QTableWidgetItem *item) noexcept

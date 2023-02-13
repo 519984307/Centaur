@@ -80,6 +80,10 @@ namespace CENTAUR_NAMESPACE::dal
             bool enabled,
             bool protect) noexcept;
 
+        static std::optional<QString> getDynamicFieldPlugin(const QString &uuid) noexcept;
+
+        static std::optional<bool> removePlugin(const QString &uuid) noexcept;
+
         static std::optional<QString> fromUUIDtoVersion(const QString &uuid) noexcept;
     };
 
