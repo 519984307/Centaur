@@ -12,6 +12,7 @@
 #include <QErrorMessage>
 #include <QFile>
 #include <QFileInfo>
+#include <QSettings>
 #include <QSqlError>
 #include <QSqlRecord>
 #include <QTextStream>
@@ -23,6 +24,13 @@
 #include <cryptopp/hex.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/rijndael.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/schema.h>
 
 #include <zip.h>
 
@@ -200,7 +208,7 @@ END_CENTAUR_NAMESPACE
 
 namespace
 {
-// clang-format off
+    // clang-format off
     #if defined(__clang__) || defined(__GNUC__)
     CENTAUR_WARN_PUSH()
     CENTAUR_WARN_OFF("-Wexit-time-destructors")

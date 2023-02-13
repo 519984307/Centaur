@@ -21,6 +21,7 @@
 #include <QPixmapCache>
 #include <QSqlQuery>
 #include <QString>
+#include <rapidjson/document.h>
 #include <unordered_map>
 
 namespace CENTAUR_NAMESPACE::Ui
