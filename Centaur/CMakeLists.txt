@@ -138,7 +138,7 @@ ELSEIF (UNIX AND APPLE)
     SET(CMAKE_MACOSX_RPATH 1)
     SET(CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
 ELSE ()
-    MESSAGE(FATAL_ERROR "Centaur: Unknown target platform ")
+    MESSAGE(FATAL_ERROR "Centaur: Unknown target platform")
 ENDIF ()
 
 LIST(APPEND ICON_FILE
@@ -152,7 +152,13 @@ LIST(APPEND IMAGE_FILES
         ${CMAKE_SOURCE_DIR}/local/crp_img.zip)
 
 LIST(APPEND EXTRA_FILES
-        ${CMAKE_SOURCE_DIR}/local/plugins.schema.json)
+        ${CMAKE_SOURCE_DIR}/local/plugins.schema.json
+        ${CMAKE_SOURCE_DIR}/local/keymap.schema.json)
+
+LIST(APPEND KEYMAP_FILES
+        ${CMAKE_SOURCE_DIR}/local/macos.keymap.json
+        ${CMAKE_SOURCE_DIR}/local/windows.keymap.json
+        ${CMAKE_SOURCE_DIR}/local/linux.keymap.json)
 
 ADD_EXECUTABLE(Centaur ${CENTAUR_EXECUTABLE}
         ${CENT_RESOURCE}
@@ -162,11 +168,26 @@ ADD_EXECUTABLE(Centaur ${CENTAUR_EXECUTABLE}
         ${REPAIR_FILES}
         ${IMAGE_FILES}
         ${ICON_FILE}
-        ${EXTRA_FILES})
+        ${EXTRA_FILES}
+        ${KEYMAP_FILES})
 
 ADD_DEPENDENCIES(Centaur
         BinanceSPOT
         ExchangeRate)
+
+IF (USE_PCH)
+    TARGET_PRECOMPILE_HEADERS(Centaur
+            PRIVATE
+            <QAction> <QDir> <QDirIterator> <QMenu> <QMessageBox> <QSortFilterProxyModel> <QStandardPaths> <QAreaSeries>
+            <QChartView> <QDateTimeAxis> <QGraphicsBlurEffect> <QImageReader> <QResizeEvent> <QShortcut> <QSqlDatabase>
+            <QSqlError> <QSqlField> <QSqlQuery> <QSqlRecord> <QFileInfo> <QSettings> <QDialog> <QFile> <QWidget> <QLabel>
+            <QCoreApplication> <QTextStream> <QVariant> <QPixmap> <QIcon> <QApplication> <QFrame> <QHBoxLayout> <QMainWindow>
+            <QPushButton> <QScrollArea> <QSpacerItem> <QSplitter> <QStackedWidget> <QToolButton> <QVBoxLayout>
+            <rapidjson/document.h>
+            <rapidjson/ostreamwrapper.h>
+            <rapidjson/writer.h>
+            <map> <vector> <iostream> <list> <limits> <unordered_map> <algorithm> <concepts> <fstream>)
+ENDIF ()
 
 
 # Create the Apple Bundle
@@ -184,6 +205,7 @@ IF (${APPLE_PLATFORM})
     SET_SOURCE_FILES_PROPERTIES(${REPAIR_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Repair/")
     SET_SOURCE_FILES_PROPERTIES(${IMAGE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Images/")
     SET_SOURCE_FILES_PROPERTIES(${EXTRA_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Schema/")
+    SET_SOURCE_FILES_PROPERTIES(${KEYMAP_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/Keymap/")
 ENDIF ()
 
 
