@@ -13,6 +13,7 @@ MovableFrame::MovableFrame(QWidget *parent) :
     QFrame { parent }
 {
     setMouseTracking(true);
+
     m_topLevelWidget = parent;
     while (m_topLevelWidget->parentWidget() != nullptr)
         m_topLevelWidget = m_topLevelWidget->parentWidget();
@@ -21,26 +22,40 @@ MovableFrame::MovableFrame(QWidget *parent) :
 void MovableFrame::mousePressEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::LeftButton)
+    {
+        // There are some widget that propagate the mouseMoveEvent to this Widget
+        // and start moving the whole window or dialog without a direct mouse press on the MovableFrame (QComboBox, QToolButton),
+        // however, the mousePressEvent is not propagated to this class.
+        // Taking advantage of this, with the flag, m_thisEvent, mouseMoveEvent can be ignored unless
+        // the user press the MovableFrame directly
+        m_thisEvent  = true;
         m_startPoint = event->globalPosition().toPoint();
+    }
 
     QFrame::mousePressEvent(event);
 }
 
 void MovableFrame::mouseMoveEvent(QMouseEvent *event)
 {
-     if (event->buttons() & Qt::LeftButton)
-     {
-         if ((event->globalPosition().toPoint() - m_startPoint) != QPoint { 0, 0 })
-         {
-             QRect thisRect = m_topLevelWidget->geometry();
-             thisRect.moveTopLeft(thisRect.topLeft() + (event->globalPosition().toPoint() - m_startPoint));
-             m_topLevelWidget->setGeometry(thisRect);
-         }
 
-         m_startPoint = event->globalPosition().toPoint();
-     }
+    if (event->buttons() & Qt::LeftButton && m_thisEvent)
+    {
+        if ((event->globalPosition().toPoint() - m_startPoint) != QPoint { 0, 0 })
+        {
+            QRect thisRect = m_topLevelWidget->geometry();
+            thisRect.moveTopLeft(thisRect.topLeft() + (event->globalPosition().toPoint() - m_startPoint));
+            m_topLevelWidget->setGeometry(thisRect);
+        }
+
+        m_startPoint = event->globalPosition().toPoint();
+    }
 
     QFrame::mouseMoveEvent(event);
+}
+
+void MovableFrame::mouseReleaseEvent(C_UNUSED QMouseEvent *event)
+{
+    m_thisEvent = false;
 }
 
 void MovableFrame::mouseDoubleClickEvent(C_UNUSED QMouseEvent *event)

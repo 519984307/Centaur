@@ -28,6 +28,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
@@ -38,6 +39,7 @@ private:
     QRect m_normalGeometry;
     QWidget *m_topLevelWidget;
     QPoint m_startPoint;
+    bool m_thisEvent { false };
 };
 
 END_CENTAUR_NAMESPACE
