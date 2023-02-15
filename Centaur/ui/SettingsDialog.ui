@@ -118,6 +118,65 @@ QGroupBox::title {
     padding: 0 3px;
 }
 
+QComboBox {
+    border: 1px solid gray;
+    min-width: 6em;
+	font-size: 14px;
+	border: 0px;
+	color: rgb(225,225,255);
+	background-color: rgb(63,70,76);
+	border-radius:  0px;
+	border-bottom: 2px solid  rgb(63,70,76);
+	min-height: 25px;
+	padding: 0 0 0 5;
+}
+
+QComboBox::down-arrow {
+    border-image: url(:/ui/global/drop-down) 5 5 5 5 stretch stretch;
+}
+
+QComboBox:hover{
+background-color:  rgb(78,85,90);
+border: 2px solid #6ec6ff;
+}
+
+QComboBox:focus{
+color: white;
+background-color:  rgb(94,100,105);
+border: 2px solid rgb(33,150,243);
+}
+
+QComboBox:editable {
+    background: white;
+}
+
+QComboBox:!editable, QComboBox::drop-down:editable {
+   background-color:  rgb(94,100,105);
+}
+
+/* QComboBox gets the &quot;on&quot; state when the popup is open */
+QComboBox:!editable:on, QComboBox::drop-down:editable:on {
+    background-color: rgb(63,70,76)
+}
+
+QComboBox:on { /* shift the text when the popup opens */
+    padding-top: 3px;
+    padding-left: 4px;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+
+    border-left-width: 1px;
+    border-left-color: darkgray;
+    border-left-style: solid; /* just a single line */
+    border-top-right-radius: 3px; /* same radius as the QComboBox */
+    border-bottom-right-radius: 3px;
+}
+
+
 
 </string>
   </property>
@@ -284,7 +343,7 @@ border: 0px;
              <number>0</number>
             </property>
             <item>
-             <widget class="QFrame" name="titleBarFrame_2">
+             <widget class="QFrame" name="titleBarFrame2">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -406,7 +465,7 @@ background-color: rgb(238,136,83);
                    </widget>
                   </item>
                   <item>
-                   <spacer name="titleSpacer_2">
+                   <spacer name="titleSpacer">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
                     </property>
@@ -1611,6 +1670,115 @@ font-size:  25px;
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
                     <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout4">
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QComboBox" name="shortcutsComboBox">
+                        <property name="minimumSize">
+                         <size>
+                          <width>150</width>
+                          <height>27</height>
+                         </size>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true"/>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="shortcutsToolButton">
+                        <property name="minimumSize">
+                         <size>
+                          <width>27</width>
+                          <height>27</height>
+                         </size>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>27</width>
+                          <height>27</height>
+                         </size>
+                        </property>
+                        <property name="sizeIncrement">
+                         <size>
+                          <width>0</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">
+QToolButton{
+font-size: 14px;
+font-weight: 600;
+color:  #0D3C61;
+border: 0px;
+border-radius:  5px;
+background-color: #2196f3;
+}
+
+QToolButton:default{
+font-size: 14px;
+font-weight: 800;
+color:  #0d3C61;
+border: 0px;
+border-radius:  5px;
+border: 2px solid rgba(144,203,249,100);
+background-color: #2196f3;
+}
+
+QToolButton:hover, QPushButton:hover:default{
+	background-color:  #339EF4;
+}
+
+QToolButton:pressed{
+	background-color:  #68B8F7;
+}
+
+QToolButton:pressed:default{
+background-color:  #68B8F7;
+}
+
+QToolButton:disabled{
+color: #c0c0c0;
+background-color: #9D9EA4;
+}</string>
+                        </property>
+                        <property name="text">
+                         <string>...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../../Library/cui/rcc/resources.qrc">
+                          <normaloff>:/ui/settings/shortcut/settings-arrow</normaloff>:/ui/settings/shortcut/settings-arrow</iconset>
+                        </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                        <property name="popupMode">
+                         <enum>QToolButton::InstantPopup</enum>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer2">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
                      <widget class="CENTAUR_NAMESPACE::SearchLineEdit" name="shortcutSearch">
                       <property name="styleSheet">
                        <string notr="true">QLineEdit{
@@ -1637,7 +1805,93 @@ border: 2px solid #56aff6;
                      </widget>
                     </item>
                     <item>
-                     <widget class="QTreeView" name="treeView"/>
+                     <widget class="QTreeView" name="shortcutsTree">
+                      <property name="styleSheet">
+                       <string notr="true">QTreeView {
+    color: white;
+    background-color: rgb(46,53,59);
+    alternate-background-color: rgb(61,68,73);
+    border: 0px;
+}
+
+
+QTreeView::item {
+    border: 0px;
+    height: 25px;
+}
+
+QTreeView::item:hover{
+    background-color: rgb(79,85,90);
+}
+
+QTreeView::item:hover:selected{
+    background-color: rgb(104,109,113);
+	font-weight: 800;
+}
+
+QTreeView::item:selected{
+    color: white;
+	font-weight: 600;
+    background-color: rgb(91,97,102);
+}
+
+
+QTreeView::branch {
+        background-color: rgb(46,53,59);
+}
+
+QTreeView::branch:hover{
+    background-color: rgb(79,85,90);
+}
+
+QTreeView::branch:hover:selected {
+        background-color: rgb(104,109,113);
+}
+
+QTreeView::branch:selected{
+    color: white;
+	font-weight: 600;
+    background-color: rgb(91,97,102);
+}
+
+QHeaderView::section:checked
+{
+    background-color:  #3387CD;
+    color: white;
+}
+
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+        border-image: none;
+        image: url(:/ui/global/drop-right);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings  {
+        border-image: none;
+        image: url(:/ui/global/drop-down);
+}
+
+/***************************************************************************/
+QHeaderView::section {
+    font: normal 800 13px Roboto;
+    padding-left: 4px;
+    border: 0px;
+    height: 26px;
+    background-color: #0069c0;
+    color: white;
+    padding-left: 4px;
+    border: 0px;
+}
+
+QHeaderView::section:hover
+{
+    background-color: #5299D4;
+    color: white;
+}</string>
+                      </property>
+                     </widget>
                     </item>
                    </layout>
                   </widget>
