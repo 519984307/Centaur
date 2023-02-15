@@ -71,6 +71,11 @@ protected slots:
     void pluginsTableItemChanged(QTableWidgetItem *item) noexcept;
     void installPlugin() noexcept;
     void uninstallPlugin() noexcept;
+    void duplicateKeymap(bool triggered) noexcept;
+    void renameKeymap(bool triggered) noexcept;
+    void restoreDefaultKeymap(bool triggered) noexcept;
+    void removeKeymap(bool triggered) noexcept;
+    void shortcutSelectionChanged(int index) noexcept;
 
 protected:
     void restoreInterface() noexcept;
@@ -88,6 +93,9 @@ private:
 
     struct AdvancedImpl;
     std::unique_ptr<AdvancedImpl> _advImpl;
+
+    struct ShortcutsImpl;
+    std::unique_ptr<ShortcutsImpl> _sctImpl;
 
 protected:
     Ui::SettingsDialog *ui();

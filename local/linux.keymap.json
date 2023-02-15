@@ -1,0 +1,11 @@
+{
+  "name": "Linux",
+  "base": "internal",
+  "keymap": [
+    {
+      "id": 0,
+      "parent": 0,
+      "shortcut": "dfd"
+    }
+  ]
+}

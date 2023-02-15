@@ -131,6 +131,13 @@ QComboBox {
 	padding: 0 0 0 5;
 }
 
+
+QComboBox:editable {
+    color: black;
+}
+
+
+
 QComboBox::down-arrow {
     border-image: url(:/ui/global/drop-down) 5 5 5 5 stretch stretch;
 }
@@ -1676,19 +1683,34 @@ font-size:  25px;
                       </property>
                       <item>
                        <widget class="QComboBox" name="shortcutsComboBox">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
                         <property name="minimumSize">
                          <size>
-                          <width>150</width>
+                          <width>107</width>
+                          <height>27</height>
+                         </size>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>300</width>
                           <height>27</height>
                          </size>
                         </property>
                         <property name="styleSheet">
                          <string notr="true"/>
                         </property>
+                        <property name="editable">
+                         <bool>false</bool>
+                        </property>
                        </widget>
                       </item>
                       <item>
-                       <widget class="QToolButton" name="shortcutsToolButton">
+                       <widget class="QPushButton" name="shortcutsPushButton">
                         <property name="minimumSize">
                          <size>
                           <width>27</width>
@@ -1746,7 +1768,7 @@ background-color: #9D9EA4;
 }</string>
                         </property>
                         <property name="text">
-                         <string>...</string>
+                         <string/>
                         </property>
                         <property name="icon">
                          <iconset resource="../../Library/cui/rcc/resources.qrc">
@@ -1758,15 +1780,15 @@ background-color: #9D9EA4;
                           <height>20</height>
                          </size>
                         </property>
-                        <property name="popupMode">
-                         <enum>QToolButton::InstantPopup</enum>
-                        </property>
                        </widget>
                       </item>
                       <item>
-                       <spacer name="horizontalSpacer2">
+                       <spacer name="horizontalSpacer_2">
                         <property name="orientation">
                          <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeType">
+                         <enum>QSizePolicy::MinimumExpanding</enum>
                         </property>
                         <property name="sizeHint" stdset="0">
                          <size>

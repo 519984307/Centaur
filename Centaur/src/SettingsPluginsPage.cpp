@@ -15,9 +15,9 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QProgressDialog>
+#include <QSettings>
 #include <QStyledItemDelegate>
 #include <QtConcurrent>
-#include <QSettings>
 
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
@@ -50,7 +50,6 @@ namespace
         }
     };
 } // namespace
-
 
 DelegateItem::DelegateItem(QObject *parent) :
     QStyledItemDelegate { parent }
@@ -257,7 +256,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                     QFile file(schemaJSONPlugin);
                     if (!file.open(QIODevice::ReadOnly))
                     {
-                        errorStrings.push_back(QString(tr("An internal file is missing. Reinstalling the application might solve the problem")));
+                        errorStrings.push_back(tr("An internal file is missing. Reinstalling the application might solve the problem"));
                         return;
                     }
 
@@ -267,7 +266,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                     schemaJSONDoc.Parse(textStream.readAll().toUtf8().constData());
                     if (schemaJSONDoc.HasParseError())
                     {
-                        errorStrings.push_back(QString(tr("An internal file is corrupted. Reinstalling the application might solve the problem")));
+                        errorStrings.push_back(tr("An internal file is corrupted. Reinstalling the application might solve the problem"));
                         return;
                     }
 
@@ -284,7 +283,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (z_error != ZIP_ER_OK)
                         {
-                            errorStrings.push_back(QString(tr("The file %1 is not a valid plugin package")).arg(file));
+                            errorStrings.push_back(tr("The file %1 is not a valid plugin package").arg(file));
                             emit watcher.progressValueChanged(++ipv);
                             continue;
                         }
@@ -293,7 +292,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (json_index == -1)
                         {
-                            errorStrings.push_back(QString(tr("%1\ndoes not contain any plugin metadata information")).arg(file));
+                            errorStrings.push_back(tr("%1\ndoes not contain any plugin metadata information").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -306,7 +305,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (json_st == -1 || json_stats.size <= 0)
                         {
-                            errorStrings.push_back(QString(tr("%1\nmetadata file is not available")).arg(file));
+                            errorStrings.push_back(tr("%1\nmetadata file is not available").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -318,7 +317,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (bytes_read < 0)
                         {
-                            errorStrings.push_back(QString(tr("%1\nmetadata file was not read")).arg(file));
+                            errorStrings.push_back(tr("%1\nmetadata file was not read").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -328,7 +327,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                         jsonDoc.Parse(_file_bytes.get());
                         if (jsonDoc.HasParseError())
                         {
-                            errorStrings.push_back(QString(tr("%1\nmetadata file is not valid")).arg(file));
+                            errorStrings.push_back(tr("%1\nmetadata file is not valid").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -336,7 +335,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (!jsonDoc.Accept(schemaValidator))
                         {
-                            errorStrings.push_back(QString(tr("%1\nmetadata file contain an invalid format")).arg(file));
+                            errorStrings.push_back(tr("%1\nmetadata file contain an invalid format").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -347,7 +346,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                         // Currently there's only version 0.1.0
                         if (plVersion != "0.1.0")
                         {
-                            errorStrings.push_back(QString(tr("%1\nfile format version is not supported")).arg(file));
+                            errorStrings.push_back(tr("%1\nfile format version is not supported").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -356,7 +355,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                         auto exists = DataAccess::pluginExists(QString { jsonDoc["identification"]["uuid"].GetString() });
                         if (exists)
                         {
-                            errorStrings.push_back(QString(tr("%1\nhas an unready installed plugin")).arg(file));
+                            errorStrings.push_back(tr("%1\nhas an unready installed plugin").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -367,7 +366,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                         // Currently there is only version 0.1.0
                         if (min_ui_version != "a15c48b4-460b-4a79-a0a8-8ece90603f85")
                         {
-                            errorStrings.push_back(QString(tr("%1\nis not supported by this version of the UI")).arg(file));
+                            errorStrings.push_back(tr("%1\nis not supported by this version of the UI").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -380,7 +379,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (dynlib_index == -1)
                         {
-                            errorStrings.push_back(QString(tr("%1\ndoes not contain any plugin")).arg(file));
+                            errorStrings.push_back(tr("%1\ndoes not contain any plugin").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -403,7 +402,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (bytes_read < 0)
                         {
-                            errorStrings.push_back(QString(tr("%1\nplugin file was not read")).arg(file));
+                            errorStrings.push_back(tr("%1\nplugin file was not read").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -413,7 +412,7 @@ void cen::SettingsDialog::installPlugin() noexcept
 
                         if (calcHash != hash)
                         {
-                            errorStrings.push_back(QString(tr("%1\nplugin file is corrupted")).arg(file));
+                            errorStrings.push_back(tr("%1\nplugin file is corrupted").arg(file));
                             zip_close(zip_archive);
                             emit watcher.progressValueChanged(++ipv);
                             continue;
@@ -429,7 +428,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                         QFile toDiscPluginFile(pluginFile);
                         if (!toDiscPluginFile.open(QIODeviceBase::NewOnly | QIODeviceBase::WriteOnly))
                         {
-                            errorStrings.push_back(QString(tr("%1\nthe plugin file could not be opened to write")).arg(file));
+                            errorStrings.push_back(tr("%1\nthe plugin file could not be opened to write").arg(file));
                             emit watcher.progressValueChanged(++ipv);
                             continue;
                         }
@@ -438,7 +437,7 @@ void cen::SettingsDialog::installPlugin() noexcept
                         auto nWritten = dataStream.writeRawData(reinterpret_cast<const char *>(_plugin_bytes.get()), static_cast<int>(dynlib_stats.size));
                         if (nWritten < static_cast<int>(dynlib_stats.size))
                         {
-                            errorStrings.push_back(QString(tr("%1\nthe plugin file could not be written")).arg(file));
+                            errorStrings.push_back(tr("%1\nthe plugin file could not be written").arg(file));
                             emit watcher.progressValueChanged(++ipv);
                             continue;
                         }

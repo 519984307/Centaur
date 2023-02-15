@@ -15,6 +15,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QStandardPaths>
+#include <QTreeView>
 
 #include <QSettings>
 
@@ -30,7 +31,9 @@ SettingsDialog::Impl::Impl() :
 SettingsDialog::SettingsDialog(QWidget *parent) :
     QDialog { parent },
     _impl { new Impl },
-    _sesImpl { new SessionImpl }
+    _sesImpl { new SessionImpl },
+    _advImpl { new AdvancedImpl },
+    _sctImpl { new ShortcutsImpl }
 {
     ui()->setupUi(this);
     connect(ui()->acceptButton, &QPushButton::released, this, &SettingsDialog::onAccept);
@@ -117,6 +120,12 @@ void SettingsDialog::onAccept() noexcept
     settings.setValue("state", ui()->pluginsTableWidget->horizontalHeader()->saveState());
     settings.endGroup();
 
+    settings.beginGroup("shortcutsTreeViewWidget");
+    settings.setValue("geometry", ui()->shortcutsTree->saveGeometry());
+    settings.setValue("h-geometry", ui()->shortcutsTree->header()->saveGeometry());
+    settings.setValue("state", ui()->shortcutsTree->header()->saveState());
+    settings.endGroup();
+
     accept();
 }
 
@@ -144,6 +153,12 @@ void SettingsDialog::restoreInterface() noexcept
     ui()->pluginsTableWidget->restoreGeometry(settings.value("geometry").toByteArray());
     ui()->pluginsTableWidget->horizontalHeader()->restoreGeometry(settings.value("h-geometry").toByteArray());
     ui()->pluginsTableWidget->horizontalHeader()->restoreState(settings.value("state").toByteArray());
+    settings.endGroup();
+
+    settings.beginGroup("shortcutsTreeViewWidget");
+    ui()->shortcutsTree->restoreGeometry(settings.value("geometry").toByteArray());
+    ui()->shortcutsTree->header()->restoreGeometry(settings.value("h-geometry").toByteArray());
+    ui()->shortcutsTree->header()->restoreState(settings.value("state").toByteArray());
     settings.endGroup();
 }
 

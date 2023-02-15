@@ -17,6 +17,13 @@
 #include <QHBoxLayout>
 #include <QStandardItem>
 
+#include <rapidjson/document.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/writer.h>
+
+#include <fstream>
+
 #ifndef CENTAUR_SETTINGSDIALOG_HPP
 #include "Centaur.hpp"
 #include "SettingsDialog.hpp"
@@ -96,6 +103,68 @@ public:
 public:
     QStandardItem *_pixmapCache;
     QStandardItem *_pixmapCacheValue;
+};
+
+struct SettingsDialog::ShortcutsImpl final
+{
+    Q_DECLARE_TR_FUNCTIONS(ShortcutsImpl)
+
+public:
+    struct Wrapper
+    {
+        explicit Wrapper(QString fl) :
+            jsonDoc(new rapidjson::Document),
+            file { std::move(fl) }
+        {
+        }
+
+        ~Wrapper()
+        {
+            if (writeAtDestruction)
+                write();
+            delete jsonDoc;
+        }
+
+        Wrapper(Wrapper &&rp) :
+            jsonDoc { rp.jsonDoc },
+            file { std::move(rp.file) }
+        {
+            rp.jsonDoc = nullptr;
+        }
+
+        // Avoid memory leaks
+        Wrapper(const Wrapper &) = delete;
+
+        void write()
+        {
+            if (jsonDoc == nullptr)
+                return;
+
+            std::ofstream stream(file.toUtf8().constData());
+            rapidjson::OStreamWrapper r_stream(stream);
+            rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(r_stream);
+            jsonDoc->Accept(writer);
+        }
+
+        rapidjson::Document &operator()()
+        {
+            return *jsonDoc;
+        }
+
+        rapidjson::Document *jsonDoc;
+        QString file;
+        bool writeAtDestruction { true };
+    };
+
+public:
+    QStandardItemModel *itemModel;
+
+    std::map<QString, Wrapper> docKeymap;
+
+    QAction *duplicate { nullptr };
+    QAction *rename { nullptr };
+    QAction *restore { nullptr };
+    QAction *del { nullptr };
 };
 
 END_CENTAUR_NAMESPACE
