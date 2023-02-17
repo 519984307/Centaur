@@ -31,7 +31,10 @@ IF (DEFINED CENTAUR_ENV_DETECTED)
     FIND_PACKAGE(Qt6 COMPONENTS
             ${Qt6_Components}
             REQUIRED
-            PATHS ${CENTAUR_ENV_DETECTED})
+            PATHS "${CENTAUR_ENV_DETECTED}" NO_DEFAULT_PATH)
+
+
+    MESSAGE(STATUS "${Qt6_VERSION_MAJOR}.${Qt6_VERSION_MINOR}.${Qt6_VERSION_PATCH}")
 ELSE ()
     MESSAGE(STATUS "Centaur: Qt6 package in default paths")
     FIND_PACKAGE(Qt6 COMPONENTS
@@ -74,7 +77,8 @@ SET(CENT_SOURCE
         src/SettingsShortcutsPage.cpp
         src/SettingsAdvancedPage.cpp
         src/SettingsPluginsPage.cpp
-        src/SettingsSessionPage.cpp)
+        src/SettingsSessionPage.cpp
+        src/ShortcutDialog.cpp)
 
 SET(CENT_INCLUDE
         include/CentaurApp.hpp
@@ -108,7 +112,8 @@ SET(CENT_INCLUDE
         include/CandleChartDialog.hpp
         include/PixmapMemCacheDialog.hpp
         include/DAL.hpp
-        include/SettingsDialogData.hpp)
+        include/SettingsDialogData.hpp
+        include/ShortcutDialog.hpp)
 
 SET(CENT_UI
         ui/CentaurApp.ui
@@ -179,10 +184,10 @@ IF (USE_PCH)
     TARGET_PRECOMPILE_HEADERS(Centaur
             PRIVATE
             <QAction> <QDir> <QDirIterator> <QMenu> <QMessageBox> <QSortFilterProxyModel> <QStandardPaths> <QAreaSeries>
-            <QChartView> <QDateTimeAxis> <QGraphicsBlurEffect> <QImageReader> <QResizeEvent> <QShortcut> <QSqlDatabase>
-            <QSqlError> <QSqlField> <QSqlQuery> <QSqlRecord> <QFileInfo> <QSettings> <QDialog> <QFile> <QWidget> <QLabel>
-            <QCoreApplication> <QTextStream> <QVariant> <QPixmap> <QIcon> <QApplication> <QFrame> <QHBoxLayout> <QMainWindow>
-            <QPushButton> <QScrollArea> <QSpacerItem> <QSplitter> <QStackedWidget> <QToolButton> <QVBoxLayout>
+            <QChartView> <QDateTimeAxis> <QGraphicsBlurEffect> <QImageReader> <QResizeEvent> <QShortcut> <QSqlRecord> <QFileInfo>
+            <QSettings> <QDialog> <QFile> <QWidget> <QLabel> <QCoreApplication> <QTextStream> <QVariant> <QPixmap> <QIcon>
+            <QApplication> <QFrame> <QHBoxLayout> <QMainWindow> <QPushButton> <QScrollArea> <QSpacerItem> <QSplitter> <QStackedWidget>
+            <QToolButton> <QVBoxLayout> <QKeySequenceEdit>
             <rapidjson/document.h>
             <rapidjson/ostreamwrapper.h>
             <rapidjson/writer.h>
