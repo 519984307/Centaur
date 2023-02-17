@@ -21,7 +21,7 @@ IF (DEFINED CENTAUR_ENV_DETECTED)
     FIND_PACKAGE(Qt6 COMPONENTS
             ${Qt6_Components}
             REQUIRED
-            PATHS ${CENTAUR_ENV_DETECTED})
+            PATHS ${CENTAUR_ENV_DETECTED} NO_DEFAULT_PATH)
 ELSE ()
     MESSAGE(STATUS "BinanceSPOT: Qt6 package in default paths")
     FIND_PACKAGE(Qt6 COMPONENTS
@@ -37,7 +37,6 @@ SET(CMAKE_AUTORCC ON)
 SET(SOURCE_FILES
         src/BinanceSPOT.cpp
         src/SpotMarketWS.cpp
-        ../../Library/Helpers/src/OptionsWidget.cpp
         src/StatusDialog.cpp
         src/CoinInfoDialog.cpp
         src/NetworkAddressDialog.cpp
@@ -49,9 +48,8 @@ SET(SOURCE_FILES
 
 SET(INCLUDE_FILES
         include/BinanceSPOT.hpp
-        ../../Library/Helpers/include/OptionsWidget.hpp
-        ../../Library/Helpers/include/OptionsTableWidget.hpp
-        ../../Library/Helpers/src/OptionsTableWidget.cpp
+        ../../Library/cui/include/OptionsWidget.hpp
+        ../../Library/cui/include/OptionsTableWidget.hpp
         include/CoinInfoDialog.hpp
         include/NetworkAddressDialog.hpp
         include/AssetDetailDialog.hpp
@@ -83,7 +81,7 @@ TARGET_INCLUDE_DIRECTORIES(BinanceSPOT PRIVATE
         ../../Library/Exchanges/BinanceAPI/include
         ../../Library/Protocol/include
         ../include
-        ../../Library/Helpers/include
+        ../../Library/cui/include
         ../../include)
 
 
@@ -94,6 +92,7 @@ TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE cpr::cpr)
 TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE websockets)
 
 #Local libraries
+TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE cui)
 TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE uuid)
 TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE Protocol)
 TARGET_LINK_LIBRARIES(BinanceSPOT PRIVATE BinanceAPI)

@@ -18,7 +18,7 @@ IF (DEFINED CENTAUR_ENV_DETECTED)
     FIND_PACKAGE(Qt6 COMPONENTS
             ${Qt6_Components}
             REQUIRED
-            PATHS ${CENTAUR_ENV_DETECTED})
+            PATHS ${CENTAUR_ENV_DETECTED} NO_DEFAULT_PATH)
 ELSE ()
     MESSAGE(STATUS "ExchangeRate: Qt6 package in default paths")
     FIND_PACKAGE(Qt6 COMPONENTS
