@@ -39,7 +39,7 @@ void CENTAUR_NAMESPACE::BinanceSpotPlugin::setPluginInterfaces(CENTAUR_INTERFACE
 
 CENTAUR_NAMESPACE::uuid CENTAUR_NAMESPACE::BinanceSpotPlugin::getPluginUUID() const noexcept
 {
-    static uuid globalPluginUuid { g_uuidString };
+    static uuid globalPluginUuid { g_uuidString, false };
     return globalPluginUuid;
 }
 

@@ -109,7 +109,7 @@ void CENTAUR_PLUGIN_NAMESPACE::ValueThread::run()
 
 CENTAUR_PLUGIN_NAMESPACE::ExchangeRatePlugin::ExchangeRatePlugin(QObject *parent) :
     QObject(parent),
-    m_thisUUID { g_uuidString }
+    m_thisUUID { g_uuidString, false }
 {
 }
 
