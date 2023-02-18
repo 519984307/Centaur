@@ -66,7 +66,7 @@ namespace CENTAUR_PLUGIN_NAMESPACE
         Q_OBJECT
 
         Q_PLUGIN_METADATA(IID "com.centaur-project.plugin.ExchangeRatePlugin/1.0")
-        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IExchangeRate)
+        Q_INTERFACES(CENTAUR_PLUGIN_NAMESPACE::IBase CENTAUR_PLUGIN_NAMESPACE::IExchangeRate CENTAUR_PLUGIN_NAMESPACE::IStatus)
 
     public:
         explicit ExchangeRatePlugin(QObject *parent = nullptr);
