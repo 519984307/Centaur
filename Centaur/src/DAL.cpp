@@ -143,6 +143,39 @@ std::optional<bool> CENTAUR_NAMESPACE::dal::DataAccess::pluginExists(const QStri
     return q.size() > 0;
 }
 
+std::optional<CENTAUR_NAMESPACE::dal::PluginData> CENTAUR_NAMESPACE::dal::DataAccess::pluginInformation(const QString &uuid) noexcept
+{
+    QSqlQuery q;
+
+    q.prepare("SELECT name,version,manufacturer,centaur_uuid,enabled,checksum,dynamic,protected FROM plugins WHERE uuid = :uuid;");
+    q.bindValue(":uuid", uuid);
+
+    if (!q.exec())
+    {
+        QSqlError e = q.lastError();
+        QString er  = QString("%1").arg(e.text());
+        qDebug() << er;
+        logError("dbInsertPlugin", er);
+        return std::nullopt;
+    }
+
+    if(!q.size())
+        return {};
+
+    q.next();
+    return PluginData {
+        q.value(q.record().indexOf("name")).toString(),
+        q.value(q.record().indexOf("version")).toString(),
+        q.value(q.record().indexOf("manufacturer")).toString(),
+        uuid,
+        q.value(q.record().indexOf("centaur_uuid")).toString(),
+        q.value(q.record().indexOf("checksum")).toString(),
+        q.value(q.record().indexOf("dynamic")).toString(),
+        q.value(q.record().indexOf("enabled")).toBool(),
+        q.value(q.record().indexOf("protected")).toBool(),
+    };
+}
+
 std::optional<QList<CENTAUR_NAMESPACE::dal::PluginData>> CENTAUR_NAMESPACE::dal::DataAccess::pluginInformation() noexcept
 {
     QSqlQuery q;

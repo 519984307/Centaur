@@ -9,15 +9,17 @@
 #include "../../Library/cui/include/OptionsTableWidget.hpp"
 #include "../ui/ui_CentaurApp.h"
 #include "CentaurApp.hpp"
+#include "DAL.hpp"
 #include "SplashDialog.hpp"
+
+#include <QCryptographicHash>
+#include <QDataStream>
 #include <QDir>
 #include <QFile>
 #include <QHeaderView>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPluginLoader>
-#include <QString>
-#include <QUrl>
 
 namespace
 {
@@ -69,10 +71,14 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
     auto range = splash->getProgressRange();
     splash->setProgressRange(0, range.second + 2 * static_cast<int>(pluginsDir.entryList(QDir::Files).size()));
 
+#ifdef NO_PLUGIN_CHECKSUM_CHECK
+    logWarn("loadPlugins", "No checksum verification for plugins");
+#endif /**/
+
     for (const auto &plFile : pluginsDir.entryList(QDir::Files))
     {
         QString realFile = pluginsDir.absoluteFilePath(plFile);
-        // splash->setDisplayText(QString(tr("Looking for... %1")).arg(plFile));
+
         //  Detect if the file is a symbolic link
         QFileInfo info(realFile);
         if (info.isSymLink() || info.isSymbolicLink()
@@ -86,6 +92,23 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
 
         splash->setDisplayText(QString(tr("Loading: %1")).arg(plFile));
 
+#ifndef NO_PLUGIN_CHECKSUM_CHECK
+        const QString checksum = [&]() {
+            QFile ckFile(realFile);
+            if (!ckFile.open(QIODevice::ReadOnly))
+            {
+                logError("loadPlugins", "The file could not be opened for checksum check");
+                return QString("");
+            }
+            const auto data   = ckFile.readAll();
+            const QString ret = QCryptographicHash::hash(data, QCryptographicHash::Sha224).toHex();
+            ckFile.close();
+            return ret;
+        }();
+        if (checksum.isEmpty())
+            continue;
+#endif /*NO_PLUGIN_CHECKSUM_CHECK*/
+
         auto loader     = new QPluginLoader(realFile);
         QObject *plugin = loader->instance();
         splash->step();
@@ -96,14 +119,63 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
             auto baseInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IBase *>(plugin);
 
             if (baseInterface == nullptr)
-                logError("plugin", tr("The file is not a plugin"));
+                logError("loadPlugins", tr("The file is not a plugin"));
             else
             {
-                splash->setDisplayText(QString(tr("Initializing: %1 (%2)")).arg(baseInterface->getPluginName(), baseInterface->getPluginVersionString()));
+                splash->setDisplayText(tr("Initializing: %1 (%2)").arg(baseInterface->getPluginName(), baseInterface->getPluginVersionString()));
+
+                // Check data
+                const auto plDBInfo = dal::DataAccess::pluginInformation(baseInterface->getPluginUUID().to_qstring(false));
+
+                if (!plDBInfo.has_value())
+                {
+                    logError("loadPlugins", tr("Plugin %1 found in the filesystem but not in the installed database").arg(plFile));
+                    continue;
+                }
+
+                // Check the dynamic file name
+                if ((*plDBInfo).dynamic != plFile)
+                {
+                    logError("loadPlugins", tr("Plugin %1 filename and DB file discrepancies").arg(plFile));
+                    continue;
+                }
+
+                // Check UI Version
+                if ((*plDBInfo).centaur_uuid != CENTAUR_PLUGIN_NAMESPACE::centaurUUID)
+                {
+                    logError("loadPlugins", tr("Plugin %1 not supported").arg(plFile));
+                    continue;
+                }
+
+                if (!(*plDBInfo).enabled)
+                {
+                    logInfo("loadPlugins", tr("Plugin %1 is disabled").arg(plFile));
+                    continue;
+                }
+
+                if ((*plDBInfo).name != baseInterface->getPluginName())
+                {
+                    logError("loadPlugins", tr("Plugin %1 name and DB name discrepancies").arg(plFile));
+                    continue;
+                }
+
+                if ((*plDBInfo).version != baseInterface->getPluginVersionString())
+                {
+                    logError("loadPlugins", tr("Plugin %1 version string and DB version string discrepancies").arg(plFile));
+                    continue;
+                }
+
+#ifndef NO_PLUGIN_CHECKSUM_CHECK
+                if ((*plDBInfo).checksum != checksum)
+                {
+                    logError("loadPlugins", tr("Plugin %1 invalid checksum").arg(plFile));
+                    continue;
+                }
+#endif /*NO_PLUGIN_CHECKSUM_CHECK*/
 
                 mapPluginBase(baseInterface);
 
-                logInfo("plugin", QString(tr("Plugin found in file: ##F2FEFF#%1#")).arg(plFile));
+                logInfo("loadPlugins", tr("Plugin found in file: ##F2FEFF#%1#").arg(plFile));
 
                 // Init the plugin
                 auto pluginConfig = new PluginConfiguration(baseInterface->getPluginUUID().to_string().c_str());
@@ -116,11 +188,11 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
 
                 if (auto exInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IExchange *>(plugin); exInterface)
                 {
-                    logInfo("plugin", QString(tr("IExchange plugin found in file: ##F2FEFF#%1#")).arg(plFile));
+                    logInfo("loadPlugins", tr("IExchange plugin found in file: ##F2FEFF#%1#").arg(plFile));
                     if (!initExchangePlugin(exInterface))
                     {
                         loader->unload();
-                        logWarn("plugin", QString(tr("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded")).arg(plFile));
+                        logWarn("loadPlugins", tr("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded").arg(plFile));
                         removeLastPluginBase();
                         continue;
                     }
@@ -128,7 +200,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
 
                 if (auto stInterface = qobject_cast<CENTAUR_PLUGIN_NAMESPACE::IStatus *>(plugin); stInterface)
                 {
-                    logInfo("plugin", QString(tr("IStatus plugin found in file: ##F2FEFF#%1#")).arg(plFile));
+                    logInfo("loadPlugins", tr("IStatus plugin found in file: ##F2FEFF#%1#").arg(plFile));
                     // Init the plugin
                     initStatusPlugin(stInterface);
                 }
@@ -264,7 +336,7 @@ CENTAUR_NAMESPACE::OptionsTableWidget *CENTAUR_NAMESPACE::CentaurApp::populateEx
         {
             QMenu contextMenu("Context menu", this);
 
-            QAction action(QString(tr("Add '%1' to the watchlist")).arg(itemData), this);
+            QAction action(tr("Add '%1' to the watchlist").arg(itemData), this);
             contextMenu.addAction(&action);
 
             connect(&action, &QAction::triggered, this,

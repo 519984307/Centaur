@@ -60,8 +60,11 @@ namespace CENTAUR_NAMESPACE::dal
         /// \brief Creates the database an all its queries
         static OpenDatabaseCode createDatabase(QWidget *parent = nullptr) noexcept;
 
-        /// \brief Determinates if a plugin exists
+        /// \brief Determinate if a plugin exists
         static std::optional<bool> pluginExists(const QString &uuid) noexcept;
+
+        /// \brief Get a plugin data
+        static std::optional<PluginData> pluginInformation(const QString &uuid) noexcept;
 
         /// \brief Retrieve all plugin information
         static std::optional<QList<PluginData>> pluginInformation() noexcept;
