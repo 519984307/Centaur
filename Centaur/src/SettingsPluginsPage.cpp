@@ -154,7 +154,7 @@ void SettingsDialog::initPluginsWidget() noexcept
 
             for (auto &loadedPlugins : g_app->getPluginBase())
             {
-                if (loadedPlugins->getPluginUUID() != data.uuid)
+                if (loadedPlugins->getPluginUUID() == data.uuid)
                 {
                     itemLoaded->setText(tr("Loaded"));
                     itemLoaded->setData(Qt::UserRole + 1, 1);

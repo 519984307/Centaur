@@ -119,7 +119,7 @@ namespace CENTAUR_NAMESPACE
     {
         try
         {
-            return id1 == cen::uuid { str.toStdString() };
+            return id1 == str.toStdString();
         } catch (C_UNUSED const std::exception &ex)
         {
             return false;

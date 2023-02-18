@@ -328,7 +328,10 @@ bool cen::operator==(const uuid &id1, const std::string &str) noexcept
 {
     try
     {
-        return id1 == cen::uuid { str };
+        bool testForCurly = false;
+        if (!str.empty() && str[0] == '{')
+            testForCurly = true;
+        return id1 == cen::uuid { str, testForCurly };
     } catch (C_UNUSED const std::exception &ex)
     {
         return false;
