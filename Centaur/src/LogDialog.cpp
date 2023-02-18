@@ -151,7 +151,7 @@ void LogDialog::onLog(unsigned long long date, int session, int level, const QSt
     int curRow = logger->rowCount();
     logger->insertRow(curRow);
 
-    auto insertItem = [&](const int &col, const QString &text, const QColor &color, const int &align = Qt::AlignCenter) {
+    auto insertItem = [&](const int &col, const QString &text, const QColor &color, const Qt::Alignment &align = Qt::AlignCenter) {
         auto item = new QTableWidgetItem(text);
         item->setFont(QFont("Roboto", 12));
         item->setForeground(color);
