@@ -28,7 +28,7 @@ CENTAUR_NAMESPACE::CoinInfoDialog::CoinInfoDialog(BINAPI_NAMESPACE::AllCoinsInfo
     m_ui->searchEdit->setPlaceholderText("Search...");
 
     m_ui->tableView->initialize(m_ui->searchEdit, 14, -1, 13, 0);
-    connect(m_ui->tableView, &OptionsTableWidget::viewItem, this, &CoinInfoDialog::onViewItem);
+    connect(m_ui->tableView, &OptionsTableWidget::viewItemPressed, this, &CoinInfoDialog::onViewItem);
 
     restoreInterfaceState();
 
