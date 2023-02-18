@@ -52,7 +52,6 @@ SET(CENT_SOURCE
         src/Logger.cpp
         src/Globals.cpp
         src/Plugins.cpp
-        src/PluginsDialog.cpp
         src/FavoritesDialog.cpp
         src/ConfigurationInterface.cpp
         src/ProtocolClient.cpp
@@ -86,7 +85,6 @@ SET(CENT_INCLUDE
         include/CentaurUIState.hpp
         include/Logger.hpp
         include/Globals.hpp
-        include/PluginsDialog.hpp
         include/FavoritesDialog.hpp
         include/ConfigurationInterface.hpp
         include/crc64.hpp
@@ -117,7 +115,6 @@ SET(CENT_INCLUDE
 
 SET(CENT_UI
         ui/CentaurApp.ui
-        ui/PluginsDialog.ui
         ui/FavoritesDialog.ui
         ui/CandleViewWidget.ui
         ui/LogDialog.ui
