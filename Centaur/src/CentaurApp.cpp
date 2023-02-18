@@ -8,12 +8,12 @@
 #include "../ui/ui_CentaurApp.h"
 #include "CandleChartDialog.hpp"
 #include "CandleViewWidget.hpp"
+#include "DAL.hpp"
 #include "DepthChartDialog.hpp"
 #include "FavoritesDialog.hpp"
 #include "LogDialog.hpp"
 #include "LoginDialog.hpp"
 #include "OrderbookDialog.hpp"
-#include "PluginsDialog.hpp"
 #include "SettingsDialog.hpp"
 #include "SplashDialog.hpp"
 #include <QAreaSeries>
@@ -24,12 +24,14 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QResizeEvent>
+#include <QShortcut>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
 #include <QSqlRecord>
-#include <QStyledItemDelegate>
+#include <QStandardPaths>
+#include <QTextStream>
 #include <QtCharts/QValueAxis>
 #include <utility>
 
@@ -222,6 +224,10 @@ CentaurApp::CentaurApp(QWidget *parent) :
     setWindowFlag(Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
+    /* TODO: On Final Release. Plugins Path must be in the Application Data path
+     * This is more of an issue on MacOS Bundles
+     * QString data = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+     */
     g_globals->paths.pluginsPath = g_globals->paths.appPath + "/Contents/Plugins";
 
 #else
@@ -244,6 +250,7 @@ CentaurApp::CentaurApp(QWidget *parent) :
 
     // Start the interface
     initializeInterface();
+    initializeShortcuts();
     splashScreen->step();
 
     // Start the server
@@ -261,6 +268,7 @@ CentaurApp::CentaurApp(QWidget *parent) :
     splashScreen->step();
 
     /*
+
                         onCandleView("ETHUSDT", m_candleViewSupport.begin()->first, plugin::ICandleView::TimeFrame::Minutes_1, pluginInformationFromBase(m_exchangeList.begin()->second.exchange));
                     */
 
@@ -384,14 +392,26 @@ void CentaurApp::closeEvent(QCloseEvent *event)
 
 void CentaurApp::initializeDatabaseServices() noexcept
 {
-    auto db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName(g_globals->paths.resPath + "/Local/centaur.db");
+    using namespace dal;
+    auto status = DataAccess::openDatabase(this);
 
-    if (!db.open())
+    switch (status)
     {
-        logFatal("app", tr("The Centaur database could not be opened"));
-        QMessageBox::critical(this, tr("Error"), tr("The Centaur database could not be opened"));
-        exit(EXIT_FAILURE);
+        case OpenDatabaseCode::Fatal:
+            {
+                QMessageBox::critical(this, tr("Error"), tr("The Centaur database could not be opened."));
+                exit(EXIT_FAILURE);
+            }
+
+        case OpenDatabaseCode::Recreate:
+            {
+                status = DataAccess::createDatabase(this);
+                if (status == OpenDatabaseCode::Fatal)
+                    exit(EXIT_FAILURE);
+            }
+            break;
+        case OpenDatabaseCode::Ok:
+            [[likely]];
     }
 
     m_sqlFavorites = new FavoritesDBManager;
@@ -670,6 +690,135 @@ border: 0px;
     _impl->last7Chart->setMargins(QMargins(0, 0, 0, 0));
 }
 
+void CentaurApp::initializeShortcuts() noexcept
+{
+    namespace json = rapidjson;
+
+    QSettings settings("CentaurProject", "Centaur");
+    settings.beginGroup("Settings.Keymap");
+    const auto savedKeymap = settings.value("keymap", ".").toString();
+    settings.endGroup();
+
+    // Load the schema file
+    const QString schemaJSONKeymap = g_globals->paths.resPath + "/Schema/keymap.schema.json";
+    QFile file(schemaJSONKeymap);
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        const QString message = tr("An internal file is missing for the keyboard shortcuts. Reinstalling the application might solve the problem");
+
+        logError("initializeShortcuts", message);
+
+        QMessageBox::critical(this,
+            tr("Missing file"),
+            message,
+            QMessageBox::Ok);
+
+        return;
+    }
+
+    QTextStream textStream(&file);
+    json::Document schemaJSONDoc;
+    schemaJSONDoc.Parse(textStream.readAll().toUtf8().constData());
+    if (schemaJSONDoc.HasParseError())
+    {
+        const QString message = tr("An internal file is corrupted for the keyboard shortcuts. Reinstalling the application might solve the problem");
+
+        logError("initializeShortcuts", message);
+
+        QMessageBox::critical(this,
+            tr("Corrupted file"),
+            message,
+            QMessageBox::Ok);
+
+        return;
+    }
+
+    json::SchemaDocument schemaDoc(schemaJSONDoc);
+    json::SchemaValidator schemaValidator(schemaDoc);
+
+    // Read the json files
+    QStringList searchPaths {
+        g_globals->paths.resPath + "/Keymap/",                                              // internal files
+        QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/keymap/" // user defined
+    };
+
+    for (const auto &path : searchPaths)
+    {
+        QDirIterator it(path, QDirIterator::NoIteratorFlags);
+        while (it.hasNext())
+        {
+            QFileInfo nfo(it.next());
+            if (nfo.completeSuffix() != "keymap.json")
+            {
+                logWarn("initializeShortcuts", tr("An extraneous file (%1) in a keymap path (%2) was found").arg(nfo.fileName(), path));
+                continue;
+            }
+
+            QFile jsonKeymap(nfo.absoluteFilePath());
+            if (!jsonKeymap.open(QIODevice::ReadOnly))
+            {
+                logWarn("initializeShortcuts", tr("File %1 in the keymap path (%2) could not be opened").arg(nfo.fileName(), path));
+                continue;
+            }
+
+            QTextStream jsonFileData(&jsonKeymap);
+
+            json::Document jsonDoc;
+            jsonDoc.Parse(jsonFileData.readAll().toUtf8().constData());
+
+            if (jsonDoc.HasParseError())
+            {
+                logWarn("initializeShortcuts", tr("File %1 in the keymap path (%2) is not a valid JSON file").arg(nfo.fileName(), path));
+                continue;
+            }
+
+            if (!jsonDoc.Accept(schemaValidator))
+            {
+                logWarn("initializeShortcuts", tr("File %1 in the keymap path (%2) is not a valid keymap json file").arg(nfo.fileName(), path));
+                continue;
+            }
+
+            const QString keymapName { jsonDoc["name"].GetString() };
+
+            if (savedKeymap == keymapName)
+            {
+                loadShortcuts(jsonDoc);
+                return;
+            }
+        }
+    }
+}
+
+void CentaurApp::loadShortcuts(const rapidjson::Document &document) noexcept
+{
+
+    auto doConnection = [&](auto &json, auto &&func) {
+        auto shortcut = new QShortcut(QKeySequence::fromString(json["shortcut"].GetString(), QKeySequence::PortableText), this);
+
+        this->connect(shortcut, &QShortcut::activated, this, func);
+    };
+
+    for (const auto &wnd : document["keymap"]["Window"].GetArray())
+    {
+        if (wnd["id"] == "open-settings")
+        {
+            doConnection(wnd, &CentaurApp::onShowSettings);
+        }
+    }
+
+    for (const auto &tls : document["keymap"]["Tools"].GetArray())
+    {
+        if (tls["id"] == "open-plugins-info")
+        {
+            doConnection(tls, &CentaurApp::onShowPlugins);
+        }
+        else if (tls["id"] == "open-log-window")
+        {
+            doConnection(tls, &CentaurApp::onShowLogDialog);
+        }
+    }
+}
+
 void CentaurApp::saveInterfaceState() noexcept
 {
     logTrace("app", "CentaurApp::saveInterfaceState()");
@@ -713,6 +862,21 @@ void CentaurApp::loadInterfaceState() noexcept
     settings.beginGroup("Splitter0");
     ui()->splitter->restoreGeometry(settings.value("geometry").toByteArray());
     ui()->splitter->restoreState(settings.value("state").toByteArray());
+    settings.endGroup();
+
+    // Load advanced settings
+    settings.beginGroup("advancedSettings-PixmapCache");
+    // Always write the default
+    settings.setValue("default", QPixmapCache::cacheLimit());
+    int pixCacheValue = settings.value("size", -1).toInt();
+    if (pixCacheValue == -1 || pixCacheValue > 1'073'741'824 || pixCacheValue < 10'240'000)
+    {
+        logError("loadInterfaceState", QString(tr("Pixmap Cache Memory Value is not correct (%1)")).arg(pixCacheValue));
+    }
+    else
+    {
+        QPixmapCache::setCacheLimit(pixCacheValue);
+    }
     settings.endGroup();
 
     logInfo("app", "UI state loaded");
@@ -1044,9 +1208,11 @@ void CentaurApp::plotSevenDaysChart(const QString &symbol, const QList<std::pair
 void CentaurApp::onShowPlugins() noexcept
 {
     QGraphicsBlurEffect blur;
-    setGraphicsEffect(&blur);
 
-    PluginsDialog dlg(this);
+    SettingsDialog dlg(this);
+
+    dlg.setPage(SettingsDialog::Pages::Plugins);
+
     dlg.exec();
 }
 
@@ -1059,6 +1225,9 @@ void CentaurApp::onShowLogDialog() noexcept
 
 void CentaurApp::onShowSettings() noexcept
 {
+    QGraphicsBlurEffect blur;
+    setGraphicsEffect(&blur);
+
     SettingsDialog dlg(this);
 
     if (dlg.exec() == QDialog::Accepted)
