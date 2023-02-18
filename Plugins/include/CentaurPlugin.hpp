@@ -26,7 +26,7 @@
 #include <QStatusBar>
 #include <QString>
 #include <QToolBar>
-#include <QtPlugin>
+// #include <QtPlugin>
 #endif /*DONT_INCLUDE_QT*/
 
 /// Current Centaur plugin version 0.2.0
