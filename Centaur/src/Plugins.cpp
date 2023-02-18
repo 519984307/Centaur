@@ -121,6 +121,8 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
                     {
                         loader->unload();
                         logWarn("plugin", QString(tr("Plugin IExchange in file: ##F2FEFF#%1#, was unloaded")).arg(plFile));
+                        removeLastPluginBase();
+                        continue;
                     }
                 }
 
@@ -130,6 +132,7 @@ void CENTAUR_NAMESPACE::CentaurApp::loadPlugins(SplashDialog *splash) noexcept
                     // Init the plugin
                     initStatusPlugin(stInterface);
                 }
+
                 if (loader->isLoaded())
                 {
                     mapPluginInstance(loader);

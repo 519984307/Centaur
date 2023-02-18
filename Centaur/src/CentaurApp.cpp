@@ -255,7 +255,7 @@ CentaurApp::CentaurApp(QWidget *parent) :
 
     // Start the server
     splashScreen->setDisplayText(tr("Starting the communication server"));
-    startCommunicationsServer();
+    // startCommunicationsServer();
     splashScreen->step();
 
     // Load plugins
@@ -338,6 +338,11 @@ LogDialog *CentaurApp::logDialog() noexcept
 void CentaurApp::mapPluginBase(CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept
 {
     _impl->pluginsData.emplace_back(base);
+}
+
+void CentaurApp::removeLastPluginBase() noexcept
+{
+    _impl->pluginsData.pop_back();
 }
 
 void CentaurApp::mapConfigurationInterface(const uuid &id, PluginConfiguration *config)

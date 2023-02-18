@@ -125,6 +125,7 @@ public:
 
 protected:
     void mapPluginBase(CENTAUR_PLUGIN_NAMESPACE::IBase *base) noexcept;
+    void removeLastPluginBase() noexcept;
     void mapConfigurationInterface(const uuid &id, PluginConfiguration *config);
     void mapExchangePlugin(const uuid &id, const ExchangeInformation &info);
     void mapPluginInstance(QPluginLoader *loader);
