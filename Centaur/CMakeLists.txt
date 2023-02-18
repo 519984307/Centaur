@@ -263,7 +263,7 @@ TARGET_LINK_LIBRARIES(Centaur PRIVATE cui)
 
 IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # Control clang warnings
-    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories ")
+    SET(COMPILER_OPTIONS " -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-reserved-identifier -Wno-poison-system-directories -Wno-c++20-compat")
 
     SET_SOURCE_FILES_PROPERTIES(
             ${CENT_INCLUDE}
