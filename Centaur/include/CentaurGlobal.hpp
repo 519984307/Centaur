@@ -74,25 +74,6 @@ CENTAUR_WARN_OFF("-Welaborated-enum-base")
 CENTAUR_WARN_POP()
 #endif
 
-#if defined(__clang__) || defined(__GNUC__)
-// clang-format off
-CENTAUR_WARN_PUSH()
-CENTAUR_WARN_OFF("-Wreserved-identifier")
-CENTAUR_WARN_OFF("-Wquoted-include-in-framework-header")
-CENTAUR_WARN_OFF("-Wdouble-promotion")
-CENTAUR_WARN_OFF("-Wfloat-equal")
-CENTAUR_WARN_OFF("-Wdocumentation-unknown-command")
-CENTAUR_WARN_OFF("-Winconsistent-missing-destructor-override")
-CENTAUR_WARN_OFF("-Wweak-vtables")
-CENTAUR_WARN_OFF("-Wsuggest-destructor-override")
-// clang-format on
-#endif /*__clang__*/
-// #include <qwt_plot_curve.h>
-// #include <qwt_scale_engine.h>
-#if defined(__clang__) || defined(__GNUC__)
-CENTAUR_WARN_POP()
-#endif /*__clang__*/
-
 #endif /*DONT_INCLUDE_QT*/
 
 #endif // CENTAUR_APPLICATION_GLOBALS_HPP
