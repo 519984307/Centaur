@@ -5,6 +5,7 @@
 //
 #include "CandleTimeAxisItem.hpp"
 #include <QApplication>
+#include <QDateTime>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QPainter>

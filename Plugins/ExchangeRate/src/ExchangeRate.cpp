@@ -9,6 +9,7 @@
 #include "CentaurPlugin.hpp"
 #include "Protocol.hpp"
 #include <QApplication>
+#include <QDate>
 #include <QFile>
 #include <QMessageBox>
 #include <QObject>

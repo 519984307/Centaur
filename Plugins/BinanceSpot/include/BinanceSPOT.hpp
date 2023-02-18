@@ -17,6 +17,7 @@
 #include "WSSpotBinanceAPI.hpp"
 #include <CentaurInterface.hpp>
 #include <CentaurPlugin.hpp>
+#include <QDate>
 #include <QIcon>
 #include <QMap>
 #include <QMetaType>
