@@ -1,11 +1,26 @@
 {
   "name": "Windows",
   "base": "internal",
-  "keymap": [
-    {
-      "id": 0,
-      "parent": 0,
-      "shortcut": "dfd"
-    }
-  ]
+  "keymap": {
+    "Window": [
+      {
+        "id": "close-window",
+        "shortcut": ""
+      },
+      {
+        "id": "open-settings",
+        "shortcut": ""
+      }
+    ],
+    "Tools": [
+      {
+        "id": "open-plugins-info",
+        "shortcut": ""
+      },
+      {
+        "id": "open-log-window",
+        "shortcut": ""
+      }
+    ]
+  }
 }
