@@ -156,6 +156,17 @@ public:
         bool writeAtDestruction { true };
     };
 
+    // In order to have translations on the UI
+    // This structure maps the ID from the keymap to a translatable string
+    struct KeymapFileNameMap
+    {
+        Q_DECLARE_TR_FUNCTIONS(KeymapFileNameMap)
+    public:
+        KeymapFileNameMap();
+        std::map<QString, QString> keyNameMap;
+    } shortcutNameMap;
+
+
 public:
     QStandardItemModel *itemModel;
 

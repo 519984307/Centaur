@@ -76,6 +76,7 @@ protected slots:
     void restoreDefaultKeymap(bool triggered) noexcept;
     void removeKeymap(bool triggered) noexcept;
     void shortcutSelectionChanged(int index) noexcept;
+    void shortcutDoubleClick(const QModelIndex &index) noexcept;
 
 protected:
     void restoreInterface() noexcept;

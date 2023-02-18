@@ -2,45 +2,25 @@
   "name": "MacOS",
   "base": "internal",
   "keymap": {
-    "ShowWindow": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "1": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "2": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "3": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "4": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "5": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "6": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "7": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "8": {
-      "parent": 0,
-      "shortcut": ""
-    },
-    "9": {
-      "parent": 0,
-      "shortcut": ""
-    }
+    "Window": [
+      {
+        "id": "close-window",
+        "shortcut": "Ctrl+Q"
+      },
+      {
+        "id": "open-settings",
+        "shortcut": "Ctrl+,"
+      }
+    ],
+    "Tools": [
+      {
+        "id": "open-plugins-info",
+        "shortcut": "Ctrl+Alt+P"
+      },
+      {
+        "id": "open-log-window",
+        "shortcut": "Ctrl+Alt+0"
+      }
+    ]
   }
 }

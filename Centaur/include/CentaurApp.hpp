@@ -67,6 +67,9 @@ protected:
 private:
     /// \brief initializeInterface Set interface status
     void initializeInterface() noexcept;
+    /// \brief Initialize keyboard shortcuts
+    void initializeShortcuts() noexcept;
+    void loadShortcuts(const rapidjson::Document &document) noexcept;
     /// \brief Load the internal centaur database file
     void initializeDatabaseServices() noexcept;
     /// \brief Store the user interface geometry and state before closing

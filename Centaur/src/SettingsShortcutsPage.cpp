@@ -7,6 +7,7 @@
 #include "../ui/ui_SettingsDialog.h"
 #include "Globals.hpp"
 #include "SettingsDialog.hpp"
+#include "ShortcutDialog.hpp"
 
 #include "Logger.hpp"
 #include <QAction>
@@ -24,10 +25,15 @@
 
 BEGIN_CENTAUR_NAMESPACE
 
-/**
- * \brief In order to have translations on the Shortcuts
- * all the json files are indexes
- */
+SettingsDialog::ShortcutsImpl::KeymapFileNameMap::KeymapFileNameMap()
+{
+    keyNameMap["Window"]            = tr("Main window");
+    keyNameMap["Tools"]             = tr("Main tool windows");
+    keyNameMap["close-window"]      = tr("Close main window");
+    keyNameMap["open-settings"]     = tr("Open settings dialog");
+    keyNameMap["open-plugins-info"] = tr("Open plugins information");
+    keyNameMap["open-log-window"]   = tr("Open log dialog");
+}
 
 void SettingsDialog::initShortcutsWidget() noexcept
 {
@@ -38,14 +44,13 @@ void SettingsDialog::initShortcutsWidget() noexcept
     proxyModel->setFilterKeyColumn(0);
     proxyModel->setSourceModel(_sctImpl->itemModel);
     proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    proxyModel->setRecursiveFilteringEnabled(true);
 
     ui()->shortcutsTree->setModel(proxyModel);
 
     connect(ui()->shortcutSearch, &QLineEdit::textChanged, proxyModel, &QSortFilterProxyModel::setFilterFixedString);
 
     _sctImpl->itemModel->setHorizontalHeaderLabels({ tr("Editor Action"), tr("Shortcut") });
-
-
 
     // Load the schema file
     const QString schemaJSONKeymap = g_globals->paths.resPath + "/Schema/keymap.schema.json";
@@ -156,15 +161,18 @@ void SettingsDialog::initShortcutsWidget() noexcept
     auto savedKeymap = settings.value("keymap", ".").toString();
     settings.endGroup();
 
-
-
     connect(ui()->shortcutsComboBox, &QComboBox::currentIndexChanged, this, &SettingsDialog::shortcutSelectionChanged);
 
     if (savedKeymap != ".")
     {
         int savedIndex = ui()->shortcutsComboBox->findText(savedKeymap);
-        if (savedIndex != -1)
+        if (savedIndex > 0)
             ui()->shortcutsComboBox->setCurrentIndex(savedIndex);
+        else
+        {
+            if (savedIndex == 0)
+                shortcutSelectionChanged(0);
+        }
     }
 
     // Init the combobox
@@ -202,6 +210,8 @@ void SettingsDialog::initShortcutsWidget() noexcept
 
         contextMenu.exec(point);
     });
+
+    connect(ui()->shortcutsTree, &QTreeView::doubleClicked, this, &SettingsDialog::shortcutDoubleClick);
 }
 
 void SettingsDialog::duplicateKeymap(C_UNUSED bool triggered) noexcept
@@ -298,8 +308,6 @@ void SettingsDialog::duplicateKeymap(C_UNUSED bool triggered) noexcept
     // Set the file
     ui()->shortcutsComboBox->setItemData(newItemIndex, newJsonFile, Qt::UserRole + 2);
 
-    qDebug() << QString(jsonDoc["name"].GetString());
-
     _sctImpl->docKeymap.emplace(newKeymapName, newJsonFile);
     _sctImpl->docKeymap.at(newKeymapName)().Swap(jsonDoc);
 
@@ -349,12 +357,33 @@ void SettingsDialog::restoreDefaultKeymap(C_UNUSED bool triggered) noexcept
     const QString currentText = ui()->shortcutsComboBox->currentText();
 
     auto response = QMessageBox::question(this,
-        tr("Delete keymap"),
+        tr("Restore keymap"),
         tr("Are you sure you want to restore the defaults for %1").arg(currentText),
         QMessageBox::Yes | QMessageBox::No);
 
     if (response == QMessageBox::No)
         return;
+
+    const auto baseString = ui()->shortcutsComboBox->itemData(currentIndex, Qt::UserRole + 1).toString();
+
+    auto baseIter = _sctImpl->docKeymap.find(baseString);
+
+    if (baseIter == _sctImpl->docKeymap.end())
+    {
+        QMessageBox::information(this,
+            tr("Restore keymap"),
+            tr("Origin '%1' of the current key is not present").arg(currentText),
+            QMessageBox::Yes);
+
+        return;
+    }
+
+    const auto &originDoc = baseIter->second();
+    auto &currentDoc      = _sctImpl->docKeymap.at(currentText)()["keymap"];
+
+    currentDoc.CopyFrom(originDoc["keymap"], _sctImpl->docKeymap.at(currentText)().GetAllocator());
+
+    shortcutSelectionChanged(currentIndex);
 }
 
 void SettingsDialog::removeKeymap(C_UNUSED bool triggered) noexcept
@@ -394,12 +423,107 @@ void SettingsDialog::removeKeymap(C_UNUSED bool triggered) noexcept
 
 void SettingsDialog::shortcutSelectionChanged(int index) noexcept
 {
-    const auto currentComboText = ui()->shortcutsComboBox->currentText();
+    const auto currentComboText = ui()->shortcutsComboBox->itemText(index);
 
     QSettings settings("CentaurProject", "Centaur");
     settings.beginGroup("Settings.Keymap");
     settings.setValue("keymap", currentComboText);
     settings.endGroup();
+
+    const auto &jsonDoc = _sctImpl->docKeymap.at(currentComboText)()["keymap"];
+    const auto &trMap   = _sctImpl->shortcutNameMap.keyNameMap;
+
+    _sctImpl->itemModel->removeRows(0, _sctImpl->itemModel->rowCount());
+
+    for (const auto &topLevel : jsonDoc.GetObject())
+    {
+        auto topLevelIter = trMap.find(QString(topLevel.name.GetString()));
+        if (topLevelIter == trMap.end())
+        {
+            logWarn("shortcut", "found an invalid key");
+            continue;
+        }
+
+        QStandardItem *item = new QStandardItem(topLevelIter->second);
+        _sctImpl->itemModel->insertRow(_sctImpl->itemModel->rowCount(), item);
+
+        QString jsonTopLevel { topLevel.name.GetString() };
+
+        for (auto &innerLevel : topLevel.value.GetArray())
+        {
+            const QString id { innerLevel["id"].GetString() };
+            const QString shortcut { innerLevel["shortcut"].GetString() };
+
+            auto innerLevelIter = trMap.find(id);
+            if (innerLevelIter == trMap.end())
+            {
+                logWarn("shortcut", tr("found an invalid key in the inner levels %1").arg(id));
+                continue;
+            }
+
+            QStandardItem *innerName     = new QStandardItem(innerLevelIter->second);
+            QStandardItem *innerShortcut = new QStandardItem(QKeySequence::fromString(shortcut, QKeySequence::PortableText).toString(QKeySequence::NativeText));
+
+            innerShortcut->setData(jsonTopLevel, Qt::UserRole + 1);
+            innerShortcut->setData(innerLevel["id"].GetString(), Qt::UserRole + 2);
+
+            item->insertRow(0, { innerName, innerShortcut });
+        }
+    }
+
+    ui()->shortcutsTree->expandAll();
+}
+
+void SettingsDialog::shortcutDoubleClick(const QModelIndex &index) noexcept
+{
+    if (!index.isValid())
+        return;
+
+    if (!index.parent().isValid())
+    {
+        QMessageBox::information(this,
+            tr("Wrong index"),
+            tr("Top level items are not modifiable"),
+            QMessageBox::Ok);
+
+        return;
+    }
+
+    auto proxyModel = qobject_cast<QSortFilterProxyModel *>(ui()->shortcutsTree->model());
+
+    int selectionRow = index.row();
+
+    auto nameIndex     = proxyModel->mapToSource(proxyModel->index(selectionRow, 0, index.parent()));
+    auto shortcutIndex = proxyModel->mapToSource(proxyModel->index(selectionRow, 1, index.parent()));
+
+    if (!nameIndex.isValid() || !shortcutIndex.isValid())
+        return;
+
+    ShortcutDialog dlg(this);
+
+    dlg.setShortcutInformation(nameIndex.data().toString(), shortcutIndex.data().toString());
+
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        const auto &topLevel   = shortcutIndex.data(Qt::UserRole + 1).toString();
+        const auto &innerLevel = shortcutIndex.data(Qt::UserRole + 2).toString();
+
+        const auto currentIndex  = ui()->shortcutsComboBox->currentText();
+        const auto &jsonDocArray = _sctImpl->docKeymap.at(currentIndex)()["keymap"][topLevel.toUtf8().constData()].GetArray();
+
+        const auto shortcutString = dlg.getShortcut();
+
+        for (auto &doc : jsonDocArray)
+        {
+            if (innerLevel == doc["id"].GetString())
+            {
+                doc["shortcut"].SetString(shortcutString.toString(QKeySequence::PortableText).toUtf8().constData(), _sctImpl->docKeymap.at(currentIndex)().GetAllocator());
+                break;
+            }
+        }
+
+        _sctImpl->itemModel->setData(shortcutIndex, shortcutString.toString(QKeySequence::NativeText), Qt::DisplayRole);
+    }
 }
 
 END_CENTAUR_NAMESPACE

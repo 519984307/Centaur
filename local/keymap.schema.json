@@ -1,39 +1,4 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "name": {
-      "type": "string"
-    },
-    "base": {
-      "type": "string"
-    },
-    "keymap": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "parent": {
-            "type": "integer"
-          },
-          "id": {
-            "type": "integer"
-          },
-          "shortcut": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "parent",
-          "id",
-          "shortcut"
-        ]
-      }
-    }
-  },
-  "required": [
-    "name",
-    "base",
-    "keymap"
-  ]
+  "type": "object"
 }
