@@ -169,39 +169,38 @@ namespace CENTAUR_PROTOCOL_NAMESPACE
     /// \brief Object encryption as well af the generation of public and private keys
     struct Encryption final
     {
-        enum class BinaryBase
-        {
-            Base64,
-            Base16, /// Hexadecimal format
-        };
-
     public:
         Encryption();
         ~Encryption();
 
     public:
-        /// \brief Loads and validates a private key. Expect an exception if an error occur
-        /// \param file File name
-        auto loadPrivateKey(const std::string &file) -> void;
-
-        /// \brief Loads and validates a public key. Expect an exception if an error occur
-        /// \param file File name
-        auto loadPublicKey(const std::string &file) -> void;
+        auto loadKeyPair(const std::string &privateFile, const std::string &publicFile, const std::string &passphrase) -> void;
 
         /// \brief Encrypt with the private key
         /// \param plainText Data to encrypt
-        /// \param base Return data in this formatted string
         /// \return Return Base64 or Base156 according
-        auto encryptPrivate(const std::string &plainText, const BinaryBase base) -> std::string;
+        auto encryptPrivate(const std::string &plainText) -> std::string;
 
-        auto decryptPrivate(const std::string &cipherText, const BinaryBase base) -> std::string;
+        auto decryptPrivate(const std::string &cipherText) -> std::string;
 
-        auto encryptPublic(const std::string &plainText, const BinaryBase base) -> std::string;
+        auto encryptPublic(const std::string &plainText) -> std::string;
 
         /// \brief Decrypt with the public key
         /// \param cipherText Data to decrypt
         /// \return an array of the decrypted data
-        auto decryptPublic(const std::string &cipherText, const BinaryBase base) -> std::string;
+        auto decryptPublic(const std::string &cipherText) -> std::string;
+
+    public:
+        /// \throws std::runtime_error when an error occur
+        static auto generateRSAPrivatePublicKeys(const std::string &privateFile, const std::string &publicFile, const std::string &passphrase) -> void;
+
+        static auto toBase64(const std::string &str) -> std::string;
+
+        static auto toBase16(const std::string &str) -> std::string;
+
+        static auto fromBase64(const std::string &str) -> std::string;
+
+        static auto fromBase16(const std::string &str) -> std::string;
 
     private:
         struct Impl;
