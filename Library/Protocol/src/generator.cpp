@@ -39,18 +39,13 @@ auto CENTAUR_PROTOCOL_NAMESPACE::Generator::hash(cen::protocol::ProtocolHeader *
 {
     static_assert((g_hashSize / 2) == SHA256_Size); // Hash Sizes must be equal. The division is because the hash will be stringify
 
-    uint8_t hash[SHA256_Size];
-
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, data.c_str(), data.size());
-    SHA256_Final(hash, &sha256);
+    auto hash = SHA256(reinterpret_cast<const unsigned char *>(data.c_str()), data.size(), nullptr);
 
     auto k = 0ul;
-    for (uint8_t i : hash)
+    for (uint8_t l = 0; l < SHA256_Size; ++l)
     {
         for (auto j = 0ul; j < 2; ++j, ++k)
-            header->hash[k] = g_toString[i][j];
+            header->hash[k] = g_toString[hash[l]][j];
     }
     header->hash[k] = 0;
 }
@@ -76,9 +71,9 @@ auto CENTAUR_PROTOCOL_NAMESPACE::Generator::compress(ProtocolHeader *header, con
     zInfo.next_in                     = reinterpret_cast<Bytef *>(const_cast<char *>(data.data()));
     zInfo.next_out                    = outData.data();
 
-    std::size_t size                  = 0;
+    std::size_t size = 0;
 
-    int nErr                          = deflateInit(&zInfo, level);
+    int nErr = deflateInit(&zInfo, level);
     if (nErr == Z_OK)
     {
         nErr = deflate(&zInfo, Z_FINISH);
@@ -149,7 +144,7 @@ auto CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(Protocol *pro, uint32_t use
 
     std::size_t dataSize = 0;
 
-    const auto json      = data->json();
+    const auto json = data->json();
 
     generateHeader(&header, json.size(), userVersion, data->type());
 
@@ -169,7 +164,7 @@ auto CENTAUR_PROTOCOL_NAMESPACE::Generator::generate(Protocol *pro, uint32_t use
     // Get the data pointer
     const uint8_t *dataPointer = compressData ? compressed.data() : reinterpret_cast<const uint8_t *>(json.data());
 
-    header.timestamp           = CENTAUR_PROTOCOL_NAMESPACE::Generator::timestamp();
+    header.timestamp = CENTAUR_PROTOCOL_NAMESPACE::Generator::timestamp();
 
     pro->setSize(dataSize + sizeof(ProtocolHeader));
 
